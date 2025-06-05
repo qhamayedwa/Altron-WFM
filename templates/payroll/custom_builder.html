@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Report Builder - Payroll{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Custom Report Builder</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('payroll.payroll_processing') }}">Payroll</a></li>
+                        <li class="breadcrumb-item active">Custom Builder</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Configuration -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="database" class="me-2"></i>Data Sources
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Select the data sources you want to include in your custom report.</p>
+                    
+                    {% for source_key, source_info in data_sources.items() %}
+                    <div class="card border-secondary mb-3">
+                        <div class="card-header">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="source_{{ source_key }}" 
+                                       name="data_sources" value="{{ source_key }}">
+                                <label class="form-check-label fw-bold" for="source_{{ source_key }}">
+                                    {{ source_info.name }}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="card-body py-2">
+                            <p class="text-muted mb-2">Available fields:</p>
+                            <div class="row">
+                                {% for field in source_info.fields %}
+                                <div class="col-md-6">
+                                    <div class="form-check form-check-sm">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="field_{{ source_key }}_{{ field }}" 
+                                               name="fields_{{ source_key }}" value="{{ field }}" disabled>
+                                        <label class="form-check-label small" for="field_{{ source_key }}_{{ field }}">
+                                            {{ field }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Report Configuration -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="settings" class="me-2"></i>Report Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="customReportForm">
+                        <div class="mb-3">
+                            <label for="report_name" class="form-label">Report Name</label>
+                            <input type="text" class="form-control" id="report_name" 
+                                   placeholder="Enter custom report name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="date_range" class="form-label">Date Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="date" class="form-control" id="start_date" name="start_date">
+                                </div>
+                                <div class="col-6">
+                                    <input type="date" class="form-control" id="end_date" name="end_date">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="report_format" class="form-label">Export Format</label>
+                            <select class="form-select" id="report_format" name="format">
+                                {% for format in report_formats %}
+                                <option value="{{ format }}">{{ format }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="filters" class="form-label">Filters (Optional)</label>
+                            <textarea class="form-control" id="filters" rows="3" 
+                                      placeholder="Enter filter conditions (e.g., department=HR, status=active)"></textarea>
+                            <div class="form-text">Enter one filter per line in format: field=value</div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Report Preview -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="eye" class="me-2"></i>Report Preview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="report_preview" class="text-center text-muted py-4">
+                        <i data-feather="file-text" style="width: 48px; height: 48px;" class="mb-3"></i>
+                        <p>Select data sources and configure your report to see a preview.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Ready to Generate Your Custom Report?</h6>
+                            <p class="text-muted mb-0">Configure your data sources and settings above, then generate your report.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="previewReport()">
+                                <i data-feather="eye" class="me-2"></i>Preview
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="generateReport()">
+                                <i data-feather="download" class="me-2"></i>Generate Report
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="saveTemplate()">
+                                <i data-feather="save" class="me-2"></i>Save Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Notice -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i data-feather="info" class="me-2"></i>Custom Report Builder - Advanced Feature
+                </h6>
+                <p class="mb-0">
+                    This custom report builder provides a foundation for creating advanced, tailored reports. 
+                    The interface allows you to select data sources, configure fields, and set export options. 
+                    Full implementation includes dynamic query building, advanced filtering, and template saving capabilities.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+feather.replace();
+
+// Enable/disable field checkboxes based on data source selection
+document.querySelectorAll('input[name="data_sources"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const sourceKey = this.value;
+        const fieldCheckboxes = document.querySelectorAll(`input[name="fields_${sourceKey}"]`);
+        
+        fieldCheckboxes.forEach(fieldCheckbox => {
+            fieldCheckbox.disabled = !this.checked;
+            if (!this.checked) {
+                fieldCheckbox.checked = false;
+            }
+        });
+    });
+});
+
+function previewReport() {
+    const selectedSources = Array.from(document.querySelectorAll('input[name="data_sources"]:checked'))
+        .map(cb => cb.value);
+    
+    if (selectedSources.length === 0) {
+        alert('Please select at least one data source.');
+        return;
+    }
+    
+    let previewHtml = '<h6>Report Preview</h6>';
+    previewHtml += '<div class="table-responsive">';
+    previewHtml += '<table class="table table-sm table-bordered">';
+    previewHtml += '<thead><tr>';
+    
+    // Add headers based on selected sources and fields
+    selectedSources.forEach(source => {
+        const selectedFields = Array.from(document.querySelectorAll(`input[name="fields_${source}"]:checked`))
+            .map(cb => cb.value);
+        
+        if (selectedFields.length === 0) {
+            // If no specific fields selected, show all available fields
+            const allFields = Array.from(document.querySelectorAll(`input[name="fields_${source}"]`))
+                .map(cb => cb.value);
+            allFields.forEach(field => {
+                previewHtml += `<th>${field}</th>`;
+            });
+        } else {
+            selectedFields.forEach(field => {
+                previewHtml += `<th>${field}</th>`;
+            });
+        }
+    });
+    
+    previewHtml += '</tr></thead>';
+    previewHtml += '<tbody>';
+    previewHtml += '<tr><td colspan="100%" class="text-center text-muted">Sample data will appear here</td></tr>';
+    previewHtml += '</tbody></table></div>';
+    
+    document.getElementById('report_preview').innerHTML = previewHtml;
+}
+
+function generateReport() {
+    const reportName = document.getElementById('report_name').value;
+    const selectedSources = Array.from(document.querySelectorAll('input[name="data_sources"]:checked'))
+        .map(cb => cb.value);
+    
+    if (!reportName.trim()) {
+        alert('Please enter a report name.');
+        return;
+    }
+    
+    if (selectedSources.length === 0) {
+        alert('Please select at least one data source.');
+        return;
+    }
+    
+    // This would integrate with the backend to generate the actual report
+    alert(`Custom report "${reportName}" would be generated with sources: ${selectedSources.join(', ')}\n\nThis feature requires backend implementation for dynamic query building and data export.`);
+}
+
+function saveTemplate() {
+    const reportName = document.getElementById('report_name').value;
+    
+    if (!reportName.trim()) {
+        alert('Please enter a report name to save as template.');
+        return;
+    }
+    
+    // This would save the current configuration as a reusable template
+    alert(`Report template "${reportName}" would be saved for future use.\n\nThis feature requires backend implementation for template storage and retrieval.`);
+}
+
+// Set default dates
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    document.getElementById('start_date').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('end_date').value = today.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}

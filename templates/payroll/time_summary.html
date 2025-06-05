@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Time Summary Report - Payroll{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Time Summary Report</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('payroll.payroll_processing') }}">Payroll</a></li>
+                        <li class="breadcrumb-item active">Time Summary</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                   value="{{ start_date.strftime('%Y-%m-%d') if start_date else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                   value="{{ end_date.strftime('%Y-%m-%d') if end_date else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i data-feather="search" class="me-2"></i>Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    {% if time_summary %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="users" class="mb-2" style="width: 32px; height: 32px; color: #0d6efd;"></i>
+                    <h5 class="card-title">Total Employees</h5>
+                    <h3 class="text-primary">{{ time_summary|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="clock" class="mb-2" style="width: 32px; height: 32px; color: #198754;"></i>
+                    <h5 class="card-title">Total Hours</h5>
+                    {% set total_hours = time_summary | sum(attribute='total_hours') or 0 %}
+                    <h3 class="text-success">{{ "%.1f"|format(total_hours) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="calendar" class="mb-2" style="width: 32px; height: 32px; color: #ffc107;"></i>
+                    <h5 class="card-title">Total Entries</h5>
+                    {% set total_entries = time_summary | sum(attribute='total_entries') or 0 %}
+                    <h3 class="text-warning">{{ total_entries }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="trending-up" class="mb-2" style="width: 32px; height: 32px; color: #20c997;"></i>
+                    <h5 class="card-title">Avg Hours/Employee</h5>
+                    {% set avg_hours = (total_hours / time_summary|length) if time_summary|length > 0 else 0 %}
+                    <h3 class="text-info">{{ "%.1f"|format(avg_hours) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Summary Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="grid" class="me-2"></i>Employee Time Summary
+                    </h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                        <i data-feather="printer" class="me-1"></i>Print
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Email</th>
+                                    <th>Total Entries</th>
+                                    <th>Total Hours</th>
+                                    <th>Average Hours/Day</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for summary in time_summary %}
+                                <tr>
+                                    <td><strong>{{ summary.username }}</strong></td>
+                                    <td>{{ summary.email or 'N/A' }}</td>
+                                    <td>{{ summary.total_entries or 0 }}</td>
+                                    <td><strong>{{ "%.2f"|format(summary.total_hours or 0) }}</strong></td>
+                                    <td>
+                                        {% if summary.total_entries and summary.total_entries > 0 %}
+                                            {{ "%.2f"|format((summary.total_hours or 0) / summary.total_entries) }}
+                                        {% else %}
+                                            0.00
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set hours = summary.total_hours or 0 %}
+                                        {% if hours >= 40 %}
+                                            <span class="badge bg-success">Full Time</span>
+                                        {% elif hours >= 20 %}
+                                            <span class="badge bg-primary">Part Time</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Low Hours</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i data-feather="clock" class="mb-3" style="width: 48px; height: 48px; color: #6c757d;"></i>
+                    <h5 class="text-muted">No Time Data Available</h5>
+                    <p class="text-muted">No time entries found for the selected period.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+feather.replace();
+</script>
+{% endblock %}
