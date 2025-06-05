@@ -261,6 +261,88 @@
     <!-- Initialize Feather Icons -->
     <script>
         feather.replace()
+        
+        // Global JavaScript Functions for Dashboard Functionality
+        
+        // Show Profile Modal/Page
+        function showProfile() {
+            window.location.href = '/auth/profile';
+        }
+        
+        // Quick Actions Functions
+        function quickClockIn() {
+            clockIn();
+        }
+        
+        function quickClockOut() {
+            clockOut();
+        }
+        
+        function viewMySchedule() {
+            window.location.href = '/schedules';
+        }
+        
+        function applyForLeave() {
+            window.location.href = '/leave-management';
+        }
+        
+        // Navigation Functions
+        function navigateToTimeAttendance() {
+            window.location.href = '/time-attendance';
+        }
+        
+        function navigateToScheduling() {
+            window.location.href = '/schedules';
+        }
+        
+        function navigateToLeaveManagement() {
+            window.location.href = '/leave-management';
+        }
+        
+        function navigateToPayroll() {
+            window.location.href = '/payroll';
+        }
+        
+        function navigateToReports() {
+            window.location.href = '/reports';
+        }
+        
+        // Database Status Check
+        function checkDatabaseStatus() {
+            const statusElement = document.getElementById('db-status');
+            const statusTextElement = document.getElementById('db-status-text');
+            
+            if (!statusElement || !statusTextElement) return;
+            
+            fetch('/api/system-info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusElement.className = 'db-status connected';
+                        statusTextElement.textContent = 'Connected';
+                    } else {
+                        statusElement.className = 'db-status disconnected';
+                        statusTextElement.textContent = 'Error';
+                    }
+                })
+                .catch(error => {
+                    console.log('Failed to check database status:', error);
+                    statusElement.className = 'db-status disconnected';
+                    statusTextElement.textContent = 'Offline';
+                });
+        }
+        
+        // Global Error Handler
+        window.addEventListener('error', function(event) {
+            console.log('Global error:', event.error);
+        });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkDatabaseStatus();
+            // Check database status every 30 seconds
+            setInterval(checkDatabaseStatus, 30000);
+        });
     </script>
     
     {% block scripts %}{% endblock %}
