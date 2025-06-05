@@ -393,9 +393,9 @@ function runRuleTest() {
         <strong>Test Results:</strong><br>
         Regular Hours: ${Math.min(hours, 40)}<br>
         Overtime Hours: ${Math.max(0, hours - 40)}<br>
-        Regular Pay: $${(Math.min(hours, 40) * baseRate).toFixed(2)}<br>
-        Overtime Pay: $${(Math.max(0, hours - 40) * baseRate * 1.5).toFixed(2)}<br>
-        <strong>Total Pay: $${(Math.min(hours, 40) * baseRate + Math.max(0, hours - 40) * baseRate * 1.5).toFixed(2)}</strong>
+        Regular Pay: R${(Math.min(hours, 40) * baseRate).toFixed(2)}<br>
+        Overtime Pay: R${(Math.max(0, hours - 40) * baseRate * 1.5).toFixed(2)}<br>
+        <strong>Total Pay: R${(Math.min(hours, 40) * baseRate + Math.max(0, hours - 40) * baseRate * 1.5).toFixed(2)}</strong>
     `;
     
     document.getElementById('testResults').innerHTML = result;
