@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i data-feather="user" class="me-2"></i>
+                        My Profile
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Username</h6>
+                            <p>{{ current_user.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Email</h6>
+                            <p>{{ current_user.email }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Full Name</h6>
+                            <p>{{ current_user.full_name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Member Since</h6>
+                            <p>{{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if current_user.last_login %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Last Login</h6>
+                            <p>{{ current_user.last_login.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-muted">Roles</h6>
+                            <div>
+                                {% for role in current_user.roles %}
+                                <span class="badge bg-primary me-2">{{ role.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary me-2">
+                    <i data-feather="home" class="me-2"></i>
+                    Back to Home
+                </a>
+                {% if current_user.has_role('Super User') %}
+                <a href="{{ url_for('auth.user_management') }}" class="btn btn-primary">
+                    <i data-feather="users" class="me-2"></i>
+                    Manage Users
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+</script>
+{% endblock %}

@@ -58,6 +58,10 @@ def create_app(config_class=Config):
                              error_code=500, 
                              error_message="Internal server error"), 500
     
+    # Register CLI commands
+    from cli_commands import register_commands
+    register_commands(app)
+    
     # Create database tables
     with app.app_context():
         # Import models to ensure tables are created

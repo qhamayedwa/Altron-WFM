@@ -37,6 +37,7 @@
                             Home
                         </a>
                     </li>
+                    {% if current_user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('main.users') }}">
                             <i data-feather="users" class="me-1"></i>
@@ -49,11 +50,48 @@
                             Posts
                         </a>
                     </li>
+                    {% if current_user.has_role('Super User') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.user_management') }}">
+                            <i data-feather="shield" class="me-1"></i>
+                            User Management
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endif %}
                 </ul>
                 
-                <!-- Database Status -->
+                <!-- User Authentication -->
                 <div class="navbar-nav">
-                    <div class="nav-item d-flex align-items-center">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i data-feather="user" class="me-1"></i>
+                            {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i data-feather="user" class="me-2"></i>
+                                My Profile
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i data-feather="log-out" class="me-2"></i>
+                                Sign Out
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.login') }}">
+                            <i data-feather="log-in" class="me-1"></i>
+                            Sign In
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Database Status -->
+                    <div class="nav-item d-flex align-items-center ms-3">
                         <span class="db-status loading" id="db-status"></span>
                         <small class="text-muted" id="db-status-text">Checking...</small>
                     </div>
