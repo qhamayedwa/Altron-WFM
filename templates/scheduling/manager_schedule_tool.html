@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Management Tool{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Schedule Management Tool</h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createScheduleModal">
+                        <i data-feather="plus" class="me-2"></i>Create Schedule
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="bulkSchedule()">
+                        <i data-feather="copy" class="me-2"></i>Bulk Schedule
+                    </button>
+                    <button class="btn btn-outline-info" onclick="exportSchedules()">
+                        <i data-feather="download" class="me-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Navigation and Filters -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-secondary" onclick="changeWeek(-1)">
+                    <i data-feather="chevron-left"></i> Previous Week
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="changeWeek(1)">
+                    Next Week <i data-feather="chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" id="departmentFilter" onchange="filterByDepartment()">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept }}">{{ dept }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4 text-end">
+            <h5 class="mb-0">Week of {{ week_start.strftime('%B %d, %Y') if week_start else 'Current Week' }}</h5>
+        </div>
+    </div>
+
+    <!-- Team Schedule Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Team Schedule Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered schedule-overview-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="15%">Employee</th>
+                                    <th width="12%">Monday</th>
+                                    <th width="12%">Tuesday</th>
+                                    <th width="12%">Wednesday</th>
+                                    <th width="12%">Thursday</th>
+                                    <th width="12%">Friday</th>
+                                    <th width="12%">Saturday</th>
+                                    <th width="12%">Sunday</th>
+                                    <th width="10%">Total Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in employees %}
+                                <tr>
+                                    <td class="employee-cell">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2">
+                                                <span class="badge bg-secondary">{{ employee.first_name[0] }}{{ employee.last_name[0] }}</span>
+                                            </div>
+                                            <div>
+                                                <strong>{{ employee.first_name }} {{ employee.last_name }}</strong><br>
+                                                <small class="text-muted">{{ employee.department or 'No Dept' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {% for day in range(7) %}
+                                    <td class="schedule-day-cell" data-employee="{{ employee.id }}" data-day="{{ day }}">
+                                        {% set day_schedules = employee_schedules.get((employee.id, day), []) %}
+                                        {% for schedule in day_schedules %}
+                                        <div class="schedule-item" onclick="editSchedule({{ schedule.id }})">
+                                            <div class="schedule-time">{{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}</div>
+                                            <div class="schedule-shift">{{ schedule.shift_type.name }}</div>
+                                            {% if schedule.needs_approval %}
+                                            <span class="badge bg-warning">Pending</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                        <button class="btn btn-sm btn-outline-success add-schedule-btn" onclick="addSchedule({{ employee.id }}, {{ day }})" style="display: none;">
+                                            <i data-feather="plus"></i>
+                                        </button>
+                                    </td>
+                                    {% endfor %}
+                                    <td class="text-center">
+                                        <strong>{{ employee_hours.get(employee.id, 0) }}h</strong>
+                                        {% if employee_hours.get(employee.id, 0) > 40 %}
+                                        <br><span class="badge bg-warning">OT</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Statistics -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-primary">{{ stats.total_schedules or 0 }}</h4>
+                    <small class="text-muted">Total Schedules</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-success">{{ stats.total_hours or 0 }}</h4>
+                    <small class="text-muted">Total Hours</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-warning">{{ stats.overtime_hours or 0 }}</h4>
+                    <small class="text-muted">Overtime Hours</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-info">{{ stats.pending_approvals or 0 }}</h4>
+                    <small class="text-muted">Pending Approvals</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Schedule Modal -->
+<div class="modal fade" id="createScheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('scheduling.create_schedule') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Employee</label>
+                        <select class="form-select" name="employee_id" required>
+                            <option value="">Select Employee...</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee.first_name }} {{ employee.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Shift Type</label>
+                        <select class="form-select" name="shift_type_id" required>
+                            <option value="">Select Shift Type...</option>
+                            {% for shift_type in shift_types %}
+                            <option value="{{ shift_type.id }}" data-start="{{ shift_type.default_start_time }}" data-end="{{ shift_type.default_end_time }}">
+                                {{ shift_type.name }} ({{ shift_type.default_start_time.strftime('%H:%M') }} - {{ shift_type.default_end_time.strftime('%H:%M') }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Start Time</label>
+                                <input type="time" class="form-control" name="start_time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">End Time</label>
+                                <input type="time" class="form-control" name="end_time" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-control" name="location" placeholder="Work location (optional)">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="2" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="recurring" id="recurringCheck">
+                        <label class="form-check-label" for="recurringCheck">
+                            Create recurring schedule
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.schedule-overview-table td {
+    vertical-align: top;
+    padding: 8px;
+}
+
+.schedule-day-cell {
+    position: relative;
+    min-height: 80px;
+    background-color: #f8f9fa;
+}
+
+.schedule-day-cell:hover {
+    background-color: #e9ecef;
+}
+
+.schedule-day-cell:hover .add-schedule-btn {
+    display: block !important;
+}
+
+.schedule-item {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+.schedule-item:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+}
+
+.schedule-time {
+    font-weight: bold;
+}
+
+.schedule-shift {
+    font-size: 0.7rem;
+    opacity: 0.9;
+}
+
+.employee-cell {
+    background-color: #ffffff;
+    border-right: 2px solid #dee2e6;
+}
+
+.add-schedule-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+</style>
+
+<script>
+function changeWeek(direction) {
+    const currentDate = new Date('{{ week_start }}' || new Date());
+    currentDate.setDate(currentDate.getDate() + (direction * 7));
+    window.location.href = '?week=' + currentDate.toISOString().split('T')[0];
+}
+
+function addSchedule(employeeId, day) {
+    // Open create schedule modal with pre-filled employee and date
+    const modal = new bootstrap.Modal(document.getElementById('createScheduleModal'));
+    document.querySelector('[name="employee_id"]').value = employeeId;
+    modal.show();
+}
+
+function editSchedule(scheduleId) {
+    // Open edit schedule modal
+    window.location.href = `/scheduling/edit/${scheduleId}`;
+}
+
+function bulkSchedule() {
+    // Open bulk schedule creation tool
+    window.location.href = '{{ url_for("scheduling.bulk_schedule") }}';
+}
+
+function exportSchedules() {
+    // Export schedules functionality
+    window.location.href = '{{ url_for("scheduling.export_schedules") }}';
+}
+
+function filterByDepartment() {
+    const department = document.getElementById('departmentFilter').value;
+    window.location.href = '?department=' + department;
+}
+
+// Auto-fill times when shift type is selected
+document.addEventListener('DOMContentLoaded', function() {
+    const shiftSelect = document.querySelector('[name="shift_type_id"]');
+    const startTime = document.querySelector('[name="start_time"]');
+    const endTime = document.querySelector('[name="end_time"]');
+    
+    if (shiftSelect) {
+        shiftSelect.addEventListener('change', function() {
+            const option = this.options[this.selectedIndex];
+            if (option.dataset.start && option.dataset.end) {
+                startTime.value = option.dataset.start;
+                endTime.value = option.dataset.end;
+            }
+        });
+    }
+    
+    feather.replace();
+});
+</script>
+{% endblock %}

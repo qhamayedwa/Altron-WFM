@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Manager Time & Attendance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Team Time & Attendance Management</h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#approvalModal">
+                        <i data-feather="check-circle" class="me-2"></i>Pending Approvals ({{ pending_count or 0 }})
+                    </button>
+                    <a href="{{ url_for('main.reports') }}" class="btn btn-outline-info">
+                        <i data-feather="bar-chart-2" class="me-2"></i>View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ team_stats.present or 0 }}</h3>
+                    <small class="text-muted">Currently Working</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ team_stats.on_break or 0 }}</h3>
+                    <small class="text-muted">On Break</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ team_stats.on_leave or 0 }}</h3>
+                    <small class="text-muted">On Leave</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ team_stats.exceptions or 0 }}</h3>
+                    <small class="text-muted">Exceptions</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Search -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i data-feather="search"></i></span>
+                <input type="text" class="form-control" placeholder="Search employees..." id="employeeSearch">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+                <option value="on_break">On Break</option>
+                <option value="exception">Exception</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="date" class="form-control" id="dateFilter" value="{{ selected_date or today }}">
+        </div>
+    </div>
+
+    <!-- Team Time Entries Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Team Time Entries - {{ selected_date or today }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="teamTimeTable">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Department</th>
+                                    <th>Clock In</th>
+                                    <th>Clock Out</th>
+                                    <th>Break Time</th>
+                                    <th>Total Hours</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in team_entries %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2">
+                                                <span class="badge bg-secondary">{{ entry.employee.first_name[0] }}{{ entry.employee.last_name[0] }}</span>
+                                            </div>
+                                            <div>
+                                                <strong>{{ entry.employee.first_name }} {{ entry.employee.last_name }}</strong><br>
+                                                <small class="text-muted">{{ entry.employee.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ entry.employee.department or 'N/A' }}</td>
+                                    <td>
+                                        {% if entry.clock_in_time %}
+                                            {{ entry.clock_in_time.strftime('%I:%M %p') }}
+                                        {% else %}
+                                            <span class="text-muted">Not Clocked In</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if entry.clock_out_time %}
+                                            {{ entry.clock_out_time.strftime('%I:%M %p') }}
+                                        {% elif entry.clock_in_time %}
+                                            <span class="text-warning">In Progress</span>
+                                        {% else %}
+                                            <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ entry.total_break_minutes or 0 }} min</td>
+                                    <td>{{ "%.2f"|format(entry.total_hours) if entry.total_hours else '--' }}</td>
+                                    <td>
+                                        {% if entry.status == 'Closed' %}
+                                            <span class="badge bg-success">Complete</span>
+                                        {% elif entry.status == 'Open' %}
+                                            <span class="badge bg-primary">Active</span>
+                                        {% elif entry.status == 'Exception' %}
+                                            <span class="badge bg-danger">Exception</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ entry.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="viewDetails({{ entry.id }})">
+                                                <i data-feather="eye"></i>
+                                            </button>
+                                            {% if not entry.approved_by_manager_id %}
+                                            <button class="btn btn-outline-success" onclick="approveEntry({{ entry.id }})">
+                                                <i data-feather="check"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-outline-warning" onclick="editEntry({{ entry.id }})">
+                                                <i data-feather="edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">No time entries found for selected date</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approval Modal -->
+<div class="modal fade" id="approvalModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pending Time Entry Approvals</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Pending approvals list would be loaded here -->
+                <div id="pendingApprovals">
+                    Loading pending approvals...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Manager-specific functionality
+function viewDetails(entryId) {
+    // Show detailed view of time entry
+}
+
+function approveEntry(entryId) {
+    // Approve time entry
+}
+
+function editEntry(entryId) {
+    // Edit time entry
+}
+
+// Real-time updates for team status
+// Bulk approval functionality
+// Export team reports
+</script>
+{% endblock %}

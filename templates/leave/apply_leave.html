@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Apply for Leave{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Apply for Leave</h2>
+                <a href="{{ url_for('main.leave_management') }}" class="btn btn-outline-secondary">
+                    <i data-feather="arrow-left" class="me-2"></i>Back to Leave Management
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Leave Application Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Leave Application Form</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('leave.apply_leave') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Leave Type <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="leave_type_id" id="leaveType" required onchange="updateBalance()">
+                                        <option value="">Select Leave Type...</option>
+                                        {% for leave_type in leave_types %}
+                                        <option value="{{ leave_type.id }}" data-max-days="{{ leave_type.max_days_per_request }}">
+                                            {{ leave_type.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Available Balance</label>
+                                    <div class="form-control-plaintext bg-light p-2 rounded" id="availableBalance">
+                                        Select leave type to view balance
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="start_date" id="startDate" required onchange="calculateDays()">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">End Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="end_date" id="endDate" required onchange="calculateDays()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Leave <span class="text-danger">*</span></label>
+                            <textarea class="form-control" name="reason" rows="4" required placeholder="Please provide a detailed reason for your leave request..."></textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="send" class="me-2"></i>Submit Application
+                            </button>
+                            <a href="{{ url_for('main.leave_management') }}" class="btn btn-secondary">
+                                <i data-feather="x" class="me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Balance Summary -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Your Leave Balances</h6>
+                </div>
+                <div class="card-body">
+                    {% for balance in leave_balances %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong>{{ balance.leave_type.name }}</strong><br>
+                            <small class="text-muted">{{ balance.leave_type.description }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success">{{ balance.remaining_days }}</span><br>
+                            <small class="text-muted">days left</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No leave balances available</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateBalance() {
+    const leaveTypeSelect = document.getElementById('leaveType');
+    const balanceDiv = document.getElementById('availableBalance');
+    
+    if (leaveTypeSelect.value) {
+        balanceDiv.innerHTML = '<span class="text-success">Loading balance...</span>';
+        setTimeout(() => {
+            balanceDiv.innerHTML = '<strong>Available</strong>';
+        }, 500);
+    } else {
+        balanceDiv.innerHTML = 'Select leave type to view balance';
+    }
+}
+
+function calculateDays() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (end >= start) {
+            const timeDiff = end.getTime() - start.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+            console.log(`Leave duration: ${daysDiff} days`);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('startDate').min = today;
+    document.getElementById('endDate').min = today;
+    
+    feather.replace();
+});
+</script>
+{% endblock %}
