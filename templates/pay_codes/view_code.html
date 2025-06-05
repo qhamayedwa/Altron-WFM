@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Pay Code: {{ pay_code.code }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Pay Code: {{ pay_code.code }}</h1>
+        <div>
+            <a href="{{ url_for('pay_codes.edit_pay_code', code_id=pay_code.id) }}" class="btn btn-primary">
+                <i data-feather="edit" class="me-2"></i>Edit
+            </a>
+            <a href="{{ url_for('pay_codes.manage_pay_codes') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="me-2"></i>Back to Pay Codes
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pay Code Details -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Pay Code Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Code</label>
+                            <div class="fw-bold">{{ pay_code.code }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Description</label>
+                            <div>{{ pay_code.description }}</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Type</label>
+                            <div>
+                                {% if pay_code.is_absence_code %}
+                                    <span class="badge bg-info">Absence Code</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Payroll Code</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Status</label>
+                            <div>
+                                {% if pay_code.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Inactive</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Pay Rate Factor</label>
+                            <div>{{ pay_code.get_pay_rate_factor() }}x</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Created By</label>
+                            <div>{{ pay_code.created_by.username if pay_code.created_by else 'System' }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Absence-Specific Configuration -->
+                    {% if pay_code.is_absence_code %}
+                    <hr>
+                    <h6 class="mb-3">Absence Configuration</h6>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Paid Absence</label>
+                            <div>
+                                {% if pay_code.is_paid_absence() %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Requires Approval</label>
+                            <div>
+                                {% if pay_code.requires_approval() %}
+                                    <span class="badge bg-warning">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Deducts from Balance</label>
+                            <div>
+                                {% if pay_code.deducts_from_leave_balance() %}
+                                    <span class="badge bg-info">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Max Hours Per Day</label>
+                            <div>
+                                {% if pay_code.max_hours_per_day() %}
+                                    {{ pay_code.max_hours_per_day() }} hours
+                                {% else %}
+                                    <span class="text-muted">No limit</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Max Consecutive Days</label>
+                            <div>
+                                {% if pay_code.max_consecutive_days() %}
+                                    {{ pay_code.max_consecutive_days() }} days
+                                {% else %}
+                                    <span class="text-muted">No limit</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Linked Leave Type</label>
+                            <div>
+                                {% if pay_code.get_linked_leave_type_id() %}
+                                    <span class="badge bg-primary">Linked</span>
+                                {% else %}
+                                    <span class="text-muted">None</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Created Date</label>
+                            <div>{{ pay_code.created_at.strftime('%Y-%m-%d %H:%M') if pay_code.created_at else 'N/A' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Last Updated</label>
+                            <div>{{ pay_code.updated_at.strftime('%Y-%m-%d %H:%M') if pay_code.updated_at else 'N/A' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Statistics -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Usage Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h3 class="text-primary">{{ time_entries_count }}</h3>
+                        <p class="text-muted">Total time entries using this code</p>
+                    </div>
+
+                    {% if recent_entries %}
+                    <h6 class="mb-3">Recent Usage</h6>
+                    <div class="list-group list-group-flush">
+                        {% for entry in recent_entries %}
+                        <div class="list-group-item p-2">
+                            <div class="d-flex justify-content-between">
+                                <small class="fw-bold">{{ entry.employee.username }}</small>
+                                <small class="text-muted">{{ entry.clock_in_time.strftime('%m/%d') if entry.clock_in_time else 'N/A' }}</small>
+                            </div>
+                            <small class="text-muted">{{ "%.1f"|format(entry.total_hours) }} hours</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i data-feather="inbox" class="mb-2"></i>
+                        <p>No recent usage</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if pay_code.is_absence_code %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('pay_codes.log_absence') }}?pay_code_id={{ pay_code.id }}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        <i data-feather="plus-circle" class="me-2"></i>Log Absence
+                    </a>
+                    <a href="{{ url_for('pay_codes.manage_absences') }}?pay_code_id={{ pay_code.id }}" class="btn btn-outline-secondary btn-sm w-100">
+                        <i data-feather="list" class="me-2"></i>View Absences
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
