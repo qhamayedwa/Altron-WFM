@@ -15,25 +15,38 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
+                        {{ form.hidden_tag() }}
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="username" class="form-label">Username *</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
+                                {{ form.username.label(class="form-label") }}
+                                {{ form.username(class="form-control") }}
+                                {% for error in form.username.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="email" class="form-label">Email *</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                {{ form.email.label(class="form-label") }}
+                                {{ form.email(class="form-control") }}
+                                {% for error in form.email.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label">First Name *</label>
-                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                {{ form.first_name.label(class="form-label") }}
+                                {{ form.first_name(class="form-control") }}
+                                {% for error in form.first_name.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="last_name" class="form-label">Last Name *</label>
-                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                {{ form.last_name.label(class="form-label") }}
+                                {{ form.last_name(class="form-control") }}
+                                {% for error in form.last_name.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
                             </div>
                         </div>
 
@@ -45,20 +58,26 @@
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
-                                        <label for="employee_id" class="form-label">Employee ID</label>
-                                        <input type="text" class="form-control" id="employee_id" name="employee_id" 
-                                               placeholder="e.g., EMP001">
+                                        {{ form.employee_id.label(class="form-label") }}
+                                        {{ form.employee_id(class="form-control", placeholder="e.g., EMP001") }}
                                         <small class="text-muted">Unique identifier for the employee</small>
+                                        {% for error in form.employee_id.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
                                     </div>
                                     <div class="col-md-4 mb-3">
-                                        <label for="department" class="form-label">Department</label>
-                                        <input type="text" class="form-control" id="department" name="department" 
-                                               placeholder="e.g., Operations, HR, IT">
+                                        {{ form.department.label(class="form-label") }}
+                                        {{ form.department(class="form-control", placeholder="e.g., Operations, HR, IT") }}
+                                        {% for error in form.department.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
                                     </div>
                                     <div class="col-md-4 mb-3">
-                                        <label for="position" class="form-label">Position/Job Title</label>
-                                        <input type="text" class="form-control" id="position" name="position" 
-                                               placeholder="e.g., Staff Member, Manager">
+                                        {{ form.position.label(class="form-label") }}
+                                        {{ form.position(class="form-control", placeholder="e.g., Staff Member, Manager") }}
+                                        {% for error in form.position.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
                                     </div>
                                 </div>
                             </div>
@@ -66,13 +85,19 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="password" class="form-label">Password *</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
+                                {{ form.password.label(class="form-label") }}
+                                {{ form.password(class="form-control") }}
                                 <small class="text-muted">Minimum 6 characters</small>
+                                {% for error in form.password.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="password2" class="form-label">Confirm Password *</label>
-                                <input type="password" class="form-control" id="password2" name="password2" required>
+                                {{ form.password2.label(class="form-label") }}
+                                {{ form.password2(class="form-control") }}
+                                {% for error in form.password2.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
                             </div>
                         </div>
                         
@@ -83,21 +108,20 @@
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    {{ form.roles(class="form-control") }}
-                                    {% for role in form.roles.choices %}
+                                    {% for role in roles %}
                                     <div class="col-md-6 mb-2">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" 
-                                                   value="{{ role[0] }}" id="role_{{ role[0] }}" name="roles">
-                                            <label class="form-check-label" for="role_{{ role[0] }}">
-                                                <strong>{{ role[1] }}</strong>
-                                                {% if role[1] == 'User' %}
+                                                   value="{{ role.id }}" id="role_{{ role.id }}" name="roles">
+                                            <label class="form-check-label" for="role_{{ role.id }}">
+                                                <strong>{{ role.name }}</strong>
+                                                {% if role.name == 'User' %}
                                                 <small class="text-muted d-block">Basic employee access (recommended for regular employees)</small>
-                                                {% elif role[1] == 'Manager' %}
+                                                {% elif role.name == 'Manager' %}
                                                 <small class="text-muted d-block">Team management and approval permissions</small>
-                                                {% elif role[1] == 'Admin' %}
+                                                {% elif role.name == 'Admin' %}
                                                 <small class="text-muted d-block">System administration access</small>
-                                                {% elif role[1] == 'Super User' %}
+                                                {% elif role.name == 'Super User' %}
                                                 <small class="text-muted d-block">Complete system control</small>
                                                 {% endif %}
                                             </label>
@@ -128,10 +152,7 @@
                                 <i data-feather="arrow-left" class="me-2"></i>
                                 Back to Users
                             </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i data-feather="user-plus" class="me-2"></i>
-                                Register User
-                            </button>
+                            {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </form>
                 </div>
