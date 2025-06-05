@@ -90,20 +90,18 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('time_attendance.clock_in_out') }}" class="btn btn-primary">
-                            <i data-feather="clock" class="me-2"></i>Time Entry
+                        <a href="#" class="btn btn-primary">
+                            <i data-feather="clock" class="me-2"></i>Clock In/Out
                         </a>
-                        <a href="{{ url_for('scheduling.view_schedule') }}" class="btn btn-outline-primary">
+                        <a href="#" class="btn btn-outline-primary">
                             <i data-feather="calendar" class="me-2"></i>View Schedule
                         </a>
-                        <a href="{{ url_for('leave_management.apply_leave') }}" class="btn btn-outline-secondary">
+                        <a href="#" class="btn btn-outline-secondary">
                             <i data-feather="file-text" class="me-2"></i>Apply for Leave
                         </a>
-                        {% if current_user.has_role('Manager') or current_user.has_role('Super User') %}
                         <a href="{{ url_for('main.reports') }}" class="btn btn-outline-info">
                             <i data-feather="bar-chart-2" class="me-2"></i>View Reports
                         </a>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -114,7 +112,7 @@
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">Recent Time Entries</h6>
-                    <a href="{{ url_for('time_attendance.time_entries') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                    <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 <div class="card-body">
                     {% if recent_entries %}
@@ -231,18 +229,18 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('time_attendance.manage_time_entries') }}" class="btn btn-outline-primary btn-sm w-100">
-                                <i data-feather="clock" class="me-2"></i>Manage Time Entries
+                            <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                                <i data-feather="clock" class="me-2"></i>Time Entries
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('scheduling.manage_schedules') }}" class="btn btn-outline-primary btn-sm w-100">
-                                <i data-feather="calendar" class="me-2"></i>Manage Schedules
+                            <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                                <i data-feather="calendar" class="me-2"></i>Schedules
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('leave_management.team_applications') }}" class="btn btn-outline-primary btn-sm w-100">
-                                <i data-feather="file-text" class="me-2"></i>Leave Approvals
+                            <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                                <i data-feather="file-text" class="me-2"></i>Leave Management
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
@@ -252,7 +250,6 @@
                         </div>
                     </div>
                     
-                    {% if current_user.has_role('Super User') %}
                     <hr>
                     <div class="row">
                         <div class="col-md-3 mb-2">
@@ -266,17 +263,16 @@
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('auth.user_management') }}" class="btn btn-outline-secondary btn-sm w-100">
+                            <a href="#" class="btn btn-outline-secondary btn-sm w-100">
                                 <i data-feather="users" class="me-2"></i>User Management
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('leave_management.manage_leave_types') }}" class="btn btn-outline-secondary btn-sm w-100">
-                                <i data-feather="settings" class="me-2"></i>Leave Types
+                            <a href="#" class="btn btn-outline-secondary btn-sm w-100">
+                                <i data-feather="settings" class="me-2"></i>System Settings
                             </a>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
