@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Create Shift Type - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="plus" class="me-2"></i>
+            Create Shift Type
+        </h2>
+        <a href="{{ url_for('scheduling.shift_types') }}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="me-2"></i>
+            Back to Shift Types
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Shift Type Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Shift Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="e.g., Day, Evening, Night" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="description" name="description" 
+                                       placeholder="Brief description of the shift">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="default_start_time" class="form-label">Default Start Time *</label>
+                                <input type="time" class="form-control" id="default_start_time" name="default_start_time" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="default_end_time" class="form-label">Default End Time *</label>
+                                <input type="time" class="form-control" id="default_end_time" name="default_end_time" required>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i data-feather="info" class="me-2"></i>
+                            <strong>Note:</strong> The default times will be used as templates when creating new schedules. 
+                            Individual schedules can still have custom times.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('scheduling.shift_types') }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="save" class="me-2"></i>
+                                Create Shift Type
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+
+    // Set default times
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default start time to 9:00 AM
+        document.getElementById('default_start_time').value = '09:00';
+        // Set default end time to 5:00 PM
+        document.getElementById('default_end_time').value = '17:00';
+    });
+
+    // Calculate duration when times change
+    function updateDuration() {
+        const startTime = document.getElementById('default_start_time').value;
+        const endTime = document.getElementById('default_end_time').value;
+        
+        if (startTime && endTime) {
+            const start = new Date('2000-01-01 ' + startTime);
+            let end = new Date('2000-01-01 ' + endTime);
+            
+            // Handle overnight shifts
+            if (end <= start) {
+                end.setDate(end.getDate() + 1);
+            }
+            
+            const diff = (end - start) / (1000 * 60 * 60); // Convert to hours
+            console.log(`Shift duration: ${diff} hours`);
+        }
+    }
+
+    document.getElementById('default_start_time').addEventListener('change', updateDuration);
+    document.getElementById('default_end_time').addEventListener('change', updateDuration);
+</script>
+{% endblock %}
