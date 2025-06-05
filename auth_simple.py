@@ -112,7 +112,7 @@ def register():
         user.email = form.email.data
         user.first_name = form.first_name.data
         user.last_name = form.last_name.data
-        user.employee_id = form.employee_id.data if form.employee_id.data else None
+        user.employee_id = form.employee_id.data
         user.department = form.department.data if form.department.data else None
         user.position = form.position.data if form.position.data else None
         user.is_active = form.is_active.data

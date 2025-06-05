@@ -58,9 +58,9 @@
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
-                                        {{ form.employee_id.label(class="form-label") }}
-                                        {{ form.employee_id(class="form-control", placeholder="e.g., EMP001") }}
-                                        <small class="text-muted">Unique identifier for the employee</small>
+                                        <label for="employee_id" class="form-label">Employee ID *</label>
+                                        {{ form.employee_id(class="form-control", placeholder="e.g., EMP001", required=true) }}
+                                        <small class="text-muted">Required unique identifier for the employee</small>
                                         {% for error in form.employee_id.errors %}
                                             <div class="text-danger small">{{ error }}</div>
                                         {% endfor %}

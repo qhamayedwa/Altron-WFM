@@ -38,7 +38,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True, index=True)  # Add index for active user queries
     
     # Additional fields for employee management
-    employee_id = db.Column(db.String(20), unique=True, nullable=True, index=True)  # Employee ID with index
+    employee_id = db.Column(db.String(20), unique=True, nullable=False, index=True)  # Employee ID - required key identifier
     department = db.Column(db.String(64), nullable=True, index=True)  # Department with index
     position = db.Column(db.String(64), nullable=True)
     hire_date = db.Column(db.Date, nullable=True, index=True)  # Hire date with index

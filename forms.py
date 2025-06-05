@@ -27,7 +27,7 @@ class RegistrationForm(FlaskForm):
     last_name = StringField('Last Name', validators=[DataRequired(), Length(max=64)])
     
     # Employee-specific fields
-    employee_id = StringField('Employee ID', validators=[Length(max=20)])
+    employee_id = StringField('Employee ID', validators=[DataRequired(), Length(min=1, max=20, message='Employee ID is required and must be between 1 and 20 characters')])
     department = StringField('Department', validators=[Length(max=64)])
     position = StringField('Position/Job Title', validators=[Length(max=64)])
     
@@ -59,6 +59,12 @@ class RegistrationForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user is not None:
             raise ValidationError('Please use a different email address.')
+    
+    def validate_employee_id(self, employee_id):
+        """Validate employee ID is unique"""
+        user = User.query.filter_by(employee_id=employee_id.data).first()
+        if user is not None:
+            raise ValidationError('This Employee ID is already in use. Please use a different Employee ID.')
 
 class EditUserForm(FlaskForm):
     """Form for editing user information"""
