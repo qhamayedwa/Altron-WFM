@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-3">
+                <i data-feather="database" class="me-3"></i>
+                Flask PostgreSQL App
+            </h1>
+            <p class="lead text-muted mb-4">
+                A complete Flask web application with PostgreSQL database integration, 
+                proper project structure, migration support, and modern Bootstrap UI.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <button id="create-sample-data" class="btn btn-outline-primary">
+                    <i data-feather="plus" class="me-2"></i>
+                    Create Sample Data
+                </button>
+                <a href="{{ url_for('main.db_status') }}" class="btn btn-outline-secondary">
+                    <i data-feather="activity" class="me-2"></i>
+                    Check DB Status
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Statistics -->
+    <div class="row mb-5">
+        <div class="col-md-4 mb-3">
+            <div class="card stats-card users h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-info">
+                                <i data-feather="users" class="me-2"></i>
+                                Users
+                            </h5>
+                            <h2 class="mb-0" id="users-count">{{ user_count }}</h2>
+                            <small class="text-muted">Registered users</small>
+                        </div>
+                        <div class="text-info opacity-25">
+                            <i data-feather="users" width="48" height="48"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card stats-card posts h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-success">
+                                <i data-feather="file-text" class="me-2"></i>
+                                Posts
+                            </h5>
+                            <h2 class="mb-0" id="posts-count">{{ post_count }}</h2>
+                            <small class="text-muted">Published posts</small>
+                        </div>
+                        <div class="text-success opacity-25">
+                            <i data-feather="file-text" width="48" height="48"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card stats-card categories h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title text-warning">
+                                <i data-feather="tag" class="me-2"></i>
+                                Categories
+                            </h5>
+                            <h2 class="mb-0" id="categories-count">{{ category_count }}</h2>
+                            <small class="text-muted">Content categories</small>
+                        </div>
+                        <div class="text-warning opacity-25">
+                            <i data-feather="tag" width="48" height="48"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Posts Section -->
+    {% if recent_posts %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <h3 class="mb-4">
+                <i data-feather="clock" class="me-2"></i>
+                Recent Posts
+            </h3>
+            <div class="row">
+                {% for post in recent_posts %}
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ post.title }}</h5>
+                            <p class="card-text text-muted">
+                                {{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i data-feather="user" class="me-1"></i>
+                                    {{ post.author.username }}
+                                </small>
+                                <small class="text-muted">
+                                    <i data-feather="calendar" class="me-1"></i>
+                                    {{ post.created_at.strftime('%b %d, %Y') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('main.posts') }}" class="btn btn-outline-primary">
+                    <i data-feather="arrow-right" class="me-2"></i>
+                    View All Posts
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Features Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h3 class="mb-4">
+                <i data-feather="star" class="me-2"></i>
+                Application Features
+            </h3>
+            <div class="row">
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i data-feather="database" class="text-primary mb-3" width="48" height="48"></i>
+                            <h5 class="card-title">PostgreSQL Integration</h5>
+                            <p class="card-text text-muted">
+                                Full PostgreSQL database integration with SQLAlchemy ORM.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i data-feather="git-branch" class="text-success mb-3" width="48" height="48"></i>
+                            <h5 class="card-title">Database Migrations</h5>
+                            <p class="card-text text-muted">
+                                Flask-Migrate for easy database schema management.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i data-feather="layout" class="text-info mb-3" width="48" height="48"></i>
+                            <h5 class="card-title">Modern UI</h5>
+                            <p class="card-text text-muted">
+                                Bootstrap-powered responsive UI with dark theme support.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i data-feather="shield" class="text-warning mb-3" width="48" height="48"></i>
+                            <h5 class="card-title">Security Ready</h5>
+                            <p class="card-text text-muted">
+                                Built-in security features and best practices implementation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Getting Started Section -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i data-feather="play-circle" class="me-2"></i>
+                        Getting Started
+                    </h5>
+                    <p class="card-text text-muted mb-3">
+                        Your Flask PostgreSQL application is ready! Here's what you can do next:
+                    </p>
+                    <ol class="text-muted">
+                        <li>Create sample data using the button above to populate the database</li>
+                        <li>Explore the <a href="{{ url_for('main.users') }}" class="text-decoration-none">Users</a> and <a href="{{ url_for('main.posts') }}" class="text-decoration-none">Posts</a> sections</li>
+                        <li>Check the database connection status in the navigation bar</li>
+                        <li>Customize the models in <code>models.py</code> for your specific needs</li>
+                        <li>Add new routes in <code>routes.py</code> to extend functionality</li>
+                    </ol>
+                    <div class="mt-3">
+                        <span class="badge bg-primary me-2">Flask</span>
+                        <span class="badge bg-success me-2">PostgreSQL</span>
+                        <span class="badge bg-info me-2">SQLAlchemy</span>
+                        <span class="badge bg-warning">Bootstrap</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Update feather icons after dynamic content loads
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}

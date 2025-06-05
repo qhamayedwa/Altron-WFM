@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ error_code }} - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="error-container">
+        <div class="text-center">
+            <div class="mb-4">
+                {% if error_code == 404 %}
+                    <i data-feather="search" class="text-muted" width="120" height="120"></i>
+                {% elif error_code == 500 %}
+                    <i data-feather="alert-triangle" class="text-danger" width="120" height="120"></i>
+                {% else %}
+                    <i data-feather="x-circle" class="text-warning" width="120" height="120"></i>
+                {% endif %}
+            </div>
+            
+            <h1 class="display-1 fw-bold text-muted">{{ error_code }}</h1>
+            
+            {% if error_code == 404 %}
+                <h2 class="mb-3">Page Not Found</h2>
+                <p class="lead text-muted mb-4">
+                    The page you're looking for doesn't exist or has been moved.
+                </p>
+            {% elif error_code == 500 %}
+                <h2 class="mb-3">Internal Server Error</h2>
+                <p class="lead text-muted mb-4">
+                    Something went wrong on our end. Please try again later.
+                </p>
+            {% else %}
+                <h2 class="mb-3">Error {{ error_code }}</h2>
+                <p class="lead text-muted mb-4">
+                    {{ error_message or "An unexpected error occurred." }}
+                </p>
+            {% endif %}
+            
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                    <i data-feather="home" class="me-2"></i>
+                    Go Home
+                </a>
+                <button onclick="history.back()" class="btn btn-outline-secondary">
+                    <i data-feather="arrow-left" class="me-2"></i>
+                    Go Back
+                </button>
+            </div>
+            
+            {% if error_code == 500 %}
+            <div class="mt-4">
+                <div class="alert alert-info" role="alert">
+                    <i data-feather="info" class="me-2"></i>
+                    <strong>Database Connection Issue?</strong>
+                    <br>
+                    Check if your PostgreSQL database is running and the connection settings are correct.
+                    <br>
+                    <a href="{{ url_for('main.db_status') }}" class="alert-link">Check Database Status</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Replace feather icons
+    feather.replace();
+    
+    // Auto-redirect to home after 10 seconds for 404 errors
+    {% if error_code == 404 %}
+    let countdown = 10;
+    const redirectMessage = document.createElement('p');
+    redirectMessage.className = 'text-muted mt-3';
+    redirectMessage.innerHTML = `<small>Redirecting to home page in <span id="countdown">${countdown}</span> seconds...</small>`;
+    document.querySelector('.error-container .text-center').appendChild(redirectMessage);
+    
+    const countdownTimer = setInterval(() => {
+        countdown--;
+        document.getElementById('countdown').textContent = countdown;
+        
+        if (countdown <= 0) {
+            clearInterval(countdownTimer);
+            window.location.href = "{{ url_for('main.index') }}";
+        }
+    }, 1000);
+    {% endif %}
+</script>
+{% endblock %}
