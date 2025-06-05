@@ -355,7 +355,7 @@ feather.replace();
 
 // Clock In Function
 function clockIn() {
-    fetch('/api/clock-in', {
+    fetch('/time/clock-in', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -379,7 +379,7 @@ function clockIn() {
 
 // Clock Out Function
 function clockOut() {
-    fetch('/api/clock-out', {
+    fetch('/time/clock-out', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

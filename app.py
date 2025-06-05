@@ -58,6 +58,10 @@ def create_app(config_class=Config):
     app.register_blueprint(api_bp)
     app.register_blueprint(automation_bp, url_prefix='/automation')
     
+    # Register time tracking routes
+    from time_tracking_routes import time_tracking_bp
+    app.register_blueprint(time_tracking_bp, url_prefix='/time')
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
