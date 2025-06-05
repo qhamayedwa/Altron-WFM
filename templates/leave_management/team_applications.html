@@ -35,7 +35,7 @@
                         <option value="">All Employees</option>
                         {% for user in users %}
                         <option value="{{ user.id }}" {{ 'selected' if user_filter == user.id }}>
-                            {{ user.username }} ({{ user.full_name() }})
+                            {{ user.username }} ({{ user.full_name }})
                         </option>
                         {% endfor %}
                     </select>
@@ -76,7 +76,7 @@
                         <tr>
                             <td>
                                 <strong>{{ application.employee.username }}</strong>
-                                <br><small class="text-muted">{{ application.employee.full_name() }}</small>
+                                <br><small class="text-muted">{{ application.employee.full_name }}</small>
                             </td>
                             <td>
                                 <strong>{{ application.leave_type.name }}</strong>
