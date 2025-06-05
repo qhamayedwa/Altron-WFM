@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Schedules - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="calendar" class="me-2"></i>
+            Schedule Management
+        </h2>
+        <a href="{{ url_for('scheduling.create_schedule') }}" class="btn btn-primary">
+            <i data-feather="plus" class="me-2"></i>
+            Create Schedule
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="user_id" class="form-label">Employee</label>
+                    <select class="form-select" id="user_id" name="user_id">
+                        <option value="">All Employees</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {% if user.id == selected_user_id %}selected{% endif %}>
+                            {{ user.username }} - {{ user.full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="shift_type_id" class="form-label">Shift Type</label>
+                    <select class="form-select" id="shift_type_id" name="shift_type_id">
+                        <option value="">All Shift Types</option>
+                        {% for shift_type in shift_types %}
+                        <option value="{{ shift_type.id }}" {% if shift_type.id == selected_shift_type_id %}selected{% endif %}>
+                            {{ shift_type.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                           value="{{ start_date or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" 
+                           value="{{ end_date or '' }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filter</button>
+                    <a href="{{ url_for('scheduling.manage_schedules') }}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Schedules Table -->
+    {% if schedules.items %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>Shift Type</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                            <th>Assigned By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules.items %}
+                        <tr class="{% if schedule.is_past_due() %}table-secondary{% endif %}">
+                            <td>
+                                <strong>{{ schedule.employee.username }}</strong>
+                                <br><small class="text-muted">{{ schedule.employee.full_name }}</small>
+                            </td>
+                            <td>{{ schedule.start_time.strftime('%a, %b %d') }}</td>
+                            <td>
+                                {% if schedule.shift_type %}
+                                <span class="badge bg-info">{{ schedule.shift_type.name }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Custom</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ schedule.start_time.strftime('%I:%M %p') }}</td>
+                            <td>{{ schedule.end_time.strftime('%I:%M %p') }}</td>
+                            <td>{{ "%.1f"|format(schedule.duration_hours()) }}h</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if schedule.status == 'Confirmed' else 'primary' if schedule.status == 'Scheduled' else 'warning' }}">
+                                    {{ schedule.status }}
+                                </span>
+                            </td>
+                            <td>{{ schedule.assigned_by.username }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('scheduling.edit_schedule', schedule_id=schedule.id) }}" 
+                                       class="btn btn-outline-primary" title="Edit">
+                                        <i data-feather="edit"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('scheduling.delete_schedule', schedule_id=schedule.id) }}" 
+                                          style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this schedule?')">
+                                        <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                            <i data-feather="trash-2"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if schedules.pages > 1 %}
+            <nav aria-label="Schedule pagination">
+                <ul class="pagination justify-content-center mt-3">
+                    {% if schedules.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('scheduling.manage_schedules', page=schedules.prev_num, user_id=selected_user_id, shift_type_id=selected_shift_type_id, start_date=start_date, end_date=end_date) }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in schedules.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != schedules.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('scheduling.manage_schedules', page=page_num, user_id=selected_user_id, shift_type_id=selected_shift_type_id, start_date=start_date, end_date=end_date) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if schedules.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('scheduling.manage_schedules', page=schedules.next_num, user_id=selected_user_id, shift_type_id=selected_shift_type_id, start_date=start_date, end_date=end_date) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i data-feather="calendar" class="text-muted mb-3" width="64" height="64"></i>
+            <h5>No Schedules Found</h5>
+            <p class="text-muted">No schedules match the current filters.</p>
+            <a href="{{ url_for('scheduling.create_schedule') }}" class="btn btn-primary">
+                <i data-feather="plus" class="me-2"></i>
+                Create First Schedule
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+
+    // Set default date range to current week
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        
+        if (!startDateInput.value && !endDateInput.value) {
+            const today = new Date();
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+            
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
+            
+            startDateInput.value = weekStart.toISOString().split('T')[0];
+            endDateInput.value = weekEnd.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

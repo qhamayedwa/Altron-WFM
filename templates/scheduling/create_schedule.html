@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Create Schedule - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="plus" class="me-2"></i>
+            Create Employee Schedule
+        </h2>
+        <a href="{{ url_for('scheduling.manage_schedules') }}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="me-2"></i>
+            Back to Schedules
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Schedule Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="user_id" class="form-label">Employee *</label>
+                                <select class="form-select" id="user_id" name="user_id" required>
+                                    <option value="">Select Employee</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.username }} - {{ user.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="shift_type_id" class="form-label">Shift Type</label>
+                                <select class="form-select" id="shift_type_id" name="shift_type_id">
+                                    <option value="">Custom Schedule</option>
+                                    {% for shift_type in shift_types %}
+                                    <option value="{{ shift_type.id }}" 
+                                            data-start="{{ shift_type.default_start_time.strftime('%H:%M') }}"
+                                            data-end="{{ shift_type.default_end_time.strftime('%H:%M') }}">
+                                        {{ shift_type.name }} ({{ shift_type.default_start_time.strftime('%I:%M %p') }} - {{ shift_type.default_end_time.strftime('%I:%M %p') }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_datetime" class="form-label">Start Date & Time *</label>
+                                <input type="datetime-local" class="form-control" id="start_datetime" name="start_datetime" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="end_datetime" class="form-label">End Date & Time *</label>
+                                <input type="datetime-local" class="form-control" id="end_datetime" name="end_datetime" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Any special instructions or notes for this schedule..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i data-feather="info" class="me-2"></i>
+                            <strong>Note:</strong> The system will check for scheduling conflicts before creating the schedule.
+                            Employees will be notified of new schedule assignments.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('scheduling.manage_schedules') }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="save" class="me-2"></i>
+                                Create Schedule
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+
+    // Set default times when shift type is selected
+    document.getElementById('shift_type_id').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const startTime = selectedOption.getAttribute('data-start');
+        const endTime = selectedOption.getAttribute('data-end');
+        
+        if (startTime && endTime) {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+            
+            // Set start datetime
+            const startDateTime = tomorrow.toISOString().split('T')[0] + 'T' + startTime;
+            document.getElementById('start_datetime').value = startDateTime;
+            
+            // Set end datetime (same day unless overnight shift)
+            let endDate = tomorrow;
+            if (endTime < startTime) { // Overnight shift
+                endDate.setDate(tomorrow.getDate() + 1);
+            }
+            const endDateTime = endDate.toISOString().split('T')[0] + 'T' + endTime;
+            document.getElementById('end_datetime').value = endDateTime;
+        }
+    });
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const startDateTime = new Date(document.getElementById('start_datetime').value);
+        const endDateTime = new Date(document.getElementById('end_datetime').value);
+        
+        if (endDateTime <= startDateTime) {
+            e.preventDefault();
+            alert('End time must be after start time.');
+            return false;
+        }
+        
+        const hoursDifference = (endDateTime - startDateTime) / (1000 * 60 * 60);
+        if (hoursDifference > 24) {
+            e.preventDefault();
+            if (!confirm('This schedule is longer than 24 hours. Are you sure this is correct?')) {
+                return false;
+            }
+        }
+    });
+
+    // Set default start time to tomorrow 9 AM
+    document.addEventListener('DOMContentLoaded', function() {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        
+        const defaultStart = tomorrow.toISOString().slice(0, 16);
+        document.getElementById('start_datetime').value = defaultStart;
+        
+        // Set default end time to tomorrow 5 PM
+        tomorrow.setHours(17, 0, 0, 0);
+        const defaultEnd = tomorrow.toISOString().slice(0, 16);
+        document.getElementById('end_datetime').value = defaultEnd;
+    });
+</script>
+{% endblock %}
