@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Create Pulse Survey{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i data-feather="plus-circle"></i> Create Team Communication Pulse Survey</h4>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Survey Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="e.g., Team Communication Assessment" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Brief description of the survey purpose"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="duration_hours" class="form-label">Survey Duration (Hours)</label>
+                                    <select class="form-select" id="duration_hours" name="duration_hours">
+                                        <option value="24" selected>24 hours</option>
+                                        <option value="48">48 hours</option>
+                                        <option value="72">72 hours</option>
+                                        <option value="168">1 week</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="target_department" class="form-label">Target Department</label>
+                                    <select class="form-select" id="target_department" name="target_department">
+                                        <option value="">All Departments</option>
+                                        {% for dept in departments %}
+                                        <option value="{{ dept }}">{{ dept }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_anonymous" name="is_anonymous" checked>
+                                <label class="form-check-label" for="is_anonymous">
+                                    Anonymous Survey (Recommended for honest feedback)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6><i data-feather="list"></i> Survey Questions (Predefined)</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">This survey includes the following predefined questions:</p>
+                                {% for question in questions %}
+                                <div class="mb-2">
+                                    <strong>{{ loop.index }}.</strong> {{ question.question }}
+                                    {% if question.type == 'scale' %}
+                                        <small class="text-muted">(1-{{ question.scale }} scale)</small>
+                                    {% elif question.type == 'text' %}
+                                        <small class="text-muted">(Text response{% if question.get('optional') %}, optional{% endif %})</small>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('pulse_survey.pulse_dashboard') }}" class="btn btn-outline-secondary">
+                                <i data-feather="arrow-left"></i> Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="send"></i> Create Survey
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Feather Icons
+feather.replace();
+</script>
+{% endblock %}

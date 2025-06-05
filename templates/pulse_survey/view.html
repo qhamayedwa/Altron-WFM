@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}{{ survey.title }} - Results{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i data-feather="bar-chart-2"></i> {{ survey.title }}</h2>
+            {% if survey.description %}
+            <p class="text-muted">{{ survey.description }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <span class="badge bg-{{ 'success' if survey.is_active and not survey.is_expired() else 'secondary' }} fs-6">
+                {% if survey.is_expired() %}
+                    Ended
+                {% elif survey.is_active %}
+                    Active
+                {% else %}
+                    Inactive
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- Survey Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_responses }}</h3>
+                    <p class="mb-0">Total Responses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ completion_rate }}%</h3>
+                    <p class="mb-0">Completion Rate</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ survey.target_department or 'All' }}</h3>
+                    <p class="mb-0">Target Audience</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ 'Anonymous' if survey.is_anonymous else 'Named' }}</h3>
+                    <p class="mb-0">Response Type</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Survey Results -->
+    <div class="row">
+        {% for question_id, result in results.items() %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6>{{ result.question }}</h6>
+                </div>
+                <div class="card-body">
+                    {% if result.type == 'scale' %}
+                        {% if result.total_responses > 0 %}
+                        <div class="text-center mb-3">
+                            <h4 class="text-primary">{{ result.average }}/{{ result.labels|length }}</h4>
+                            <small class="text-muted">Average Score</small>
+                        </div>
+                        
+                        <!-- Score Distribution -->
+                        {% for i in range(result.labels|length) %}
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>{{ i + 1 }} - {{ result.labels[i] }}</span>
+                                <span class="badge bg-secondary">{{ result.scores[i] }}</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (result.scores[i] / result.total_responses * 100) if result.total_responses > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i data-feather="inbox" style="width: 32px; height: 32px;"></i>
+                            <p class="mt-2 mb-0">No responses yet</p>
+                        </div>
+                        {% endif %}
+                    
+                    {% elif result.type == 'text' %}
+                        {% if result.responses %}
+                        <div class="text-responses" style="max-height: 300px; overflow-y: auto;">
+                            {% for response in result.responses %}
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <small>"{{ response }}"</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i data-feather="message-square" style="width: 32px; height: 32px;"></i>
+                            <p class="mt-2 mb-0">No text responses</p>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Survey Details -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i data-feather="info"></i> Survey Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Created:</strong> {{ survey.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                            <p><strong>Ends:</strong> {{ survey.ends_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Created by:</strong> {{ survey.created_by.first_name }} {{ survey.created_by.last_name }}</p>
+                            <p><strong>Survey ID:</strong> {{ survey.id }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{{ url_for('pulse_survey.pulse_dashboard') }}" class="btn btn-outline-primary">
+            <i data-feather="arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<script>
+// Initialize Feather Icons
+feather.replace();
+</script>
+{% endblock %}
