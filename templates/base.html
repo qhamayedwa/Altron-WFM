@@ -120,6 +120,15 @@
                         </a>
                     </li>
 
+                    {% if current_user.has_role('Manager') or current_user.has_role('Admin') or current_user.has_role('Super User') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('ai_scheduling.ai_dashboard') }}">
+                            <i data-feather="cpu" class="me-1"></i>
+                            AI Scheduling
+                        </a>
+                    </li>
+                    {% endif %}
+
                     {% if current_user.has_role('Super User') %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
