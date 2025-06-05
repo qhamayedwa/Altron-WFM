@@ -16,9 +16,12 @@ def index():
     try:
         # System Statistics
         total_employees = User.query.filter_by(is_active=True).count()
-        active_schedules = Schedule.query.filter(
-            Schedule.date >= datetime.now().date()
-        ).count()
+        try:
+            active_schedules = Schedule.query.filter(
+                Schedule.date >= datetime.now().date()
+            ).count()
+        except:
+            active_schedules = 0
         
         # Time Entry Statistics (Today)
         today = datetime.now().date()
