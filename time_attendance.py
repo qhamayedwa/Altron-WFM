@@ -469,8 +469,8 @@ def reports():
             func.count(TimeEntry.id).label('total_entries'),
             func.sum(func.extract('epoch', TimeEntry.clock_out_time - TimeEntry.clock_in_time) / 3600).label('total_hours'),
             func.sum(func.case(
-                (func.extract('epoch', TimeEntry.clock_out_time - TimeEntry.clock_in_time) / 3600 > 8, 
-                 func.extract('epoch', TimeEntry.clock_out_time - TimeEntry.clock_in_time) / 3600 - 8),
+                [(func.extract('epoch', TimeEntry.clock_out_time - TimeEntry.clock_in_time) / 3600 > 8, 
+                 func.extract('epoch', TimeEntry.clock_out_time - TimeEntry.clock_in_time) / 3600 - 8)],
                 else_=0
             )).label('overtime_hours')
         ).join(TimeEntry).filter(
