@@ -46,6 +46,7 @@ def create_app(config_class=Config):
     from pay_codes import pay_codes_bp
     from payroll import payroll_bp
     from api import api_bp
+    from automation_engine import automation_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(time_attendance_bp)
@@ -55,6 +56,7 @@ def create_app(config_class=Config):
     app.register_blueprint(pay_codes_bp)
     app.register_blueprint(payroll_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(automation_bp, url_prefix='/automation')
     
     # Error handlers
     @app.errorhandler(404)

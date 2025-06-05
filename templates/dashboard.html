@@ -85,28 +85,92 @@
         <!-- Quick Actions -->
         <div class="col-xl-4 col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">Quick Actions</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="toggleQuickActionsView()">
+                        <i data-feather="grid" id="viewToggleIcon"></i>
+                    </button>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('main.time_entries') }}" class="btn btn-primary">
-                            <i data-feather="clock" class="me-2"></i>Time Entries
-                        </a>
-                        <a href="{{ url_for('main.schedules') }}" class="btn btn-outline-primary">
-                            <i data-feather="calendar" class="me-2"></i>View Schedule
-                        </a>
-                        <a href="{{ url_for('main.leave_management') }}" class="btn btn-outline-secondary">
-                            <i data-feather="file-text" class="me-2"></i>Leave Management
-                        </a>
-                        <a href="{{ url_for('main.reports') }}" class="btn btn-outline-info">
-                            <i data-feather="bar-chart-2" class="me-2"></i>View Reports
-                        </a>
-                        {% if current_user.has_role('Super User') %}
-                        <a href="{{ url_for('payroll.payroll_processing') }}" class="btn btn-success">
-                            <i data-feather="dollar-sign" class="me-2"></i>Payroll Processing
-                        </a>
+                    <!-- Self-Service Actions Grid -->
+                    <div id="quickActionsGrid" class="d-grid gap-2">
+                        <!-- Primary Time Tracking -->
+                        <div class="quick-action-section">
+                            <small class="text-muted mb-2 d-block">Time Tracking</small>
+                            {% if current_status.is_clocked_in %}
+                            <button class="btn btn-danger w-100 mb-2" onclick="clockOut()">
+                                <i data-feather="clock" class="me-2"></i>Clock Out
+                                <small class="d-block">Started: {{ current_status.clock_in_time or 'Unknown' }}</small>
+                            </button>
+                            {% else %}
+                            <button class="btn btn-success w-100 mb-2" onclick="clockIn()">
+                                <i data-feather="clock" class="me-2"></i>Clock In
+                                <small class="d-block">Start your workday</small>
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Employee Self-Service -->
+                        <div class="quick-action-section">
+                            <small class="text-muted mb-2 d-block">Self-Service</small>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <a href="{{ url_for('main.schedules') }}" class="btn btn-outline-primary btn-sm w-100">
+                                        <i data-feather="calendar" class="me-1"></i>Schedule
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <a href="{{ url_for('main.leave_management') }}" class="btn btn-outline-secondary btn-sm w-100">
+                                        <i data-feather="file-text" class="me-1"></i>Leave
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Manager Actions -->
+                        {% if current_user.has_role('Manager') or current_user.has_role('Super User') %}
+                        <div class="quick-action-section">
+                            <small class="text-muted mb-2 d-block">Management</small>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.reports') }}" class="btn btn-outline-info btn-sm">
+                                    <i data-feather="bar-chart-2" class="me-2"></i>Team Reports
+                                    {% if pending_approvals > 0 %}
+                                    <span class="badge bg-warning ms-2">{{ pending_approvals }}</span>
+                                    {% endif %}
+                                </a>
+                                {% if current_user.has_role('Super User') %}
+                                <a href="{{ url_for('payroll.payroll_processing') }}" class="btn btn-success btn-sm">
+                                    <i data-feather="dollar-sign" class="me-2"></i>Payroll
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
                         {% endif %}
+                        
+                        <!-- Quick Links -->
+                        <div class="quick-action-section">
+                            <small class="text-muted mb-2 d-block">Quick Access</small>
+                            <div class="row g-1">
+                                <div class="col-4">
+                                    <button class="btn btn-outline-dark btn-sm w-100" onclick="showTimesheet()">
+                                        <i data-feather="clock" class="mb-1"></i>
+                                        <small class="d-block">Hours</small>
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button class="btn btn-outline-dark btn-sm w-100" onclick="showProfile()">
+                                        <i data-feather="user" class="mb-1"></i>
+                                        <small class="d-block">Profile</small>
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button class="btn btn-outline-dark btn-sm w-100" onclick="showHelp()">
+                                        <i data-feather="help-circle" class="mb-1"></i>
+                                        <small class="d-block">Help</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
