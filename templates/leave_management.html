@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Management - Time & Attendance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">My Leave Applications</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Leave Management</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="file-text" class="me-2"></i>Leave Application History
+                    </h5>
+                    <div>
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-outline-primary btn-sm">
+                            <i data-feather="bar-chart-2" class="me-1"></i>Leave Reports
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if applications %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Application Date</th>
+                                    <th>Leave Type</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Days</th>
+                                    <th>Status</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in applications %}
+                                <tr>
+                                    <td>{{ application.created_at.strftime('%Y-%m-%d') if application.created_at else 'N/A' }}</td>
+                                    <td>
+                                        {% if application.leave_type %}
+                                            {{ application.leave_type.name }}
+                                        {% else %}
+                                            General Leave
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ application.start_date.strftime('%Y-%m-%d') if application.start_date else 'N/A' }}</td>
+                                    <td>{{ application.end_date.strftime('%Y-%m-%d') if application.end_date else 'N/A' }}</td>
+                                    <td>
+                                        {% if application.start_date and application.end_date %}
+                                            {% set delta = application.end_date - application.start_date %}
+                                            {{ delta.days + 1 }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if application.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif application.status == 'approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% elif application.status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ application.status|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ application.reason[:50] + '...' if application.reason and application.reason|length > 50 else application.reason or 'No reason provided' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i data-feather="file-text" class="mb-3" style="width: 48px; height: 48px; color: #6c757d;"></i>
+                        <h5 class="text-muted">No leave applications found</h5>
+                        <p class="text-muted">Your leave applications will appear here when you submit them.</p>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                            <i data-feather="plus" class="me-2"></i>Apply for Leave
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if applications %}
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="file-text" class="mb-2" style="width: 32px; height: 32px; color: #0d6efd;"></i>
+                    <h5 class="card-title">Total Applications</h5>
+                    <h3 class="text-primary">{{ applications|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="clock" class="mb-2" style="width: 32px; height: 32px; color: #ffc107;"></i>
+                    <h5 class="card-title">Pending</h5>
+                    {% set pending = applications|selectattr('status', 'equalto', 'pending')|list %}
+                    <h3 class="text-warning">{{ pending|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="check-circle" class="mb-2" style="width: 32px; height: 32px; color: #198754;"></i>
+                    <h5 class="card-title">Approved</h5>
+                    {% set approved = applications|selectattr('status', 'equalto', 'approved')|list %}
+                    <h3 class="text-success">{{ approved|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="x-circle" class="mb-2" style="width: 32px; height: 32px; color: #dc3545;"></i>
+                    <h5 class="card-title">Rejected</h5>
+                    {% set rejected = applications|selectattr('status', 'equalto', 'rejected')|list %}
+                    <h3 class="text-danger">{{ rejected|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="info" class="me-2"></i>Leave Balance Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Contact your manager or HR department for current leave balance information and to submit new leave applications.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Available Leave Types:</h6>
+                            <ul class="list-unstyled">
+                                <li><i data-feather="calendar" class="me-2" style="width: 16px; height: 16px;"></i>Annual Leave</li>
+                                <li><i data-feather="heart" class="me-2" style="width: 16px; height: 16px;"></i>Sick Leave</li>
+                                <li><i data-feather="users" class="me-2" style="width: 16px; height: 16px;"></i>Personal Leave</li>
+                                <li><i data-feather="briefcase" class="me-2" style="width: 16px; height: 16px;"></i>Emergency Leave</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Quick Actions:</h6>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.reports') }}" class="btn btn-outline-primary btn-sm">
+                                    <i data-feather="calendar" class="me-2"></i>View Leave Calendar
+                                </a>
+                                <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary btn-sm">
+                                    <i data-feather="home" class="me-2"></i>Back to Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Feather icons
+feather.replace();
+</script>
+{% endblock %}

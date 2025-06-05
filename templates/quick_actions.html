@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Actions - Time & Attendance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Quick Actions</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Quick Actions</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Time Management -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="clock" class="me-2"></i>Time Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.time_entries') }}" class="btn btn-primary">
+                            <i data-feather="play" class="me-2"></i>View Time Entries
+                        </a>
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-outline-primary">
+                            <i data-feather="bar-chart-2" class="me-2"></i>Time Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Management -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="calendar" class="me-2"></i>Schedule Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.schedules') }}" class="btn btn-primary">
+                            <i data-feather="calendar" class="me-2"></i>View Schedules
+                        </a>
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-outline-primary">
+                            <i data-feather="trending-up" class="me-2"></i>Schedule Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Management -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="file-text" class="me-2"></i>Leave Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.leave_management') }}" class="btn btn-primary">
+                            <i data-feather="file-plus" class="me-2"></i>My Leave Applications
+                        </a>
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-outline-primary">
+                            <i data-feather="pie-chart" class="me-2"></i>Leave Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Administrative -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="settings" class="me-2"></i>Administrative
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if current_user.has_role('Super User') %}
+                        <a href="{{ url_for('pay_rules.manage_pay_rules') }}" class="btn btn-warning">
+                            <i data-feather="dollar-sign" class="me-2"></i>Pay Rules
+                        </a>
+                        <a href="{{ url_for('pay_codes.manage_pay_codes') }}" class="btn btn-warning">
+                            <i data-feather="tag" class="me-2"></i>Pay Codes
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-outline-secondary">
+                            <i data-feather="users" class="me-2"></i>System Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="zap" class="me-2"></i>Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Quick access to your most recent activities and shortcuts.</p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i data-feather="clock" class="me-2"></i>Time Entries</span>
+                                    <span class="badge bg-primary rounded-pill">Active</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i data-feather="calendar" class="me-2"></i>Schedules</span>
+                                    <span class="badge bg-success rounded-pill">Current</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i data-feather="file-text" class="me-2"></i>Leave Applications</span>
+                                    <span class="badge bg-info rounded-pill">Available</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i data-feather="bar-chart-2" class="me-2"></i>Reports</span>
+                                    <span class="badge bg-secondary rounded-pill">Ready</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            {% if current_user.has_role('Super User') %}
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i data-feather="dollar-sign" class="me-2"></i>Pay Rules</span>
+                                    <span class="badge bg-warning rounded-pill">Admin</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i data-feather="tag" class="me-2"></i>Pay Codes</span>
+                                    <span class="badge bg-warning rounded-pill">Admin</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Feather icons
+feather.replace();
+</script>
+{% endblock %}

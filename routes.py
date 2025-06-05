@@ -111,8 +111,10 @@ def reports():
         total_hours = len(period_entries) * 8  # Assume 8 hours per entry
         overtime_hours = max(0, total_hours - (len(period_entries) * 8))  # Simple overtime calculation
         
-        # Employee attendance summary - manual calculation
-        users_with_entries = db.session.query(User).join(TimeEntry).filter(
+        # Employee attendance summary - manual calculation with explicit join
+        users_with_entries = db.session.query(User).join(
+            TimeEntry, User.id == TimeEntry.user_id
+        ).filter(
             and_(
                 TimeEntry.clock_in_time >= start_date,
                 TimeEntry.clock_in_time <= end_date + timedelta(days=1)
