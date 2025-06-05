@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Pay Calculations - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="file-text" class="me-2"></i>
+            Pay Calculations
+        </h2>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('pay_rules.calculate_pay') }}" class="btn btn-primary">
+                <i data-feather="plus" class="me-2"></i>
+                New Calculation
+            </a>
+            <a href="{{ url_for('pay_rules.manage_pay_rules') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="me-2"></i>
+                Back to Rules
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="employee_id" class="form-label">Employee</label>
+                    <select name="employee_id" id="employee_id" class="form-select">
+                        <option value="">All Employees</option>
+                        {% for employee in employees %}
+                        <option value="{{ employee.id }}" {{ 'selected' if employee_filter == employee.id }}>
+                            {{ employee.full_name }} ({{ employee.username }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i data-feather="filter" class="me-1"></i>
+                        Filter
+                    </button>
+                    <a href="{{ url_for('pay_rules.view_calculations') }}" class="btn btn-outline-secondary">
+                        <i data-feather="x" class="me-1"></i>
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Calculations Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if calculations.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Pay Period</th>
+                            <th>Total Hours</th>
+                            <th>Regular Hours</th>
+                            <th>Overtime Hours</th>
+                            <th>Total Allowances</th>
+                            <th>Calculated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for calc in calculations.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ calc.employee.full_name }}</strong>
+                                <br><small class="text-muted">{{ calc.employee.username }}</small>
+                            </td>
+                            <td>
+                                {{ calc.pay_period_start.strftime('%b %d') }} - {{ calc.pay_period_end.strftime('%b %d, %Y') }}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ "%.1f"|format(calc.total_hours) }}h</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ "%.1f"|format(calc.regular_hours) }}h</span>
+                            </td>
+                            <td>
+                                {% if calc.overtime_hours > 0 %}
+                                <span class="badge bg-warning">{{ "%.1f"|format(calc.overtime_hours) }}h</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if calc.total_allowances > 0 %}
+                                <span class="badge bg-info">${{ "%.2f"|format(calc.total_allowances) }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ calc.calculated_at.strftime('%b %d, %Y %I:%M %p') }}
+                                <br><small class="text-muted">by {{ calc.calculated_by.username }}</small>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('pay_rules.view_calculation_detail', calculation_id=calc.id) }}" 
+                                   class="btn btn-outline-info btn-sm" title="View Details">
+                                    <i data-feather="eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if calculations.pages > 1 %}
+            <nav aria-label="Calculations pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if calculations.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('pay_rules.view_calculations', page=calculations.prev_num, employee_id=employee_filter) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in calculations.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != calculations.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('pay_rules.view_calculations', page=page_num, employee_id=employee_filter) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if calculations.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('pay_rules.view_calculations', page=calculations.next_num, employee_id=employee_filter) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i data-feather="file-text" class="text-muted mb-3" width="64" height="64"></i>
+                <h5>No Pay Calculations Found</h5>
+                <p class="text-muted">
+                    {% if employee_filter %}
+                    No calculations found for the selected employee.
+                    {% else %}
+                    No pay calculations have been saved yet.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('pay_rules.calculate_pay') }}" class="btn btn-primary">
+                    <i data-feather="plus" class="me-2"></i>
+                    Calculate Pay
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+</script>
+{% endblock %}

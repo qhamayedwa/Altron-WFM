@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Calculate Pay - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="credit-card" class="me-2"></i>
+            Calculate Pay
+        </h2>
+        <a href="{{ url_for('pay_rules.manage_pay_rules') }}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="me-2"></i>
+            Back to Rules
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        <!-- Pay Period Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Pay Period</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="start_date" class="form-label">Start Date</label>
+                                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                                   {% if earliest_date %}min="{{ earliest_date }}"{% endif %}
+                                                   {% if latest_date %}max="{{ latest_date }}"{% endif %}
+                                                   required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="end_date" class="form-label">End Date</label>
+                                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                                   {% if earliest_date %}min="{{ earliest_date }}"{% endif %}
+                                                   {% if latest_date %}max="{{ latest_date }}"{% endif %}
+                                                   required>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if earliest_date and latest_date %}
+                                <div class="form-text">
+                                    Available time entries from {{ earliest_date }} to {{ latest_date }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Employee Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Employee Selection</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if employees %}
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="select_all">
+                                        <label class="form-check-label" for="select_all">
+                                            <strong>Select All Employees</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    {% for employee in employees %}
+                                    <div class="col-md-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input employee-checkbox" type="checkbox" 
+                                                   id="employee_{{ employee.id }}" name="employee_ids" value="{{ employee.id }}">
+                                            <label class="form-check-label" for="employee_{{ employee.id }}">
+                                                {{ employee.full_name }} ({{ employee.username }})
+                                                {% if employee.roles %}
+                                                <br><small class="text-muted">
+                                                    {% for role in employee.roles %}
+                                                    <span class="badge bg-secondary">{{ role.name }}</span>
+                                                    {% endfor %}
+                                                </small>
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning">
+                                    <i data-feather="alert-triangle" class="me-2"></i>
+                                    No active employees found.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if employees %}
+                        <!-- Calculation Options -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Options</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="save_results" name="save_results">
+                                    <label class="form-check-label" for="save_results">
+                                        Save calculation results to database
+                                    </label>
+                                    <div class="form-text">
+                                        When enabled, calculated pay will be saved and can be viewed later
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('pay_rules.manage_pay_rules') }}" class="btn btn-secondary">
+                                <i data-feather="x" class="me-2"></i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i data-feather="credit-card" class="me-2"></i>
+                                Calculate Pay
+                            </button>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Pay Calculation Process</h6>
+                </div>
+                <div class="card-body">
+                    <h6>How It Works</h6>
+                    <ol class="small">
+                        <li>System retrieves closed time entries for the period</li>
+                        <li>Active pay rules are applied in priority order</li>
+                        <li>Pay components are calculated for each employee</li>
+                        <li>Results are summarized and displayed</li>
+                    </ol>
+                    
+                    <h6 class="mt-3">Included Time Entries</h6>
+                    <ul class="small">
+                        <li>Only <strong>closed</strong> time entries are processed</li>
+                        <li>Entries must fall within the selected date range</li>
+                        <li>All approved overtime is included</li>
+                    </ul>
+                    
+                    <div class="alert alert-info small mt-3">
+                        <strong>Note:</strong> Calculations use all active pay rules. Deactivate rules you don't want to apply.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('pay_rules.view_calculations') }}" class="btn btn-outline-primary btn-sm">
+                            <i data-feather="file-text" class="me-2"></i>
+                            View Past Calculations
+                        </a>
+                        <a href="{{ url_for('pay_rules.test_rules') }}" class="btn btn-outline-info btn-sm">
+                            <i data-feather="check-circle" class="me-2"></i>
+                            Test Rules First
+                        </a>
+                        <a href="{{ url_for('pay_rules.create_pay_rule') }}" class="btn btn-outline-success btn-sm">
+                            <i data-feather="plus" class="me-2"></i>
+                            Create New Rule
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+    
+    // Set default dates (current pay period)
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), 1); // First of month
+        const endDate = today;
+        
+        document.getElementById('start_date').value = startDate.toISOString().split('T')[0];
+        document.getElementById('end_date').value = endDate.toISOString().split('T')[0];
+    });
+    
+    // Select all functionality
+    document.getElementById('select_all').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.employee-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+    
+    // Update select all when individual checkboxes change
+    document.querySelectorAll('.employee-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allCheckboxes = document.querySelectorAll('.employee-checkbox');
+            const checkedBoxes = document.querySelectorAll('.employee-checkbox:checked');
+            const selectAllCheckbox = document.getElementById('select_all');
+            
+            selectAllCheckbox.checked = allCheckboxes.length === checkedBoxes.length;
+            selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < allCheckboxes.length;
+        });
+    });
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const selectedEmployees = document.querySelectorAll('.employee-checkbox:checked');
+        if (selectedEmployees.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one employee.');
+            return false;
+        }
+        
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        
+        if (new Date(startDate) > new Date(endDate)) {
+            e.preventDefault();
+            alert('Start date must be before end date.');
+            return false;
+        }
+    });
+</script>
+{% endblock %}
