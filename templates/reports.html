@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Time & Attendance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Reports & Analytics</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Reports</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                   value="{{ request.args.get('start_date', '') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                   value="{{ request.args.get('end_date', '') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i data-feather="search" class="me-2"></i>Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="clock" class="mb-2" style="width: 32px; height: 32px; color: #0d6efd;"></i>
+                    <h5 class="card-title">Total Hours</h5>
+                    <h3 class="text-primary">{{ total_hours or 0 }}</h3>
+                    <small class="text-muted">Current Period</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="trending-up" class="mb-2" style="width: 32px; height: 32px; color: #198754;"></i>
+                    <h5 class="card-title">Overtime Hours</h5>
+                    <h3 class="text-success">{{ overtime_hours or 0 }}</h3>
+                    <small class="text-muted">Extra Time</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="users" class="mb-2" style="width: 32px; height: 32px; color: #20c997;"></i>
+                    <h5 class="card-title">Active Employees</h5>
+                    <h3 class="text-info">{{ attendance_summary|length if attendance_summary else 0 }}</h3>
+                    <small class="text-muted">With Time Entries</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="calendar" class="mb-2" style="width: 32px; height: 32px; color: #ffc107;"></i>
+                    <h5 class="card-title">Total Days</h5>
+                    <h3 class="text-warning">{{ attendance_summary|length if attendance_summary else 0 }}</h3>
+                    <small class="text-muted">Attendance Days</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Attendance Summary -->
+    {% if attendance_summary %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="users" class="me-2"></i>Employee Attendance Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Total Days</th>
+                                    <th>Total Hours</th>
+                                    <th>Average Hours/Day</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for summary in attendance_summary %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ summary.username }}</strong>
+                                        {% if summary.email %}
+                                        <br><small class="text-muted">{{ summary.email }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ summary.total_days }}</td>
+                                    <td>{{ "%.1f"|format(summary.total_hours) }} hrs</td>
+                                    <td>{{ "%.1f"|format(summary.avg_hours) }} hrs</td>
+                                    <td>
+                                        {% if summary.total_hours > 160 %}
+                                            <span class="badge bg-success">High Activity</span>
+                                        {% elif summary.total_hours > 80 %}
+                                            <span class="badge bg-primary">Normal</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Low Activity</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pay Period Summary -->
+    {% if pay_period_summary %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="dollar-sign" class="me-2"></i>Pay Period Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Regular Hours</th>
+                                    <th>Overtime Hours</th>
+                                    <th>Total Hours</th>
+                                    <th>Gross Pay</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for period in pay_period_summary %}
+                                <tr>
+                                    <td>{{ period.period_start.strftime('%Y-%m-%d') }} - {{ period.period_end.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ period.regular_hours }} hrs</td>
+                                    <td>{{ period.overtime_hours }} hrs</td>
+                                    <td>{{ period.total_hours }} hrs</td>
+                                    <td>${{ "%.2f"|format(period.gross_pay) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- No Data Message -->
+    {% if not attendance_summary and not pay_period_summary %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i data-feather="bar-chart-2" class="mb-3" style="width: 48px; height: 48px; color: #6c757d;"></i>
+                    <h5 class="text-muted">No Report Data Available</h5>
+                    <p class="text-muted">Select a date range above or ensure time entries exist for the selected period.</p>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                        <i data-feather="home" class="me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Export Options -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="download" class="me-2"></i>Export Options
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Export report data in various formats for further analysis.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" disabled>
+                                    <i data-feather="file-text" class="me-2"></i>Export to CSV
+                                </button>
+                                <button class="btn btn-outline-success" disabled>
+                                    <i data-feather="file" class="me-2"></i>Export to Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-danger" disabled>
+                                    <i data-feather="file-text" class="me-2"></i>Export to PDF
+                                </button>
+                                <button class="btn btn-outline-info" disabled>
+                                    <i data-feather="mail" class="me-2"></i>Email Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted">Export functionality will be available in future updates.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Feather icons
+feather.replace();
+
+// Set default date range (last 30 days)
+if (!document.getElementById('start_date').value) {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 30);
+    
+    document.getElementById('end_date').value = endDate.toISOString().split('T')[0];
+    document.getElementById('start_date').value = startDate.toISOString().split('T')[0];
+}
+</script>
+{% endblock %}
