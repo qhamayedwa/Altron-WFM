@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from app import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -200,3 +200,89 @@ class TimeEntry(db.Model):
     
     def __repr__(self):
         return f'<TimeEntry {self.employee.username} - {self.work_date}>'
+
+
+class ShiftType(db.Model):
+    """Shift Type model for defining work shifts"""
+    
+    __tablename__ = 'shift_types'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    default_start_time = db.Column(db.Time, nullable=False)
+    default_end_time = db.Column(db.Time, nullable=False)
+    description = db.Column(db.String(255))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    schedules = db.relationship('Schedule', backref='shift_type', lazy='dynamic')
+    
+    def duration_hours(self):
+        """Calculate shift duration in hours"""
+        if self.default_end_time and self.default_start_time:
+            # Handle overnight shifts
+            start = datetime.combine(datetime.today(), self.default_start_time)
+            end = datetime.combine(datetime.today(), self.default_end_time)
+            
+            if end < start:  # Overnight shift
+                end += timedelta(days=1)
+            
+            delta = end - start
+            return delta.total_seconds() / 3600
+        return 0
+    
+    def __repr__(self):
+        return f'<ShiftType {self.name}>'
+
+
+class Schedule(db.Model):
+    """Schedule model for employee work schedules"""
+    
+    __tablename__ = 'schedules'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    shift_type_id = db.Column(db.Integer, db.ForeignKey('shift_types.id'), nullable=True)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    assigned_by_manager_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    pay_rule_link_id = db.Column(db.Integer, nullable=True)  # Placeholder for pay rules
+    status = db.Column(db.String(20), default='Scheduled', nullable=False)  # 'Scheduled', 'Confirmed', 'Cancelled'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    employee = db.relationship('User', foreign_keys=[user_id], backref='schedules')
+    assigned_by = db.relationship('User', foreign_keys=[assigned_by_manager_id])
+    
+    # Indexes for performance
+    __table_args__ = (
+        db.Index('idx_schedules_user_date', 'user_id', 'start_time'),
+        db.Index('idx_schedules_shift_type', 'shift_type_id'),
+        db.Index('idx_schedules_manager', 'assigned_by_manager_id'),
+    )
+    
+    def duration_hours(self):
+        """Calculate scheduled duration in hours"""
+        if self.end_time and self.start_time:
+            delta = self.end_time - self.start_time
+            return delta.total_seconds() / 3600
+        return 0
+    
+    def is_past_due(self):
+        """Check if schedule is past due"""
+        return self.end_time < datetime.utcnow()
+    
+    def conflicts_with(self, other_schedule):
+        """Check if this schedule conflicts with another"""
+        return (self.start_time < other_schedule.end_time and 
+                self.end_time > other_schedule.start_time)
+    
+    def work_date(self):
+        """Get the work date (date of start time)"""
+        return self.start_time.date()
+    
+    def __repr__(self):
+        return f'<Schedule {self.employee.username} on {self.start_time.strftime("%Y-%m-%d")}>'
