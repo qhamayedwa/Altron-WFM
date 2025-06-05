@@ -31,16 +31,29 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256))
-    first_name = db.Column(db.String(64))
-    last_name = db.Column(db.String(64))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_login = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True)
+    first_name = db.Column(db.String(64), index=True)  # Add index for name searches
+    last_name = db.Column(db.String(64), index=True)   # Add index for name searches
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # Add index for date queries
+    last_login = db.Column(db.DateTime, index=True)    # Add index for activity tracking
+    is_active = db.Column(db.Boolean, default=True, index=True)  # Add index for active user queries
+    
+    # Additional fields for employee management
+    employee_id = db.Column(db.String(20), unique=True, nullable=True, index=True)  # Employee ID with index
+    department = db.Column(db.String(64), nullable=True, index=True)  # Department with index
+    position = db.Column(db.String(64), nullable=True)
+    hire_date = db.Column(db.Date, nullable=True, index=True)  # Hire date with index
     
     # Relationships
     posts = db.relationship('Post', backref='author', lazy='dynamic', cascade='all, delete-orphan')
     roles = db.relationship('Role', secondary=user_roles, lazy='subquery',
                            backref=db.backref('users', lazy=True))
+    
+    # Additional indexes for performance optimization
+    __table_args__ = (
+        db.Index('idx_users_full_name', 'first_name', 'last_name'),  # Composite index for full name searches
+        db.Index('idx_users_dept_active', 'department', 'is_active'),  # Composite index for active employees by department
+        db.Index('idx_users_hire_date_desc', 'hire_date', postgresql_using='btree'),  # Optimized for date range queries
+    )
     
     def set_password(self, password):
         """Hash and set password"""
@@ -154,11 +167,30 @@ class TimeEntry(db.Model):
     approved_by = db.relationship('User', foreign_keys=[approved_by_manager_id])
     absence_approved_by = db.relationship('User', foreign_keys=[absence_approved_by_id])
     
-    # Indexes for better query performance
+    # Comprehensive indexes for better query performance
     __table_args__ = (
-        db.Index('idx_time_entries_user_date', 'user_id', 'clock_in_time'),
-        db.Index('idx_time_entries_status', 'status'),
-        db.Index('idx_time_entries_approval', 'approved_by_manager_id'),
+        # Primary composite indexes for common query patterns
+        db.Index('idx_time_entries_user_date', 'user_id', 'clock_in_time'),  # Most common: user + date queries
+        db.Index('idx_time_entries_user_status', 'user_id', 'status'),       # User's entries by status
+        db.Index('idx_time_entries_date_status', 'clock_in_time', 'status'), # Date range + status queries
+        
+        # Individual column indexes for filtering
+        db.Index('idx_time_entries_status', 'status'),                       # Status-based filtering
+        db.Index('idx_time_entries_approval', 'approved_by_manager_id'),     # Manager approval queries
+        db.Index('idx_time_entries_pay_code', 'pay_code_id'),               # Pay code filtering
+        db.Index('idx_time_entries_absence_code', 'absence_pay_code_id'),   # Absence code filtering
+        
+        # Date-specific indexes for reporting
+        db.Index('idx_time_entries_clock_in_desc', 'clock_in_time', postgresql_using='btree'),    # Chronological ordering
+        db.Index('idx_time_entries_clock_out', 'clock_out_time'),            # Clock out time queries
+        db.Index('idx_time_entries_created_at', 'created_at'),               # Entry creation tracking
+        
+        # Composite indexes for complex queries
+        db.Index('idx_time_entries_user_date_status', 'user_id', 'clock_in_time', 'status'),  # User + date + status
+        db.Index('idx_time_entries_manager_date', 'approved_by_manager_id', 'clock_in_time'), # Manager approval by date
+        
+        # Geographic indexes for mobile tracking
+        db.Index('idx_time_entries_location', 'clock_in_latitude', 'clock_in_longitude'),     # GPS location queries
     )
     
     @property
@@ -267,11 +299,30 @@ class Schedule(db.Model):
     employee = db.relationship('User', foreign_keys=[user_id], backref='schedules')
     assigned_by = db.relationship('User', foreign_keys=[assigned_by_manager_id])
     
-    # Indexes for performance
+    # Comprehensive indexes for scheduling performance
     __table_args__ = (
-        db.Index('idx_schedules_user_date', 'user_id', 'start_time'),
-        db.Index('idx_schedules_shift_type', 'shift_type_id'),
-        db.Index('idx_schedules_manager', 'assigned_by_manager_id'),
+        # Primary composite indexes for common scheduling queries
+        db.Index('idx_schedules_user_date', 'user_id', 'start_time'),        # Most common: user + date queries
+        db.Index('idx_schedules_user_status', 'user_id', 'status'),          # User's schedules by status
+        db.Index('idx_schedules_date_range', 'start_time', 'end_time'),      # Date range overlap queries
+        
+        # Individual column indexes for filtering
+        db.Index('idx_schedules_shift_type', 'shift_type_id'),               # Shift type filtering
+        db.Index('idx_schedules_manager', 'assigned_by_manager_id'),         # Manager assignment queries
+        db.Index('idx_schedules_status', 'status'),                         # Status-based filtering
+        
+        # Date-specific indexes for scheduling optimization
+        db.Index('idx_schedules_start_time_desc', 'start_time', postgresql_using='btree'),  # Chronological ordering
+        db.Index('idx_schedules_end_time', 'end_time'),                      # End time queries
+        db.Index('idx_schedules_created_at', 'created_at'),                  # Schedule creation tracking
+        
+        # Composite indexes for complex scheduling queries
+        db.Index('idx_schedules_user_date_status', 'user_id', 'start_time', 'status'),     # User + date + status
+        db.Index('idx_schedules_manager_date', 'assigned_by_manager_id', 'start_time'),    # Manager schedules by date
+        db.Index('idx_schedules_shift_date', 'shift_type_id', 'start_time'),               # Shift type scheduling
+        
+        # Conflict detection indexes
+        db.Index('idx_schedules_overlap_check', 'user_id', 'start_time', 'end_time'),      # Overlap detection
     )
     
     def duration_hours(self):
@@ -344,12 +395,32 @@ class LeaveApplication(db.Model):
     employee = db.relationship('User', foreign_keys=[user_id], backref='leave_applications')
     manager_approved = db.relationship('User', foreign_keys=[manager_approved_id])
     
-    # Indexes for performance
+    # Comprehensive indexes for leave application performance
     __table_args__ = (
-        db.Index('idx_leave_applications_user_date', 'user_id', 'start_date'),
-        db.Index('idx_leave_applications_status', 'status'),
-        db.Index('idx_leave_applications_manager', 'manager_approved_id'),
-        db.Index('idx_leave_applications_type', 'leave_type_id'),
+        # Primary composite indexes for common leave queries
+        db.Index('idx_leave_applications_user_date', 'user_id', 'start_date'),     # Most common: user + date queries
+        db.Index('idx_leave_applications_user_status', 'user_id', 'status'),       # User's applications by status
+        db.Index('idx_leave_applications_date_range', 'start_date', 'end_date'),   # Date range overlap queries
+        
+        # Individual column indexes for filtering
+        db.Index('idx_leave_applications_status', 'status'),                       # Status-based filtering
+        db.Index('idx_leave_applications_manager', 'manager_approved_id'),         # Manager approval queries
+        db.Index('idx_leave_applications_type', 'leave_type_id'),                  # Leave type filtering
+        
+        # Date-specific indexes for leave management
+        db.Index('idx_leave_applications_start_date_desc', 'start_date', postgresql_using='btree'),  # Chronological ordering
+        db.Index('idx_leave_applications_end_date', 'end_date'),                   # End date queries
+        db.Index('idx_leave_applications_created_at', 'created_at'),               # Application creation tracking
+        db.Index('idx_leave_applications_approved_at', 'approved_at'),             # Approval date tracking
+        
+        # Composite indexes for complex leave queries
+        db.Index('idx_leave_applications_user_type_status', 'user_id', 'leave_type_id', 'status'),     # User + type + status
+        db.Index('idx_leave_applications_manager_date', 'manager_approved_id', 'start_date'),          # Manager approvals by date
+        db.Index('idx_leave_applications_type_date', 'leave_type_id', 'start_date'),                   # Leave type scheduling
+        
+        # Overlap detection and conflict resolution indexes
+        db.Index('idx_leave_applications_overlap_check', 'user_id', 'start_date', 'end_date'),        # Overlap detection
+        db.Index('idx_leave_applications_pending_approval', 'status', 'created_at'),                  # Pending approval queue
     )
     
     def total_days(self):
