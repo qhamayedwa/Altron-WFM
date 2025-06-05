@@ -102,11 +102,21 @@ def index():
         # Pay Codes Count
         active_pay_codes = PayCode.query.filter_by(is_active=True).count()
         
-        # Weekly Hours Summary - simplified calculation
+        # Weekly Hours Summary - filtered by role
         week_start = datetime.now().date() - timedelta(days=datetime.now().weekday())
-        weekly_entries = TimeEntry.query.filter(
-            TimeEntry.clock_in_time >= week_start
-        ).count()
+        if is_manager_or_admin:
+            # Organization-wide weekly hours for managers/admins
+            weekly_entries = TimeEntry.query.filter(
+                TimeEntry.clock_in_time >= week_start
+            ).count()
+        else:
+            # Personal weekly hours for basic users/employees
+            weekly_entries = TimeEntry.query.filter(
+                and_(
+                    TimeEntry.user_id == current_user.id,
+                    TimeEntry.clock_in_time >= week_start
+                )
+            ).count()
         weekly_hours = weekly_entries * 8  # Simplified: assume 8 hours per entry
         
         # Get current user's time tracking status for user empowerment features
