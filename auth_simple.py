@@ -5,6 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from urllib.parse import urlparse
 from app import db
 from models import User, Role
+from forms import RegistrationForm
 
 # Create authentication blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
