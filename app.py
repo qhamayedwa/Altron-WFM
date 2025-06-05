@@ -39,12 +39,14 @@ def create_app(config_class=Config):
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
+        from flask import render_template
         return render_template('error.html', 
                              error_code=404, 
                              error_message="Page not found"), 404
     
     @app.errorhandler(500)
     def internal_error(error):
+        from flask import render_template
         db.session.rollback()
         return render_template('error.html', 
                              error_code=500, 
