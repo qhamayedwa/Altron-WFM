@@ -255,7 +255,7 @@
     <!-- System Status -->
     <div class="row">
         <!-- Today's Statistics -->
-        <div class="col-lg-6 mb-4">
+        <div class="{% if current_user.has_role('Admin') or current_user.has_role('Super User') %}col-lg-6{% else %}col-12{% endif %} mb-4">
             <div class="card">
                 <div class="card-header">
                     <h6 class="mb-0">Today's Activity</h6>
@@ -277,7 +277,8 @@
             </div>
         </div>
 
-        <!-- System Configuration -->
+        <!-- System Configuration (Admin Only) -->
+        {% if current_user.has_role('Admin') or current_user.has_role('Super User') %}
         <div class="col-lg-6 mb-4">
             <div class="card">
                 <div class="card-header">
@@ -301,6 +302,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 
     <!-- Administrative Links (For Managers and Super Users) -->
