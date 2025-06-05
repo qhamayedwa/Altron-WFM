@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Pay Codes{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Pay Codes Management</h1>
+        <div>
+            <a href="{{ url_for('pay_codes.create_pay_code') }}" class="btn btn-primary">
+                <i data-feather="plus" class="me-2"></i>Create Pay Code
+            </a>
+            <form method="post" action="{{ url_for('pay_codes.initialize_default_codes') }}" class="d-inline">
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i data-feather="settings" class="me-2"></i>Initialize Defaults
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Code Type</label>
+                    <select name="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="absence" {% if code_type == 'absence' %}selected{% endif %}>Absence Codes</option>
+                        <option value="payroll" {% if code_type == 'payroll' %}selected{% endif %}>Payroll Codes</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary">Filter</button>
+                    <a href="{{ url_for('pay_codes.manage_pay_codes') }}" class="btn btn-outline-secondary ms-2">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pay Codes Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Pay Codes ({{ pay_codes.total }} total)</h5>
+        </div>
+        <div class="card-body">
+            {% if pay_codes.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for code in pay_codes.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ code.code }}</strong>
+                            </td>
+                            <td>{{ code.description }}</td>
+                            <td>
+                                {% if code.is_absence_code %}
+                                    <span class="badge bg-info">Absence</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Payroll</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if code.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ code.created_by.username if code.created_by else 'System' }}</td>
+                            <td>{{ code.created_at.strftime('%Y-%m-%d') if code.created_at else 'N/A' }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('pay_codes.view_pay_code', code_id=code.id) }}" 
+                                       class="btn btn-outline-primary" title="View Details">
+                                        <i data-feather="eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('pay_codes.edit_pay_code', code_id=code.id) }}" 
+                                       class="btn btn-outline-secondary" title="Edit">
+                                        <i data-feather="edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-warning toggle-status" 
+                                            data-code-id="{{ code.id }}" 
+                                            data-current-status="{{ code.is_active }}"
+                                            title="Toggle Status">
+                                        {% if code.is_active %}
+                                            <i data-feather="pause"></i>
+                                        {% else %}
+                                            <i data-feather="play"></i>
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pay_codes.pages > 1 %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if pay_codes.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('pay_codes.manage_pay_codes', page=pay_codes.prev_num, type=code_type, status=status_filter) }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in pay_codes.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != pay_codes.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('pay_codes.manage_pay_codes', page=page_num, type=code_type, status=status_filter) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pay_codes.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('pay_codes.manage_pay_codes', page=pay_codes.next_num, type=code_type, status=status_filter) }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-4">
+                <i data-feather="inbox" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                <h5 class="text-muted">No pay codes found</h5>
+                <p class="text-muted">Create your first pay code or initialize with default codes.</p>
+                <a href="{{ url_for('pay_codes.create_pay_code') }}" class="btn btn-primary">
+                    <i data-feather="plus" class="me-2"></i>Create Pay Code
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle status functionality
+    document.querySelectorAll('.toggle-status').forEach(button => {
+        button.addEventListener('click', function() {
+            const codeId = this.dataset.codeId;
+            const currentStatus = this.dataset.currentStatus === 'True';
+            
+            fetch(`/pay-codes/api/codes/${codeId}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the pay code status.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

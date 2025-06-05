@@ -132,7 +132,7 @@ def view_pay_code(code_id):
                          recent_entries=recent_entries)
 
 @pay_codes_bp.route('/<int:code_id>/edit', methods=['GET', 'POST'])
-@admin_required
+@super_user_required
 def edit_pay_code(code_id):
     """Edit an existing pay code"""
     pay_code = PayCode.query.get_or_404(code_id)
@@ -217,7 +217,7 @@ def delete_pay_code(code_id):
         return redirect(url_for('pay_codes.manage_pay_codes'))
 
 @pay_codes_bp.route('/absences')
-@manager_required
+@login_required
 def manage_absences():
     """Manage employee absences"""
     page = request.args.get('page', 1, type=int)
@@ -262,7 +262,7 @@ def manage_absences():
                          date_filter=date_filter)
 
 @pay_codes_bp.route('/absence/<int:entry_id>/approve', methods=['POST'])
-@manager_required
+@login_required
 def approve_absence(entry_id):
     """Approve an absence entry"""
     try:
@@ -273,8 +273,8 @@ def approve_absence(entry_id):
             flash('This absence has already been approved.', 'warning')
             return redirect(url_for('pay_codes.manage_absences'))
         
-        # Check if user can approve this entry
-        if not time_entry.can_be_approved_by(current_user):
+        # Basic permission check - Super Users can approve all
+        if not current_user.has_role('Super User'):
             flash('You do not have permission to approve this absence.', 'danger')
             return redirect(url_for('pay_codes.manage_absences'))
         
@@ -311,7 +311,7 @@ def approve_absence(entry_id):
         return redirect(url_for('pay_codes.manage_absences'))
 
 @pay_codes_bp.route('/absence/log', methods=['GET', 'POST'])
-@manager_required
+@login_required
 def log_absence():
     """Log absence for an employee"""
     if request.method == 'POST':
@@ -417,7 +417,7 @@ def initialize_default_codes():
 # API Endpoints
 
 @pay_codes_bp.route('/api/codes/<int:code_id>/toggle', methods=['POST'])
-@admin_required
+@super_user_required
 def api_toggle_code(code_id):
     """Toggle pay code active status"""
     try:
@@ -503,7 +503,7 @@ def api_validate_absence():
         return jsonify({'valid': False, 'errors': [str(e)]})
 
 @pay_codes_bp.route('/api/employee/<int:employee_id>/absence-history', methods=['GET'])
-@manager_required
+@login_required
 def api_get_employee_absence_history(employee_id):
     """Get employee's recent absence history"""
     try:

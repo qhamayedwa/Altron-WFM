@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Create Pay Code{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Create Pay Code</h1>
+        <a href="{{ url_for('pay_codes.manage_pay_codes') }}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="me-2"></i>Back to Pay Codes
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Pay Code Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <!-- Basic Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="code" class="form-label">Pay Code *</label>
+                                <input type="text" class="form-control" id="code" name="code" required 
+                                       placeholder="e.g., SICK, VAC, OT" style="text-transform: uppercase;">
+                                <div class="form-text">Short code identifier (uppercase letters only)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="description" class="form-label">Description *</label>
+                                <input type="text" class="form-control" id="description" name="description" required 
+                                       placeholder="e.g., Sick Leave">
+                            </div>
+                        </div>
+
+                        <!-- Code Type -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_absence_code" name="is_absence_code">
+                                <label class="form-check-label" for="is_absence_code">
+                                    This is an absence code
+                                </label>
+                                <div class="form-text">Check if this code is used for tracking employee absences</div>
+                            </div>
+                        </div>
+
+                        <!-- Pay Rate Configuration -->
+                        <div class="mb-3">
+                            <label for="pay_rate_factor" class="form-label">Pay Rate Factor</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="pay_rate_factor" name="pay_rate_factor" 
+                                       step="0.01" min="0" placeholder="1.0">
+                                <span class="input-group-text">x</span>
+                            </div>
+                            <div class="form-text">Multiplier for base pay rate (e.g., 1.5 for overtime, 0.0 for unpaid)</div>
+                        </div>
+
+                        <!-- Absence-Specific Settings -->
+                        <div id="absence-settings" style="display: none;">
+                            <hr>
+                            <h6 class="mb-3">Absence Settings</h6>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_paid" name="is_paid" checked>
+                                        <label class="form-check-label" for="is_paid">
+                                            Paid absence
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="requires_approval" name="requires_approval" checked>
+                                        <label class="form-check-label" for="requires_approval">
+                                            Requires approval
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="deducts_from_balance" name="deducts_from_balance">
+                                        <label class="form-check-label" for="deducts_from_balance">
+                                            Deducts from leave balance
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="leave_type_id" class="form-label">Linked Leave Type</label>
+                                    <select class="form-select" id="leave_type_id" name="leave_type_id">
+                                        <option value="">Select leave type...</option>
+                                        {% for leave_type in leave_types %}
+                                        <option value="{{ leave_type.id }}">{{ leave_type.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="max_hours_per_day" class="form-label">Max Hours Per Day</label>
+                                    <input type="number" class="form-control" id="max_hours_per_day" name="max_hours_per_day" 
+                                           step="0.5" min="0" max="24" placeholder="8.0">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="max_consecutive_days" class="form-label">Max Consecutive Days</label>
+                                    <input type="number" class="form-control" id="max_consecutive_days" name="max_consecutive_days" 
+                                           min="1" placeholder="5">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('pay_codes.manage_pay_codes') }}" class="btn btn-outline-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="save" class="me-2"></i>Create Pay Code
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Pay Code Examples</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Common Absence Codes:</strong>
+                        <ul class="list-unstyled mt-2">
+                            <li><code>SICK</code> - Sick Leave</li>
+                            <li><code>VAC</code> - Vacation</li>
+                            <li><code>PTO</code> - Paid Time Off</li>
+                            <li><code>UNPD</code> - Unpaid Leave</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Common Payroll Codes:</strong>
+                        <ul class="list-unstyled mt-2">
+                            <li><code>OT</code> - Overtime (1.5x)</li>
+                            <li><code>DT</code> - Double Time (2.0x)</li>
+                            <li><code>HOL</code> - Holiday Pay (1.5x)</li>
+                            <li><code>CALL</code> - Call-out Pay</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <small>
+                            <strong>Tip:</strong> Use short, descriptive codes that are easy to remember and type.
+                            Absence codes should be linked to leave types when they deduct from balances.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isAbsenceCode = document.getElementById('is_absence_code');
+    const absenceSettings = document.getElementById('absence-settings');
+
+    function toggleAbsenceSettings() {
+        if (isAbsenceCode.checked) {
+            absenceSettings.style.display = 'block';
+        } else {
+            absenceSettings.style.display = 'none';
+        }
+    }
+
+    isAbsenceCode.addEventListener('change', toggleAbsenceSettings);
+    
+    // Transform code input to uppercase
+    document.getElementById('code').addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+});
+</script>
+{% endblock %}
