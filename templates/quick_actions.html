@@ -82,6 +82,35 @@
             </div>
         </div>
 
+        <!-- Payroll & Finance -->
+        {% if current_user.has_role('Super User') %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="calculator" class="me-2"></i>Payroll & Finance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('payroll.payroll_processing') }}" class="btn btn-success">
+                            <i data-feather="calculator" class="me-2"></i>Payroll Processing
+                        </a>
+                        <a href="{{ url_for('payroll.time_summary_report') }}" class="btn btn-outline-success">
+                            <i data-feather="clock" class="me-2"></i>Time Summary
+                        </a>
+                        <a href="{{ url_for('payroll.overtime_summary_report') }}" class="btn btn-outline-warning">
+                            <i data-feather="trending-up" class="me-2"></i>Overtime Report
+                        </a>
+                        <a href="{{ url_for('payroll.custom_report_builder') }}" class="btn btn-outline-info">
+                            <i data-feather="settings" class="me-2"></i>Custom Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Administrative -->
         <div class="col-md-6 mb-4">
             <div class="card">

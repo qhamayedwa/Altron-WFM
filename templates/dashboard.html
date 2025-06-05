@@ -102,6 +102,11 @@
                         <a href="{{ url_for('main.reports') }}" class="btn btn-outline-info">
                             <i data-feather="bar-chart-2" class="me-2"></i>View Reports
                         </a>
+                        {% if current_user.has_role('Super User') %}
+                        <a href="{{ url_for('payroll.payroll_processing') }}" class="btn btn-success">
+                            <i data-feather="calculator" class="me-2"></i>Payroll Processing
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
