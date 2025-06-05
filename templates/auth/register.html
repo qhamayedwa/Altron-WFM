@@ -108,20 +108,20 @@
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    {% for role in roles %}
+                                    {% for role in form.roles.choices %}
                                     <div class="col-md-6 mb-2">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" 
-                                                   value="{{ role.id }}" id="role_{{ role.id }}" name="roles">
-                                            <label class="form-check-label" for="role_{{ role.id }}">
-                                                <strong>{{ role.name }}</strong>
-                                                {% if role.name == 'User' %}
+                                                   value="{{ role[0] }}" id="role_{{ role[0] }}" name="roles">
+                                            <label class="form-check-label" for="role_{{ role[0] }}">
+                                                <strong>{{ role[1] }}</strong>
+                                                {% if role[1] == 'User' %}
                                                 <small class="text-muted d-block">Basic employee access (recommended for regular employees)</small>
-                                                {% elif role.name == 'Manager' %}
+                                                {% elif role[1] == 'Manager' %}
                                                 <small class="text-muted d-block">Team management and approval permissions</small>
-                                                {% elif role.name == 'Admin' %}
+                                                {% elif role[1] == 'Admin' %}
                                                 <small class="text-muted d-block">System administration access</small>
-                                                {% elif role.name == 'Super User' %}
+                                                {% elif role[1] == 'Super User' %}
                                                 <small class="text-muted d-block">Complete system control</small>
                                                 {% endif %}
                                             </label>

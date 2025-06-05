@@ -103,35 +103,31 @@ def logout():
 @super_user_required
 def register():
     """User registration route (Super User only)"""
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        first_name = request.form.get('first_name')
-        last_name = request.form.get('last_name')
-        role_ids = request.form.getlist('roles')
-        
-        # Check if user already exists
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists', 'danger')
-            return redirect(url_for('auth.register'))
-        
-        if User.query.filter_by(email=email).first():
-            flash('Email already exists', 'danger')
-            return redirect(url_for('auth.register'))
-        
+    form = RegistrationForm()
+    
+    if form.validate_on_submit():
         user = User()
-        user.username = username
-        user.email = email
-        user.first_name = first_name
-        user.last_name = last_name
-        user.set_password(password)
+        user.username = form.username.data
+        user.email = form.email.data
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.employee_id = form.employee_id.data if form.employee_id.data else None
+        user.department = form.department.data if form.department.data else None
+        user.position = form.position.data if form.position.data else None
+        user.is_active = form.is_active.data
+        user.set_password(form.password.data)
         
         # Add selected roles
-        for role_id in role_ids:
-            role = Role.query.get(int(role_id))
-            if role:
-                user.add_role(role)
+        if form.roles.data:
+            for role_id in form.roles.data:
+                role = Role.query.get(role_id)
+                if role:
+                    user.add_role(role)
+        else:
+            # Default to User role if no roles selected
+            user_role = Role.query.filter_by(name='User').first()
+            if user_role:
+                user.add_role(user_role)
         
         db.session.add(user)
         db.session.commit()
@@ -139,8 +135,7 @@ def register():
         flash(f'User {user.username} has been registered successfully!', 'success')
         return redirect(url_for('auth.user_management'))
     
-    roles = Role.query.all()
-    return render_template('auth/register.html', title='Register User', roles=roles)
+    return render_template('auth/register.html', title='Register User', form=form)
 
 @auth_bp.route('/users')
 @super_user_required
