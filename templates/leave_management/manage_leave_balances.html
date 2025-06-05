@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Leave Balances - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="trending-up" class="me-2"></i>
+            Manage Leave Balances
+        </h2>
+        {% if current_user.has_role('Super User') %}
+        <form method="POST" action="{{ url_for('leave_management.run_accrual') }}" style="display: inline;">
+            <button type="submit" class="btn btn-success" onclick="return confirm('Run monthly leave accrual for all employees?')">
+                <i data-feather="refresh-cw" class="me-2"></i>
+                Run Accrual
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="user_id" class="form-label">Employee</label>
+                    <select name="user_id" id="user_id" class="form-select">
+                        <option value="">All Employees</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {{ 'selected' if user_filter == user.id }}>
+                            {{ user.username }} ({{ user.full_name() }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="leave_type_id" class="form-label">Leave Type</label>
+                    <select name="leave_type_id" id="leave_type_id" class="form-select">
+                        <option value="">All Leave Types</option>
+                        {% for leave_type in leave_types %}
+                        <option value="{{ leave_type.id }}" {{ 'selected' if leave_type_filter == leave_type.id }}>
+                            {{ leave_type.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="year" class="form-label">Year</label>
+                    <select name="year" id="year" class="form-select">
+                        {% for y in range(datetime.now().year - 2, datetime.now().year + 2) %}
+                        <option value="{{ y }}" {{ 'selected' if year == y }}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i data-feather="filter" class="me-1"></i>
+                        Filter
+                    </button>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <a href="{{ url_for('leave_management.manage_leave_balances') }}" class="btn btn-outline-secondary">
+                        <i data-feather="x" class="me-1"></i>
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Balances Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if balances.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Leave Type</th>
+                            <th>Current Balance</th>
+                            <th>Accrued This Year</th>
+                            <th>Used This Year</th>
+                            <th>Last Accrual</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for balance in balances.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ balance.employee.username }}</strong>
+                                <br><small class="text-muted">{{ balance.employee.full_name() }}</small>
+                            </td>
+                            <td>{{ balance.leave_type.name }}</td>
+                            <td>
+                                <strong class="text-primary">{{ "%.1f"|format(balance.balance) }}</strong> hours
+                            </td>
+                            <td>{{ "%.1f"|format(balance.accrued_this_year) }} hours</td>
+                            <td>{{ "%.1f"|format(balance.used_this_year) }} hours</td>
+                            <td>
+                                {% if balance.last_accrual_date %}
+                                {{ balance.last_accrual_date.strftime('%b %d, %Y') }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        onclick="showAdjustModal({{ balance.id }}, '{{ balance.employee.username }}', '{{ balance.leave_type.name }}', {{ balance.balance }})">
+                                    <i data-feather="edit-2"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if balances.pages > 1 %}
+            <nav aria-label="Balances pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if balances.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('leave_management.manage_leave_balances', page=balances.prev_num, user_id=user_filter, leave_type_id=leave_type_filter, year=year) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in balances.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != balances.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('leave_management.manage_leave_balances', page=page_num, user_id=user_filter, leave_type_id=leave_type_filter, year=year) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if balances.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('leave_management.manage_leave_balances', page=balances.next_num, user_id=user_filter, leave_type_id=leave_type_filter, year=year) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i data-feather="trending-up" class="text-muted mb-3" width="64" height="64"></i>
+                <h5>No Leave Balances Found</h5>
+                <p class="text-muted">
+                    {% if user_filter or leave_type_filter %}
+                    No balances match the current filters.
+                    {% else %}
+                    No leave balances have been created yet.
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Balance Management Info -->
+    <div class="mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Balance Management</h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <ul class="mb-0">
+                        <li><strong>Current Balance:</strong> Available leave hours for the employee</li>
+                        <li><strong>Accrued This Year:</strong> Total hours earned through accrual this year</li>
+                        <li><strong>Used This Year:</strong> Total hours deducted for approved leave</li>
+                        <li><strong>Adjust Balance:</strong> Manually modify balance for corrections or special allocations</li>
+                        {% if current_user.has_role('Super User') %}
+                        <li><strong>Run Accrual:</strong> Process monthly accrual for all eligible employees</li>
+                        {% endif %}
+                    </ul>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Adjust Balance Modal -->
+<div class="modal fade" id="adjustBalanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adjust Leave Balance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="adjustBalanceForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Employee & Leave Type</label>
+                        <div class="form-control-plaintext" id="employeeLeaveType"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Balance</label>
+                        <div class="form-control-plaintext" id="currentBalanceDisplay"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_balance" class="form-label">New Balance *</label>
+                        <input type="number" name="new_balance" id="new_balance" class="form-control" 
+                               step="0.5" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason *</label>
+                        <textarea name="reason" id="reason" class="form-control" rows="3" 
+                                  placeholder="Reason for balance adjustment" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Adjust Balance</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+    
+    let currentBalanceId = null;
+    
+    function showAdjustModal(balanceId, employee, leaveType, currentBalance) {
+        currentBalanceId = balanceId;
+        
+        document.getElementById('employeeLeaveType').textContent = `${employee} - ${leaveType}`;
+        document.getElementById('currentBalanceDisplay').textContent = `${currentBalance.toFixed(1)} hours`;
+        document.getElementById('new_balance').value = currentBalance.toFixed(1);
+        document.getElementById('reason').value = '';
+        
+        const form = document.getElementById('adjustBalanceForm');
+        form.action = `/leave/admin/leave-balances/${balanceId}/adjust`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('adjustBalanceModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Apply Leave for Employee - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i data-feather="user-plus" class="me-2"></i>
+                        Apply Leave for Employee
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="employeeLeaveForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="user_id" class="form-label">Employee *</label>
+                                    <select name="user_id" id="user_id" class="form-select" required>
+                                        <option value="">Select employee</option>
+                                        {% for user in users %}
+                                        <option value="{{ user.id }}">
+                                            {{ user.username }} - {{ user.full_name() }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="leave_type_id" class="form-label">Leave Type *</label>
+                                    <select name="leave_type_id" id="leave_type_id" class="form-select" required>
+                                        <option value="">Select leave type</option>
+                                        {% for leave_type in leave_types %}
+                                        <option value="{{ leave_type.id }}">
+                                            {{ leave_type.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_hourly" id="is_hourly">
+                                        <label class="form-check-label" for="is_hourly">
+                                            Hourly Leave Request
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3" id="hoursRequestedGroup" style="display: none;">
+                                    <label for="hours_requested" class="form-label">Hours Requested</label>
+                                    <input type="number" name="hours_requested" id="hours_requested" 
+                                           class="form-control" step="0.5" min="0.5" max="8">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">Start Date *</label>
+                                    <input type="date" name="start_date" id="start_date" 
+                                           class="form-control" required>
+                                </div>
+
+                                <div class="mb-3" id="endDateGroup">
+                                    <label for="end_date" class="form-label">End Date *</label>
+                                    <input type="date" name="end_date" id="end_date" 
+                                           class="form-control" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="auto_approve" id="auto_approve">
+                                        <label class="form-check-label" for="auto_approve">
+                                            Auto-approve this application
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason</label>
+                            <textarea name="reason" id="reason" class="form-control" rows="3" 
+                                      placeholder="Optional: Provide reason for leave request"></textarea>
+                        </div>
+
+                        <div class="alert alert-info" id="balanceInfo" style="display: none;">
+                            <small>
+                                <strong>Employee Leave Balance:</strong> <span id="currentBalance">0</span> hours available
+                            </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('leave_management.team_applications') }}" class="btn btn-secondary">
+                                <i data-feather="arrow-left" class="me-2"></i>
+                                Back to Applications
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="send" class="me-2"></i>
+                                Submit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const isHourlyCheckbox = document.getElementById('is_hourly');
+        const hoursRequestedGroup = document.getElementById('hoursRequestedGroup');
+        const endDateGroup = document.getElementById('endDateGroup');
+        const hoursRequestedInput = document.getElementById('hours_requested');
+        const endDateInput = document.getElementById('end_date');
+        const userSelect = document.getElementById('user_id');
+        const leaveTypeSelect = document.getElementById('leave_type_id');
+        const balanceInfo = document.getElementById('balanceInfo');
+        const currentBalanceSpan = document.getElementById('currentBalance');
+        
+        // Toggle hourly request fields
+        isHourlyCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                hoursRequestedGroup.style.display = 'block';
+                endDateGroup.style.display = 'none';
+                hoursRequestedInput.required = true;
+                endDateInput.required = false;
+                // Set end date same as start date for hourly requests
+                endDateInput.value = document.getElementById('start_date').value;
+            } else {
+                hoursRequestedGroup.style.display = 'none';
+                endDateGroup.style.display = 'block';
+                hoursRequestedInput.required = false;
+                endDateInput.required = true;
+                endDateInput.value = '';
+            }
+        });
+        
+        // Update balance info when user or leave type changes
+        function updateBalance() {
+            const userId = userSelect.value;
+            const leaveTypeId = leaveTypeSelect.value;
+            
+            if (userId && leaveTypeId) {
+                fetch(`/leave/api/leave-balance/${userId}/${leaveTypeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    currentBalanceSpan.textContent = parseFloat(data.balance).toFixed(1);
+                    balanceInfo.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching balance:', error);
+                    balanceInfo.style.display = 'none';
+                });
+            } else {
+                balanceInfo.style.display = 'none';
+            }
+        }
+        
+        userSelect.addEventListener('change', updateBalance);
+        leaveTypeSelect.addEventListener('change', updateBalance);
+        
+        // Sync start date with end date for hourly requests
+        document.getElementById('start_date').addEventListener('change', function() {
+            if (isHourlyCheckbox.checked) {
+                endDateInput.value = this.value;
+            }
+            // Set minimum end date
+            endDateInput.min = this.value;
+        });
+    });
+</script>
+{% endblock %}

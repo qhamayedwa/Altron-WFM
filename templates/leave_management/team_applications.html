@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Team Leave Applications - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="users" class="me-2"></i>
+            Team Leave Applications
+        </h2>
+        <a href="{{ url_for('leave_management.apply_for_employee') }}" class="btn btn-primary">
+            <i data-feather="user-plus" class="me-2"></i>
+            Apply for Employee
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" {{ 'selected' if status_filter == 'Pending' }}>Pending</option>
+                        <option value="Approved" {{ 'selected' if status_filter == 'Approved' }}>Approved</option>
+                        <option value="Rejected" {{ 'selected' if status_filter == 'Rejected' }}>Rejected</option>
+                        <option value="Cancelled" {{ 'selected' if status_filter == 'Cancelled' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="user_id" class="form-label">Employee</label>
+                    <select name="user_id" id="user_id" class="form-select">
+                        <option value="">All Employees</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {{ 'selected' if user_filter == user.id }}>
+                            {{ user.username }} ({{ user.full_name() }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i data-feather="filter" class="me-1"></i>
+                        Filter
+                    </button>
+                    <a href="{{ url_for('leave_management.team_applications') }}" class="btn btn-outline-secondary">
+                        <i data-feather="x" class="me-1"></i>
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Applications Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if applications.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Leave Type</th>
+                            <th>Dates</th>
+                            <th>Days/Hours</th>
+                            <th>Status</th>
+                            <th>Applied</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in applications.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ application.employee.username }}</strong>
+                                <br><small class="text-muted">{{ application.employee.full_name() }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ application.leave_type.name }}</strong>
+                                {% if application.reason %}
+                                <br><small class="text-muted">{{ application.reason[:50] }}{% if application.reason|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ application.start_date.strftime('%b %d') }} - 
+                                {{ application.end_date.strftime('%b %d, %Y') }}
+                            </td>
+                            <td>
+                                {% if application.is_hourly %}
+                                    {{ application.hours_requested }}h
+                                {% else %}
+                                    {{ "%.1f"|format(application.total_days()) }} days
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if application.status == 'Approved' else 'danger' if application.status == 'Rejected' else 'warning' if application.status == 'Pending' else 'secondary' }}">
+                                    {{ application.status }}
+                                </span>
+                                {% if application.manager_approved %}
+                                <br><small class="text-muted">by {{ application.manager_approved.username }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ application.created_at.strftime('%b %d, %Y') }}
+                                <br><small class="text-muted">{{ application.created_at.strftime('%I:%M %p') }}</small>
+                            </td>
+                            <td>
+                                {% if application.status == 'Pending' %}
+                                <button type="button" class="btn btn-success btn-sm me-1" 
+                                        onclick="showApprovalModal({{ application.id }}, 'approve')" title="Approve">
+                                    <i data-feather="check"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm" 
+                                        onclick="showApprovalModal({{ application.id }}, 'reject')" title="Reject">
+                                    <i data-feather="x"></i>
+                                </button>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if applications.pages > 1 %}
+            <nav aria-label="Applications pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if applications.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('leave_management.team_applications', page=applications.prev_num, status=status_filter, user_id=user_filter) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in applications.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != applications.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('leave_management.team_applications', page=page_num, status=status_filter, user_id=user_filter) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if applications.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('leave_management.team_applications', page=applications.next_num, status=status_filter, user_id=user_filter) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i data-feather="calendar" class="text-muted mb-3" width="64" height="64"></i>
+                <h5>No Leave Applications Found</h5>
+                <p class="text-muted">
+                    {% if status_filter or user_filter %}
+                    No applications match the current filters.
+                    {% else %}
+                    No leave applications to review at this time.
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Approval Modal -->
+<div class="modal fade" id="approvalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="approvalModalTitle">Approve Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="approvalForm">
+                    <div class="mb-3">
+                        <label for="manager_comments" class="form-label">Comments (Optional)</label>
+                        <textarea name="manager_comments" id="manager_comments" class="form-control" rows="3" 
+                                  placeholder="Add any comments about this decision..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmApprovalBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+    
+    let currentApplicationId = null;
+    let currentAction = null;
+    
+    function showApprovalModal(applicationId, action) {
+        currentApplicationId = applicationId;
+        currentAction = action;
+        
+        const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+        const title = document.getElementById('approvalModalTitle');
+        const btn = document.getElementById('confirmApprovalBtn');
+        
+        if (action === 'approve') {
+            title.textContent = 'Approve Leave Application';
+            btn.textContent = 'Approve';
+            btn.className = 'btn btn-success';
+        } else {
+            title.textContent = 'Reject Leave Application';
+            btn.textContent = 'Reject';
+            btn.className = 'btn btn-danger';
+        }
+        
+        document.getElementById('manager_comments').value = '';
+        modal.show();
+    }
+    
+    document.getElementById('confirmApprovalBtn').addEventListener('click', function() {
+        const comments = document.getElementById('manager_comments').value;
+        const url = `/leave/applications/${currentApplicationId}/${currentAction}`;
+        
+        const formData = new FormData();
+        formData.append('manager_comments', comments);
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while processing the request.');
+        });
+        
+        bootstrap.Modal.getInstance(document.getElementById('approvalModal')).hide();
+    });
+</script>
+{% endblock %}

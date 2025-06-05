@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Create Leave Type - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i data-feather="plus" class="me-2"></i>
+                        Create New Leave Type
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Leave Type Name *</label>
+                                    <input type="text" name="name" id="name" class="form-control" 
+                                           required placeholder="e.g., Annual Leave, Sick Leave">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="default_accrual_rate" class="form-label">Annual Accrual Rate (Hours)</label>
+                                    <input type="number" name="default_accrual_rate" id="default_accrual_rate" 
+                                           class="form-control" step="0.5" min="0" 
+                                           placeholder="e.g., 160 for 20 days annual leave">
+                                    <small class="form-text text-muted">
+                                        Total hours employees earn per year for this leave type
+                                    </small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="max_consecutive_days" class="form-label">Max Consecutive Days</label>
+                                    <input type="number" name="max_consecutive_days" id="max_consecutive_days" 
+                                           class="form-control" min="1" 
+                                           placeholder="e.g., 14 for maximum 2 weeks">
+                                    <small class="form-text text-muted">
+                                        Maximum number of consecutive days allowed (leave blank for no limit)
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea name="description" id="description" class="form-control" rows="3" 
+                                              placeholder="Brief description of this leave type"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="requires_approval" 
+                                               id="requires_approval" checked>
+                                        <label class="form-check-label" for="requires_approval">
+                                            Requires Manager Approval
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Whether applications for this leave type need manager approval
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('leave_management.manage_leave_types') }}" class="btn btn-secondary">
+                                <i data-feather="arrow-left" class="me-2"></i>
+                                Back to Leave Types
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="save" class="me-2"></i>
+                                Create Leave Type
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Leave Type Examples -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Common Leave Type Examples</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Annual Leave</h6>
+                            <ul class="small text-muted">
+                                <li>Accrual Rate: 160 hours/year (20 days)</li>
+                                <li>Requires Approval: Yes</li>
+                                <li>Max Consecutive: 14 days</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Sick Leave</h6>
+                            <ul class="small text-muted">
+                                <li>Accrual Rate: 80 hours/year (10 days)</li>
+                                <li>Requires Approval: No</li>
+                                <li>Max Consecutive: 5 days</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+</script>
+{% endblock %}

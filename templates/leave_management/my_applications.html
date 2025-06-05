@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}My Leave Applications - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="list" class="me-2"></i>
+            My Leave Applications
+        </h2>
+        <a href="{{ url_for('leave_management.apply_leave') }}" class="btn btn-primary">
+            <i data-feather="plus" class="me-2"></i>
+            Apply for Leave
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" {{ 'selected' if status_filter == 'Pending' }}>Pending</option>
+                        <option value="Approved" {{ 'selected' if status_filter == 'Approved' }}>Approved</option>
+                        <option value="Rejected" {{ 'selected' if status_filter == 'Rejected' }}>Rejected</option>
+                        <option value="Cancelled" {{ 'selected' if status_filter == 'Cancelled' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i data-feather="filter" class="me-1"></i>
+                        Filter
+                    </button>
+                    <a href="{{ url_for('leave_management.my_applications') }}" class="btn btn-outline-secondary">
+                        <i data-feather="x" class="me-1"></i>
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Applications Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if applications.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Leave Type</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Days/Hours</th>
+                            <th>Status</th>
+                            <th>Applied</th>
+                            <th>Manager</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in applications.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ application.leave_type.name }}</strong>
+                                {% if application.reason %}
+                                <br><small class="text-muted">{{ application.reason[:50] }}{% if application.reason|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ application.start_date.strftime('%b %d, %Y') }}</td>
+                            <td>{{ application.end_date.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                {% if application.is_hourly %}
+                                    {{ application.hours_requested }}h
+                                {% else %}
+                                    {{ "%.1f"|format(application.total_days()) }} days
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if application.status == 'Approved' else 'danger' if application.status == 'Rejected' else 'warning' if application.status == 'Pending' else 'secondary' }}">
+                                    {{ application.status }}
+                                </span>
+                                {% if application.status == 'Approved' and application.approved_at %}
+                                <br><small class="text-muted">{{ application.approved_at.strftime('%b %d') }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ application.created_at.strftime('%b %d, %Y') }}
+                                <br><small class="text-muted">{{ application.created_at.strftime('%I:%M %p') }}</small>
+                            </td>
+                            <td>
+                                {% if application.manager_approved %}
+                                {{ application.manager_approved.username }}
+                                {% if application.manager_comments %}
+                                <br><small class="text-muted" title="{{ application.manager_comments }}">
+                                    {{ application.manager_comments[:30] }}{% if application.manager_comments|length > 30 %}...{% endif %}
+                                </small>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if application.can_be_cancelled() %}
+                                <form method="POST" action="{{ url_for('leave_management.cancel_application', application_id=application.id) }}" 
+                                      style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this application?')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancel Application">
+                                        <i data-feather="x"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if applications.pages > 1 %}
+            <nav aria-label="Applications pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if applications.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('leave_management.my_applications', page=applications.prev_num, status=status_filter) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in applications.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != applications.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('leave_management.my_applications', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if applications.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('leave_management.my_applications', page=applications.next_num, status=status_filter) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i data-feather="calendar" class="text-muted mb-3" width="64" height="64"></i>
+                <h5>No Leave Applications Found</h5>
+                <p class="text-muted">
+                    {% if status_filter %}
+                    No applications with status "{{ status_filter }}" found.
+                    {% else %}
+                    You haven't submitted any leave applications yet.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('leave_management.apply_leave') }}" class="btn btn-primary">
+                    <i data-feather="plus" class="me-2"></i>
+                    Apply for Leave
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('leave_management.my_leave') }}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="me-2"></i>
+            Back to Leave Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+</script>
+{% endblock %}
