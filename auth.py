@@ -216,6 +216,49 @@ def change_password():
                          title='Change Password', 
                          form=form)
 
+@auth_bp.route('/user/<int:user_id>/edit', methods=['GET', 'POST'])
+@super_user_required
+def edit_user(user_id):
+    """Edit user route (Super User only)"""
+    user = User.query.get_or_404(user_id)
+    
+    form = EditUserForm(
+        original_username=user.username,
+        original_email=user.email,
+        obj=user
+    )
+    
+    # Populate roles
+    if request.method == 'GET':
+        form.roles.data = [role.id for role in user.roles]
+    
+    if form.validate_on_submit():
+        # Update user details
+        user.username = form.username.data
+        user.email = form.email.data
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.employee_id = form.employee_id.data
+        user.department = form.department.data
+        user.position = form.position.data
+        user.is_active = form.is_active.data
+        
+        # Update roles
+        user.roles.clear()
+        selected_roles = Role.query.filter(Role.id.in_(form.roles.data)).all()
+        for role in selected_roles:
+            user.roles.append(role)
+        
+        db.session.commit()
+        
+        flash(f'User {user.username} has been updated successfully!', 'success')
+        return redirect(url_for('auth.user_management'))
+    
+    return render_template('auth/edit_user.html', 
+                         title='Edit User', 
+                         form=form, 
+                         user=user)
+
 @auth_bp.route('/user/<int:user_id>/delete')
 @super_user_required
 def delete_user(user_id):
