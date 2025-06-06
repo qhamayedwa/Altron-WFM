@@ -133,6 +133,10 @@ def create_app(config_class=Config):
     from tenant_management import tenant_bp
     app.register_blueprint(tenant_bp, url_prefix='/tenant')
     
+    # Register AI-powered routes
+    from ai_routes import ai_bp
+    app.register_blueprint(ai_bp)
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
