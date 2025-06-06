@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Create Department - {{ site.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Header -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('organization.dashboard') }}">Organization</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('organization.view_company', company_id=site.region.company.id) }}">{{ site.region.company.name }}</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('organization.view_region', region_id=site.region.id) }}">{{ site.region.name }}</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('organization.view_site', site_id=site.id) }}">{{ site.name }}</a>
+                    </li>
+                    <li class="breadcrumb-item active">Create Department</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i data-feather="users" class="me-2"></i>
+                        Create New Department
+                    </h4>
+                    <small>Adding department to {{ site.name }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="departmentForm">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Department Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="code" class="form-label">Department Code *</label>
+                                    <input type="text" class="form-control" id="code" name="code" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+
+                        <!-- Manager Selection with Search -->
+                        <div class="mb-3">
+                            <label for="manager_search" class="form-label">Department Manager</label>
+                            <div class="position-relative">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="manager_search" 
+                                       placeholder="Search for a manager..."
+                                       autocomplete="off">
+                                <div class="dropdown-menu w-100" 
+                                     id="manager_dropdown" 
+                                     style="display: none; max-height: 200px; overflow-y: auto;">
+                                </div>
+                            </div>
+                            <input type="hidden" id="selected_manager_id" name="manager_id">
+                        </div>
+
+                        <!-- Manager Contact Information (Auto-populated) -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="manager_name" class="form-label">Manager Name</label>
+                                    <input type="text" class="form-control" id="manager_name" name="manager_name" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone</label>
+                                    <input type="text" class="form-control" id="phone" name="phone" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="budget" class="form-label">Budget</label>
+                                    <input type="number" class="form-control" id="budget" name="budget" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('organization.view_site', site_id=site.id) }}" class="btn btn-secondary">
+                                <i data-feather="arrow-left" class="me-2"></i>Back to Site
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="plus" class="me-2"></i>Create Department
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Manager search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('manager_search');
+    const dropdown = document.getElementById('manager_dropdown');
+    const selectedManagerId = document.getElementById('selected_manager_id');
+    const managerNameField = document.getElementById('manager_name');
+    const emailField = document.getElementById('email');
+    const phoneField = document.getElementById('phone');
+
+    let managers = [];
+
+    // Fetch managers on page load
+    fetch('/api/users?role=Manager,Admin,Super User')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                managers = data.users;
+            }
+        })
+        .catch(error => console.error('Error fetching managers:', error));
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        if (searchTerm.length < 2) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        const filteredManagers = managers.filter(manager => 
+            manager.username.toLowerCase().includes(searchTerm) ||
+            manager.email.toLowerCase().includes(searchTerm) ||
+            (manager.first_name && manager.first_name.toLowerCase().includes(searchTerm)) ||
+            (manager.last_name && manager.last_name.toLowerCase().includes(searchTerm))
+        );
+
+        displayManagerOptions(filteredManagers);
+    });
+
+    function displayManagerOptions(managerList) {
+        dropdown.innerHTML = '';
+        
+        if (managerList.length === 0) {
+            dropdown.innerHTML = '<div class="dropdown-item-text text-muted">No managers found</div>';
+        } else {
+            managerList.forEach(manager => {
+                const option = document.createElement('a');
+                option.className = 'dropdown-item';
+                option.href = '#';
+                option.innerHTML = `
+                    <div>
+                        <strong>${manager.username}</strong>
+                        <small class="text-muted d-block">${manager.email}</small>
+                    </div>
+                `;
+                
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    selectManager(manager);
+                });
+                
+                dropdown.appendChild(option);
+            });
+        }
+        
+        dropdown.style.display = 'block';
+    }
+
+    function selectManager(manager) {
+        selectedManagerId.value = manager.id;
+        managerNameField.value = manager.username;
+        emailField.value = manager.email || '';
+        phoneField.value = manager.phone || '';
+        searchInput.value = manager.username;
+        dropdown.style.display = 'none';
+    }
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+});
+</script>
+
+<style>
+.position-relative .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #fff;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
