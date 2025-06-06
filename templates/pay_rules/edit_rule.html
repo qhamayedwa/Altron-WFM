@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Pay Rule - Pay Rules{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>
+                        <i data-feather="edit" class="me-2"></i>
+                        Edit Pay Rule: {{ pay_rule.name }}
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('pay_rules.manage_pay_rules') }}">Pay Rules</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('pay_rules.view_pay_rule', rule_id=pay_rule.id) }}">{{ pay_rule.name }}</a></li>
+                            <li class="breadcrumb-item active">Edit</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('pay_rules.view_pay_rule', rule_id=pay_rule.id) }}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-2"></i>
+                        Back to Rule
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Rule Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Rule Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ pay_rule.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="priority" class="form-label">Priority</label>
+                                <input type="number" class="form-control" id="priority" name="priority" value="{{ pay_rule.priority }}" min="1" max="1000">
+                                <small class="form-text text-muted">Lower numbers have higher priority (1 = highest)</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ pay_rule.description }}</textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if pay_rule.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    Rule is Active
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Conditions Section -->
+                        <h6 class="border-bottom pb-2 mb-3">Conditions</h6>
+                        
+                        {% set conditions = pay_rule.get_conditions() %}
+                        
+                        <!-- Day of Week -->
+                        <div class="mb-4">
+                            <label class="form-label">Days of Week</label>
+                            <div class="row">
+                                {% set selected_days = conditions.get('day_of_week', []) %}
+                                {% for day_num, day_name in [(0, 'Sunday'), (1, 'Monday'), (2, 'Tuesday'), (3, 'Wednesday'), (4, 'Thursday'), (5, 'Friday'), (6, 'Saturday')] %}
+                                <div class="col-md-3 col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_{{ day_num }}" name="day_of_week" value="{{ day_num }}" {% if day_num in selected_days %}checked{% endif %}>
+                                        <label class="form-check-label" for="day_{{ day_num }}">
+                                            {{ day_name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Time Range -->
+                        <div class="row mb-4">
+                            {% set time_range = conditions.get('time_range', {}) %}
+                            <div class="col-md-6">
+                                <label for="start_hour" class="form-label">Start Hour (24h format)</label>
+                                <select class="form-select" id="start_hour" name="start_hour">
+                                    <option value="">No restriction</option>
+                                    {% for hour in range(24) %}
+                                    <option value="{{ hour }}" {% if time_range.get('start') == hour %}selected{% endif %}>{{ "%02d:00"|format(hour) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="end_hour" class="form-label">End Hour (24h format)</label>
+                                <select class="form-select" id="end_hour" name="end_hour">
+                                    <option value="">No restriction</option>
+                                    {% for hour in range(24) %}
+                                    <option value="{{ hour }}" {% if time_range.get('end') == hour %}selected{% endif %}>{{ "%02d:00"|format(hour) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Overtime Threshold -->
+                        <div class="mb-4">
+                            <label for="overtime_threshold" class="form-label">Overtime Threshold (hours per day)</label>
+                            <input type="number" class="form-control" id="overtime_threshold" name="overtime_threshold" 
+                                   value="{{ conditions.get('overtime_threshold', '') }}" step="0.5" min="0" max="24">
+                            <small class="form-text text-muted">Leave empty for no overtime threshold</small>
+                        </div>
+
+                        <!-- Employee IDs -->
+                        <div class="mb-4">
+                            <label for="employee_ids" class="form-label">Specific Employee IDs</label>
+                            <input type="text" class="form-control" id="employee_ids" name="employee_ids" 
+                                   value="{{ conditions.get('employee_ids', [])|join(', ') }}" placeholder="1, 2, 3">
+                            <small class="form-text text-muted">Comma-separated list of employee IDs. Leave empty to apply to all employees.</small>
+                        </div>
+
+                        <!-- Roles -->
+                        <div class="mb-4">
+                            <label class="form-label">Employee Roles</label>
+                            <div class="row">
+                                {% set selected_roles = conditions.get('roles', []) %}
+                                {% set available_roles = ['Employee', 'Manager', 'Super User', 'HR', 'Payroll'] %}
+                                {% for role in available_roles %}
+                                <div class="col-md-3 col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_{{ loop.index }}" name="roles" value="{{ role }}" {% if role in selected_roles %}checked{% endif %}>
+                                        <label class="form-check-label" for="role_{{ loop.index }}">
+                                            {{ role }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Actions Section -->
+                        <h6 class="border-bottom pb-2 mb-3">Actions</h6>
+                        
+                        {% set actions = pay_rule.get_actions() %}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="multiplier" class="form-label">Rate Multiplier</label>
+                                <input type="number" class="form-control" id="multiplier" name="multiplier" 
+                                       value="{{ actions.get('multiplier', '') }}" step="0.1" min="0" max="10">
+                                <small class="form-text text-muted">e.g., 1.5 for time-and-a-half</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="bonus_amount" class="form-label">Bonus Amount (R)</label>
+                                <input type="number" class="form-control" id="bonus_amount" name="bonus_amount" 
+                                       value="{{ actions.get('bonus_amount', '') }}" step="0.01" min="0">
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="hourly_rate" class="form-label">Fixed Hourly Rate (R)</label>
+                                <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" 
+                                       value="{{ actions.get('hourly_rate', '') }}" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="deduction_amount" class="form-label">Deduction Amount (R)</label>
+                                <input type="number" class="form-control" id="deduction_amount" name="deduction_amount" 
+                                       value="{{ actions.get('deduction_amount', '') }}" step="0.01" min="0">
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="save" class="me-2"></i>
+                                Update Rule
+                            </button>
+                            <a href="{{ url_for('pay_rules.view_pay_rule', rule_id=pay_rule.id) }}" class="btn btn-secondary">
+                                <i data-feather="x" class="me-2"></i>
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Rule Information</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td><strong>Created:</strong></td>
+                            <td>{{ pay_rule.created_at.strftime('%m/%d/%Y') if pay_rule.created_at else 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Last Updated:</strong></td>
+                            <td>{{ pay_rule.updated_at.strftime('%m/%d/%Y') if pay_rule.updated_at else 'Never' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                {% if pay_rule.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Configuration Tips</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <ul class="list-unstyled">
+                            <li><i data-feather="info" style="width: 14px; height: 14px;" class="me-1"></i> Lower priority numbers execute first</li>
+                            <li><i data-feather="info" style="width: 14px; height: 14px;" class="me-1"></i> Multiple conditions are combined with AND logic</li>
+                            <li><i data-feather="info" style="width: 14px; height: 14px;" class="me-1"></i> Actions define what happens when conditions are met</li>
+                            <li><i data-feather="info" style="width: 14px; height: 14px;" class="me-1"></i> Use the test feature to validate rules</li>
+                        </ul>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize feather icons
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    if (!name) {
+        e.preventDefault();
+        alert('Please enter a rule name.');
+        document.getElementById('name').focus();
+        return false;
+    }
+    
+    // Check if at least one action is specified
+    const multiplier = document.getElementById('multiplier').value;
+    const bonusAmount = document.getElementById('bonus_amount').value;
+    const hourlyRate = document.getElementById('hourly_rate').value;
+    const deductionAmount = document.getElementById('deduction_amount').value;
+    
+    if (!multiplier && !bonusAmount && !hourlyRate && !deductionAmount) {
+        e.preventDefault();
+        alert('Please specify at least one action (multiplier, bonus, hourly rate, or deduction).');
+        return false;
+    }
+});
+
+// Time range validation
+document.getElementById('start_hour').addEventListener('change', function() {
+    const startHour = parseInt(this.value);
+    const endHourSelect = document.getElementById('end_hour');
+    const endHour = parseInt(endHourSelect.value);
+    
+    if (!isNaN(startHour) && !isNaN(endHour) && startHour >= endHour) {
+        alert('Start hour must be before end hour.');
+        this.value = '';
+    }
+});
+
+document.getElementById('end_hour').addEventListener('change', function() {
+    const endHour = parseInt(this.value);
+    const startHourSelect = document.getElementById('start_hour');
+    const startHour = parseInt(startHourSelect.value);
+    
+    if (!isNaN(startHour) && !isNaN(endHour) && endHour <= startHour) {
+        alert('End hour must be after start hour.');
+        this.value = '';
+    }
+});
+</script>
+{% endblock %}
