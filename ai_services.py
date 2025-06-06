@@ -35,15 +35,8 @@ class WFMIntelligence:
     def analyze_scheduling_patterns(self, department_id: Optional[int] = None, days: int = 30) -> Dict[str, Any]:
         """Analyze scheduling patterns and provide AI insights"""
         if not self.is_available:
-            return {
-                'success': False,
-                'error': 'OpenAI service is not available. Please check your API key configuration.',
-                'suggestions': {
-                    'patterns': ['Manual review recommended'],
-                    'efficiency_score': 0,
-                    'recommendations': ['Configure OpenAI API key to enable AI insights']
-                }
-            }
+            # Use fallback statistical analysis
+            return fallback_service.analyze_scheduling_patterns(department_id, days)
             
         try:
             # Get scheduling data
@@ -127,15 +120,8 @@ class WFMIntelligence:
     def generate_payroll_insights(self, pay_period_start: date, pay_period_end: date) -> Dict[str, Any]:
         """Generate AI-powered payroll insights and anomaly detection"""
         if not self.is_available:
-            return {
-                'success': False,
-                'error': 'OpenAI service is not available. Please check your API key configuration.',
-                'insights': {
-                    'anomalies_detected': [],
-                    'cost_analysis': {'total_payroll_cost': 'N/A', 'overtime_percentage': 'N/A'},
-                    'recommendations': ['Configure OpenAI API key to enable AI insights']
-                }
-            }
+            # Use fallback statistical analysis
+            return fallback_service.generate_payroll_insights(pay_period_start, pay_period_end)
             
         try:
             # Get payroll calculations for the period
@@ -236,15 +222,8 @@ class WFMIntelligence:
     def analyze_attendance_patterns(self, employee_id: Optional[int] = None, days: int = 30) -> Dict[str, Any]:
         """Analyze attendance patterns and predict potential issues"""
         if not self.is_available:
-            return {
-                'success': False,
-                'error': 'OpenAI service is not available. Please check your API key configuration.',
-                'insights': {
-                    'patterns': ['Manual review recommended'],
-                    'risk_factors': [],
-                    'recommendations': ['Configure OpenAI API key to enable AI insights']
-                }
-            }
+            # Use fallback statistical analysis
+            return fallback_service.analyze_attendance_patterns(employee_id, days)
             
         try:
             end_date = date.today()
