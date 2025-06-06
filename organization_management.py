@@ -205,8 +205,7 @@ def view_region(region_id):
         'sites': Site.query.filter_by(region_id=region_id, is_active=True).count(),
         'departments': db.session.query(Department).join(Site).filter(
             Site.region_id == region_id, Department.is_active == True).count(),
-        'employees': db.session.query(User).join(Department).join(Site).filter(
-            Site.region_id == region_id, User.is_active == True).count()
+        'employees': db.session.query(User).filter(User.is_active == True).count()
     }
     
     return render_template('organization/view_region.html', 
