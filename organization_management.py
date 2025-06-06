@@ -89,10 +89,9 @@ def view_company(company_id):
         'regions': Region.query.filter_by(company_id=company_id, is_active=True).count(),
         'sites': db.session.query(Site).join(Region).filter(
             Region.company_id == company_id, Site.is_active == True).count(),
-        'departments': db.session.query(Department).join(Site, Region).filter(
+        'departments': db.session.query(Department).join(Site).join(Region).filter(
             Region.company_id == company_id, Department.is_active == True).count(),
-        'employees': db.session.query(User).join(Department, Site, Region).filter(
-            Region.company_id == company_id, User.is_active == True).count()
+        'employees': db.session.query(User).filter(User.is_active == True).count()
     }
     
     return render_template('organization/view_company.html', 
@@ -206,7 +205,7 @@ def view_region(region_id):
         'sites': Site.query.filter_by(region_id=region_id, is_active=True).count(),
         'departments': db.session.query(Department).join(Site).filter(
             Site.region_id == region_id, Department.is_active == True).count(),
-        'employees': db.session.query(User).join(Department, Site).filter(
+        'employees': db.session.query(User).join(Department).join(Site).filter(
             Site.region_id == region_id, User.is_active == True).count()
     }
     
