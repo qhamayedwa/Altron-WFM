@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}Create Site - {{ region.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manager-details-card {
+        background: #f8f9fa;
+        border-left: 4px solid #27C1E3;
+        padding: 15px;
+        border-radius: 0 8px 8px 0;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i data-feather="map-pin" class="me-2"></i>
+                        Create New Site
+                    </h4>
+                    <p class="mb-0 mt-2">Adding site to <strong>{{ region.name }}</strong> ({{ region.company.name }})</p>
+                </div>
+
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Site Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                    <div class="form-text">Enter the full name of the site (e.g., "Main Office", "Manufacturing Plant")</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="code" class="form-label">Site Code <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="code" name="code" required maxlength="10">
+                                    <div class="form-text">Unique identifier (auto-generated from name)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Brief description of this site's purpose and operations"></textarea>
+                        </div>
+
+                        <hr>
+                        <h5>Site Manager</h5>
+
+                        <!-- Manager Selection Dropdown -->
+                        <div class="mb-3">
+                            <label for="manager_select" class="form-label">Select Manager from System</label>
+                            <select class="form-control" id="manager_select" name="manager_select">
+                                <option value="">Select a manager...</option>
+                                {% for user in potential_managers %}
+                                <option value="{{ user.id }}" 
+                                        data-name="{{ user.full_name }}"
+                                        data-email="{{ user.email }}"
+                                        data-phone="{{ user.phone_number or user.mobile_number or '' }}"
+                                        data-position="{{ user.position or '' }}"
+                                        data-department="{{ user.department.name if user.department else '' }}">
+                                    {{ user.full_name }} 
+                                    {% if user.position %}({{ user.position }}){% endif %}
+                                    {% if user.department %} - {{ user.department.name }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Search and select an existing employee as site manager</div>
+                        </div>
+
+                        <!-- Selected Manager Details -->
+                        <div id="manager-details" class="manager-details-card" style="display: none;">
+                            <h6><i data-feather="user" class="me-2"></i>Selected Manager Details</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Name:</strong><br>
+                                    <span id="selected-manager-name"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Position:</strong><br>
+                                    <span id="selected-manager-position"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Department:</strong><br>
+                                    <span id="selected-manager-department"></span>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <strong>Contact:</strong><br>
+                                <span id="selected-manager-contact"></span>
+                            </div>
+                        </div>
+
+                        <!-- Manual Manager Entry -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="manager_name" class="form-label">Manager Name</label>
+                                    <input type="text" class="form-control" id="manager_name" name="manager_name" placeholder="Or enter manually">
+                                    <div class="form-text">Enter manager name if not found in dropdown</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="manager@company.com">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone</label>
+                                    <input type="text" class="form-control" id="phone" name="phone" placeholder="+27 11 123 4567">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h5>Address</h5>
+                        
+                        <div class="mb-3">
+                            <label for="address_line1" class="form-label">Address Line 1</label>
+                            <input type="text" class="form-control" id="address_line1" name="address_line1" placeholder="Street address">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address_line2" class="form-label">Address Line 2</label>
+                            <input type="text" class="form-control" id="address_line2" name="address_line2" placeholder="Apartment, suite, etc. (optional)">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="city" class="form-label">City</label>
+                                    <input type="text" class="form-control" id="city" name="city">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="state_province" class="form-label">State/Province</label>
+                                    <input type="text" class="form-control" id="state_province" name="state_province">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="postal_code" class="form-label">Postal Code</label>
+                                    <input type="text" class="form-control" id="postal_code" name="postal_code">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h5>Settings</h5>
+                        
+                        <div class="mb-3">
+                            <label for="timezone" class="form-label">Timezone</label>
+                            <select class="form-control" id="timezone" name="timezone">
+                                <option value="">Inherit from Region ({{ region.timezone or 'Africa/Johannesburg' }})</option>
+                                <option value="Africa/Johannesburg">Africa/Johannesburg</option>
+                                <option value="UTC">UTC</option>
+                                <option value="Africa/Cairo">Africa/Cairo</option>
+                                <option value="Africa/Lagos">Africa/Lagos</option>
+                            </select>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('organization.view_region', region_id=region.id) }}" class="btn btn-secondary">
+                                <i data-feather="arrow-left" class="me-2"></i>Back to Region
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="plus" class="me-2"></i>Create Site
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const managerSelect = document.getElementById('manager_select');
+    const managerNameInput = document.getElementById('manager_name');
+    const emailInput = document.getElementById('email');
+    const phoneInput = document.getElementById('phone');
+    const managerDetails = document.getElementById('manager-details');
+    
+    // Handle manager selection
+    managerSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const managerId = selectedOption.value;
+        
+        if (managerId) {
+            // Auto-populate fields from selected manager
+            const managerName = selectedOption.getAttribute('data-name');
+            const email = selectedOption.getAttribute('data-email');
+            const phone = selectedOption.getAttribute('data-phone');
+            const position = selectedOption.getAttribute('data-position');
+            const department = selectedOption.getAttribute('data-department');
+            
+            // Fill the form fields
+            managerNameInput.value = managerName || '';
+            emailInput.value = email || '';
+            phoneInput.value = phone || '';
+            
+            // Show manager details
+            const nameElement = document.getElementById('selected-manager-name');
+            const positionElement = document.getElementById('selected-manager-position');
+            const departmentElement = document.getElementById('selected-manager-department');
+            const contactElement = document.getElementById('selected-manager-contact');
+            
+            if (nameElement) nameElement.textContent = managerName || '';
+            if (positionElement) positionElement.textContent = position || 'Not specified';
+            if (departmentElement) departmentElement.textContent = department || 'Not specified';
+            
+            const contactText = (email || '') + (email && phone ? ', ' : '') + (phone || '') || 'Not specified';
+            if (contactElement) contactElement.textContent = contactText;
+            
+            managerDetails.style.display = 'block';
+            
+            // Make manual entry readonly when dropdown is used
+            managerNameInput.readOnly = true;
+            managerNameInput.classList.add('bg-light');
+        } else {
+            // Clear fields and hide details
+            managerNameInput.value = '';
+            emailInput.value = '';
+            phoneInput.value = '';
+            managerDetails.style.display = 'none';
+            
+            // Enable manual entry
+            managerNameInput.readOnly = false;
+            managerNameInput.classList.remove('bg-light');
+        }
+    });
+    
+    // Handle manual entry
+    managerNameInput.addEventListener('input', function() {
+        if (this.value && !this.readOnly) {
+            // Clear dropdown selection when manual entry is used
+            managerSelect.value = '';
+            managerDetails.style.display = 'none';
+        }
+    });
+    
+    // Auto-generate site code from name
+    document.getElementById('name').addEventListener('input', function() {
+        const name = this.value;
+        const code = name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
+        document.getElementById('code').value = code;
+    });
+    
+    // Add search functionality to select
+    const searchBox = document.createElement('input');
+    searchBox.type = 'text';
+    searchBox.placeholder = 'Search managers...';
+    searchBox.className = 'form-control mb-2';
+    searchBox.style.fontSize = '14px';
+    
+    // Insert search box before the select
+    managerSelect.parentNode.insertBefore(searchBox, managerSelect);
+    
+    // Store original options
+    const originalOptions = Array.from(managerSelect.options);
+    
+    // Search functionality
+    searchBox.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        // Clear existing options except the first one
+        managerSelect.innerHTML = '<option value="">Select a manager...</option>';
+        
+        // Filter and add matching options
+        originalOptions.slice(1).forEach(option => {
+            const text = option.textContent.toLowerCase();
+            const name = (option.getAttribute('data-name') || '').toLowerCase();
+            const department = (option.getAttribute('data-department') || '').toLowerCase();
+            const position = (option.getAttribute('data-position') || '').toLowerCase();
+            
+            if (text.includes(searchTerm) || 
+                name.includes(searchTerm) || 
+                department.includes(searchTerm) || 
+                position.includes(searchTerm)) {
+                managerSelect.appendChild(option.cloneNode(true));
+            }
+        });
+    });
+    
+    // Form validation
+    function validateForm(e) {
+        const siteName = document.getElementById('name').value;
+        const siteCode = document.getElementById('code').value;
+        
+        if (!siteName || !siteCode) {
+            alert('Please enter both site name and code.');
+            e.preventDefault();
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Attach validation to form
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', validateForm);
+    }
+});
+</script>
+{% endblock %}

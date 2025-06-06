@@ -259,7 +259,11 @@ def create_site(region_id):
             db.session.rollback()
             flash(f'Error creating site: {str(e)}', 'error')
     
-    return render_template('organization/create_site.html', region=region)
+    # Get potential managers (active users who could be site managers)
+    potential_managers = User.query.filter_by(is_active=True).all()
+    
+    return render_template('organization/create_site.html', 
+                         region=region, potential_managers=potential_managers)
 
 @org_bp.route('/sites/<int:site_id>')
 @login_required
