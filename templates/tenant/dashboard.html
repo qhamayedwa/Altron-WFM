@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Tenant Dashboard - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ tenant.name }} - Organization Dashboard</h1>
+                <div>
+                    <a href="{{ url_for('tenant.tenant_settings') }}" class="btn btn-outline-primary">
+                        <i data-feather="settings"></i> Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tenant Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="users" class="text-primary" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Total Users</h6>
+                            <h4 class="mb-0">{{ total_users }}</h4>
+                            <small class="text-muted">of {{ tenant.max_users }} max</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="user-check" class="text-success" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Active Users</h6>
+                            <h4 class="mb-0">{{ active_users }}</h4>
+                            <small class="text-muted">currently active</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="globe" class="text-info" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Timezone</h6>
+                            <p class="mb-0">{{ tenant.timezone }}</p>
+                            <small class="text-muted">{{ tenant.currency }} currency</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="award" class="text-warning" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Plan</h6>
+                            <p class="mb-0 text-capitalize">{{ tenant.subscription_plan }}</p>
+                            <small class="text-muted">subscription</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Multi-Tenant Organization Management</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Manage multiple organizations with complete data isolation and customizable settings.</p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <a href="{{ url_for('tenant.tenant_users') }}" class="btn btn-outline-primary">
+                                    <i data-feather="users"></i> View Organization Users
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <a href="{{ url_for('tenant.tenant_settings') }}" class="btn btn-outline-secondary">
+                                    <i data-feather="settings"></i> Organization Settings
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-info">
+                                    <i data-feather="activity"></i> Return to WFM Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Feather icons
+feather.replace();
+</script>
+{% endblock %}
