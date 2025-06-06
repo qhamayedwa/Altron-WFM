@@ -28,22 +28,27 @@
             <!-- Quick Stats -->
             <div class="row mb-4">
                 <div class="col-md-3">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h4 class="card-title">Total Employees</h4>
-                                    <h2 id="total-employees">-</h2>
+                    <a href="{{ url_for('auth.user_management') }}" class="text-decoration-none">
+                        <div class="card bg-primary text-white stat-card clickable-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title">Total Employees</h4>
+                                        <h2 id="total-employees">-</h2>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i data-feather="users" style="width: 48px; height: 48px;"></i>
+                                    </div>
                                 </div>
-                                <div class="align-self-center">
-                                    <i data-feather="users" style="width: 48px; height: 48px;"></i>
+                                <div class="card-hover-overlay">
+                                    <small><i data-feather="arrow-right" class="me-1"></i>View Employee Management</small>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
                 <div class="col-md-3">
-                    <div class="card bg-success text-white">
+                    <div class="card bg-success text-white stat-card clickable-card" onclick="filterActiveEmployees()">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -54,26 +59,34 @@
                                     <i data-feather="user-check" style="width: 48px; height: 48px;"></i>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-info text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h4 class="card-title">Departments</h4>
-                                    <h2 id="total-departments">-</h2>
-                                </div>
-                                <div class="align-self-center">
-                                    <i data-feather="briefcase" style="width: 48px; height: 48px;"></i>
-                                </div>
+                            <div class="card-hover-overlay">
+                                <small><i data-feather="filter" class="me-1"></i>Filter Active Employees</small>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card bg-warning text-white">
+                    <a href="{{ url_for('organization.dashboard') }}" class="text-decoration-none">
+                        <div class="card bg-info text-white stat-card clickable-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title">Departments</h4>
+                                        <h2 id="total-departments">-</h2>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i data-feather="briefcase" style="width: 48px; height: 48px;"></i>
+                                    </div>
+                                </div>
+                                <div class="card-hover-overlay">
+                                    <small><i data-feather="arrow-right" class="me-1"></i>Manage Departments</small>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white stat-card clickable-card" onclick="showImportHistory()">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -83,6 +96,9 @@
                                 <div class="align-self-center">
                                     <i data-feather="upload-cloud" style="width: 48px; height: 48px;"></i>
                                 </div>
+                            </div>
+                            <div class="card-hover-overlay">
+                                <small><i data-feather="history" class="me-1"></i>View Import History</small>
                             </div>
                         </div>
                     </div>
@@ -231,6 +247,49 @@ function showDepartmentsError() {
     document.getElementById('departments-loading').style.display = 'none';
     document.getElementById('departments-error').style.display = 'block';
 }
+
+// Interactive dashboard functions
+function filterActiveEmployees() {
+    // Navigate to user management with active filter
+    window.location.href = '{{ url_for("auth.user_management") }}?filter=active';
+}
+
+function showImportHistory() {
+    // Show import history modal or navigate to history page
+    showModal('Import History', 'No import history available yet. Start importing employees to see activity here.');
+}
+
+function showModal(title, content) {
+    // Create and show a simple modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade show';
+    modal.style.display = 'block';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">${title}</h5>
+                    <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                </div>
+                <div class="modal-body">
+                    <p>${content}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (modal.parentNode) {
+            modal.remove();
+        }
+    }, 5000);
+}
 </script>
 
 <style>
@@ -244,11 +303,96 @@ function showDepartmentsError() {
 .bg-info { background-color: #0dcaf0 !important; }
 .bg-warning { background-color: #ffc107 !important; }
 
+/* Interactive Dashboard Cards */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.clickable-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.clickable-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-hover-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    padding: 0.5rem;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    text-align: center;
+}
+
+.clickable-card:hover .card-hover-overlay {
+    transform: translateY(0);
+}
+
+.stat-card a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.stat-card a:hover {
+    color: inherit;
+}
+
+/* Pulse animation for interactive elements */
+.clickable-card:active {
+    transform: translateY(-2px) scale(0.98);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .clickable-card:hover {
+        transform: none;
+    }
+    
+    .card-hover-overlay {
+        position: static;
+        transform: none;
+        background: rgba(0, 0, 0, 0.2);
+        margin-top: 0.5rem;
+    }
+}
+
 code {
     background-color: #f8f9fa;
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+/* Modal styling improvements */
+.modal {
+    z-index: 1050;
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
 }
 </style>
 {% endblock %}
