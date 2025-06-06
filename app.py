@@ -78,6 +78,10 @@ def create_app(config_class=Config):
     from pulse_survey import pulse_survey_bp
     app.register_blueprint(pulse_survey_bp, url_prefix='/pulse')
     
+    # Register tenant management routes
+    from tenant_management import tenant_bp
+    app.register_blueprint(tenant_bp, url_prefix='/tenant')
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):

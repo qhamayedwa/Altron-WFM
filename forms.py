@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectMultipleField, TextAreaField, BooleanField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
+from wtforms import StringField, PasswordField, SubmitField, SelectMultipleField, TextAreaField, BooleanField, IntegerField, FloatField, SelectField
+from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, NumberRange
 from wtforms.widgets import CheckboxInput, ListWidget
 from models import User, Role
 
@@ -135,3 +135,87 @@ class RoleForm(FlaskForm):
             role = Role.query.filter_by(name=name.data).first()
             if role is not None:
                 raise ValidationError('Please use a different role name.')
+
+class TenantForm(FlaskForm):
+    """Form for creating/editing tenants"""
+    name = StringField('Organization Name', validators=[
+        DataRequired(), 
+        Length(min=2, max=100)
+    ])
+    subdomain = StringField('Subdomain', validators=[
+        DataRequired(), 
+        Length(min=2, max=50)
+    ])
+    domain = StringField('Custom Domain (optional)', validators=[Length(max=100)])
+    admin_email = StringField('Admin Email', validators=[DataRequired(), Email()])
+    phone = StringField('Phone Number', validators=[Length(max=20)])
+    address = TextAreaField('Address')
+    
+    # Subscription settings
+    subscription_plan = SelectField('Subscription Plan', 
+                                  choices=[('basic', 'Basic'), ('premium', 'Premium'), ('enterprise', 'Enterprise')],
+                                  default='basic')
+    max_users = IntegerField('Maximum Users', validators=[DataRequired(), NumberRange(min=1, max=1000)], default=10)
+    is_active = BooleanField('Active Tenant', default=True)
+    
+    # Localization settings
+    timezone = SelectField('Timezone', 
+                          choices=[('Africa/Johannesburg', 'South Africa (GMT+2)'), 
+                                 ('UTC', 'UTC'), ('US/Eastern', 'US Eastern')],
+                          default='Africa/Johannesburg')
+    currency = SelectField('Currency', 
+                          choices=[('ZAR', 'South African Rand'), ('USD', 'US Dollar'), ('EUR', 'Euro')],
+                          default='ZAR')
+    
+    submit = SubmitField('Save Tenant')
+    
+    def __init__(self, original_subdomain=None, *args, **kwargs):
+        super(TenantForm, self).__init__(*args, **kwargs)
+        self.original_subdomain = original_subdomain
+    
+    def validate_subdomain(self, subdomain):
+        """Validate subdomain is unique"""
+        from models import Tenant
+        if self.original_subdomain is None or subdomain.data != self.original_subdomain:
+            tenant = Tenant.query.filter_by(subdomain=subdomain.data).first()
+            if tenant is not None:
+                raise ValidationError('Please use a different subdomain.')
+
+class TenantSettingsForm(FlaskForm):
+    """Form for tenant settings and configuration"""
+    
+    # Branding
+    company_logo_url = StringField('Company Logo URL', validators=[Length(max=255)])
+    primary_color = StringField('Primary Color (Hex)', validators=[Length(max=7)], default='#27C1E3')
+    secondary_color = StringField('Secondary Color (Hex)', validators=[Length(max=7)], default='#ffffff')
+    
+    # Feature toggles
+    enable_geolocation = BooleanField('Enable Geolocation Tracking', default=True)
+    enable_overtime_alerts = BooleanField('Enable Overtime Alerts', default=True)
+    enable_leave_workflow = BooleanField('Enable Leave Workflow', default=True)
+    enable_payroll_integration = BooleanField('Enable Payroll Integration', default=False)
+    enable_ai_scheduling = BooleanField('Enable AI Scheduling', default=False)
+    
+    # Payroll settings
+    default_pay_frequency = SelectField('Default Pay Frequency',
+                                      choices=[('weekly', 'Weekly'), ('bi-weekly', 'Bi-weekly'), ('monthly', 'Monthly')],
+                                      default='monthly')
+    overtime_threshold = IntegerField('Overtime Threshold (hours/day)', 
+                                    validators=[NumberRange(min=1, max=24)], default=8)
+    weekend_overtime_rate = FloatField('Weekend Overtime Rate', 
+                                     validators=[NumberRange(min=1.0, max=5.0)], default=1.5)
+    holiday_overtime_rate = FloatField('Holiday Overtime Rate', 
+                                     validators=[NumberRange(min=1.0, max=5.0)], default=2.0)
+    
+    # Leave settings
+    default_annual_leave_days = IntegerField('Default Annual Leave Days', 
+                                           validators=[NumberRange(min=0, max=365)], default=21)
+    default_sick_leave_days = IntegerField('Default Sick Leave Days', 
+                                         validators=[NumberRange(min=0, max=365)], default=10)
+    leave_approval_required = BooleanField('Leave Approval Required', default=True)
+    
+    # Notifications
+    email_notifications = BooleanField('Email Notifications', default=True)
+    sms_notifications = BooleanField('SMS Notifications', default=False)
+    
+    submit = SubmitField('Save Settings')
