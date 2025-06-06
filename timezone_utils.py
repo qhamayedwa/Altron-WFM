@@ -11,7 +11,10 @@ SAST = timezone(timedelta(hours=2))
 
 def get_current_time():
     """Get current time in South African timezone (GMT+2)"""
-    return datetime.now(SAST)
+    # Return timezone-naive datetime adjusted for GMT+2
+    utc_now = datetime.utcnow()
+    sast_time = utc_now + timedelta(hours=2)
+    return sast_time
 
 def localize_datetime(dt):
     """Convert a naive datetime to South African timezone"""
@@ -21,8 +24,14 @@ def localize_datetime(dt):
 
 def format_datetime(dt, format_string='%Y-%m-%d %H:%M:%S'):
     """Format datetime in South African timezone"""
+    if dt is None:
+        return ''
+    
+    # Assume stored datetime is already in GMT+2 (SAST)
     if dt.tzinfo is None:
-        dt = localize_datetime(dt)
+        # Add 2 hours if stored as UTC
+        if hasattr(dt, '_is_utc') and dt._is_utc:
+            dt = dt + timedelta(hours=2)
     else:
         dt = dt.astimezone(SAST)
     return dt.strftime(format_string)
