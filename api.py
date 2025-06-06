@@ -559,6 +559,200 @@ def api_system_info():
         'supported_platforms': ['web', 'ios', 'android']
     })
 
+# ====================
+# DRILL-DOWN ANALYTICS APIs
+# ====================
+
+@api_bp.route('/drill-down/daily-attendance', methods=['GET'])
+@login_required
+def api_drill_down_daily_attendance():
+    """Get detailed daily attendance data for drill-down"""
+    date_str = request.args.get('date')
+    if not date_str:
+        return api_response(False, error={
+            'code': 'MISSING_PARAMETER',
+            'message': 'Date parameter required'
+        }, status_code=400)
+    
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        # Get all time entries for the specific date
+        time_entries = TimeEntry.query.filter(
+            func.date(TimeEntry.clock_in_time) == target_date
+        ).join(User).all()
+        
+        # Prepare detailed data
+        entries_data = []
+        for entry in time_entries:
+            entries_data.append({
+                'employee': f"{entry.user.first_name} {entry.user.last_name}",
+                'employee_id': getattr(entry.user, 'employee_id', 'N/A'),
+                'department': getattr(entry.user, 'department', 'Not Assigned') or 'Not Assigned',
+                'clock_in': entry.clock_in_time.strftime('%H:%M') if entry.clock_in_time else 'N/A',
+                'clock_out': entry.clock_out_time.strftime('%H:%M') if entry.clock_out_time else 'Still Active',
+                'total_hours': round(entry.total_hours, 2) if entry.total_hours else 0,
+                'status': 'Completed' if entry.clock_out_time else 'Active',
+                'break_minutes': getattr(entry, 'total_break_minutes', 0) or 0
+            })
+        
+        return api_response(True, data={
+            'date': date_str,
+            'total_entries': len(entries_data),
+            'entries': entries_data,
+            'summary': {
+                'total_hours': sum(e['total_hours'] for e in entries_data),
+                'active_employees': len([e for e in entries_data if e['status'] == 'Active']),
+                'completed_shifts': len([e for e in entries_data if e['status'] == 'Completed'])
+            }
+        })
+        
+    except ValueError:
+        return api_response(False, error={
+            'code': 'INVALID_DATE_FORMAT',
+            'message': 'Invalid date format. Use YYYY-MM-DD'
+        }, status_code=400)
+    except Exception as e:
+        logging.error(f"Daily attendance drill-down error: {e}")
+        return api_response(False, error={
+            'code': 'SERVER_ERROR',
+            'message': 'Failed to retrieve attendance data'
+        }, status_code=500)
+
+@api_bp.route('/drill-down/leave-status', methods=['GET'])
+@login_required
+def api_drill_down_leave_status():
+    """Get detailed leave applications by status"""
+    status = request.args.get('status')
+    if not status:
+        return api_response(False, error={
+            'code': 'MISSING_PARAMETER',
+            'message': 'Status parameter required'
+        }, status_code=400)
+    
+    try:
+        # Get leave applications by status
+        leave_apps = LeaveApplication.query.filter(
+            LeaveApplication.status == status
+        ).join(User).all()
+        
+        applications_data = []
+        for app in leave_apps:
+            applications_data.append({
+                'employee': f"{app.user.first_name} {app.user.last_name}",
+                'employee_id': getattr(app.user, 'employee_id', 'N/A'),
+                'department': getattr(app.user, 'department', 'Not Assigned') or 'Not Assigned',
+                'leave_type': getattr(app, 'leave_type', 'Annual Leave'),
+                'start_date': app.start_date.strftime('%Y-%m-%d'),
+                'end_date': app.end_date.strftime('%Y-%m-%d'),
+                'days_requested': (app.end_date - app.start_date).days + 1,
+                'applied_date': getattr(app, 'applied_date', app.start_date).strftime('%Y-%m-%d'),
+                'reason': getattr(app, 'reason', 'No reason provided') or 'No reason provided',
+                'manager_notes': getattr(app, 'manager_notes', 'No notes') or 'No notes'
+            })
+        
+        # Calculate summary statistics
+        total_days = sum(app['days_requested'] for app in applications_data)
+        leave_types = {}
+        for app in applications_data:
+            leave_type = app['leave_type']
+            if leave_type not in leave_types:
+                leave_types[leave_type] = 0
+            leave_types[leave_type] += 1
+        
+        return api_response(True, data={
+            'status': status,
+            'total_applications': len(applications_data),
+            'applications': applications_data,
+            'summary': {
+                'total_days_requested': total_days,
+                'leave_type_breakdown': leave_types,
+                'avg_days_per_application': round(total_days / len(applications_data), 1) if applications_data else 0
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Leave status drill-down error: {e}")
+        return api_response(False, error={
+            'code': 'SERVER_ERROR',
+            'message': 'Failed to retrieve leave data'
+        }, status_code=500)
+
+@api_bp.route('/drill-down/hourly-patterns', methods=['GET'])
+@login_required
+def api_drill_down_hourly_patterns():
+    """Get detailed hourly clock-in pattern data"""
+    hour = request.args.get('hour')
+    if not hour:
+        return api_response(False, error={
+            'code': 'MISSING_PARAMETER',
+            'message': 'Hour parameter required'
+        }, status_code=400)
+    
+    try:
+        hour_int = int(hour)
+        
+        # Get time entries for the specific hour (last 30 days)
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        
+        time_entries = TimeEntry.query.filter(
+            TimeEntry.clock_in_time >= thirty_days_ago,
+            func.extract('hour', TimeEntry.clock_in_time) == hour_int
+        ).join(User).all()
+        
+        entries_data = []
+        frequency_by_employee = {}
+        
+        for entry in time_entries:
+            employee_name = f"{entry.user.first_name} {entry.user.last_name}"
+            entry_data = {
+                'employee': employee_name,
+                'employee_id': getattr(entry.user, 'employee_id', 'N/A'),
+                'department': getattr(entry.user, 'department', 'Not Assigned') or 'Not Assigned',
+                'date': entry.clock_in_time.strftime('%Y-%m-%d'),
+                'exact_time': entry.clock_in_time.strftime('%H:%M:%S'),
+                'day_of_week': entry.clock_in_time.strftime('%A')
+            }
+            entries_data.append(entry_data)
+            
+            # Count frequency per employee
+            if employee_name not in frequency_by_employee:
+                frequency_by_employee[employee_name] = 0
+            frequency_by_employee[employee_name] += 1
+        
+        # Analyze patterns
+        day_patterns = {}
+        for entry in entries_data:
+            day = entry['day_of_week']
+            if day not in day_patterns:
+                day_patterns[day] = 0
+            day_patterns[day] += 1
+        
+        return api_response(True, data={
+            'hour': f"{hour}:00",
+            'period': "Last 30 days",
+            'total_clock_ins': len(entries_data),
+            'entries': entries_data,
+            'patterns': {
+                'employee_frequency': frequency_by_employee,
+                'day_of_week_breakdown': day_patterns,
+                'most_frequent_employee': max(frequency_by_employee.items(), key=lambda x: x[1]) if frequency_by_employee else None,
+                'most_common_day': max(day_patterns.items(), key=lambda x: x[1]) if day_patterns else None
+            }
+        })
+        
+    except ValueError:
+        return api_response(False, error={
+            'code': 'INVALID_HOUR_FORMAT',
+            'message': 'Invalid hour format. Use 0-23'
+        }, status_code=400)
+    except Exception as e:
+        logging.error(f"Hourly patterns drill-down error: {e}")
+        return api_response(False, error={
+            'code': 'SERVER_ERROR',
+            'message': 'Failed to retrieve pattern data'
+        }, status_code=500)
+
 # Error handlers
 @api_bp.errorhandler(400)
 def bad_request(error):

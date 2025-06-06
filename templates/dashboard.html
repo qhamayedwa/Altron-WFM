@@ -854,6 +854,353 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    // Interactive Drill-Down Functions
+    
+    function drillDownDailyAttendance(date, count) {
+        showDrillDownModal('Daily Attendance Details', `
+            <div class="mb-3">
+                <h6>Date: ${date}</h6>
+                <p>Total Clock-ins: ${count}</p>
+            </div>
+            <div id="drillDownContent">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading detailed attendance data...</p>
+                </div>
+            </div>
+        `);
+        
+        // Fetch detailed data via AJAX
+        fetch(`/api/drill-down/daily-attendance?date=${date}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('drillDownContent').innerHTML = generateAttendanceDetails(data.data);
+                } else {
+                    document.getElementById('drillDownContent').innerHTML = '<p class="text-danger">Error loading data</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('drillDownContent').innerHTML = `
+                    <div class="alert alert-info">
+                        <h6>Attendance Details for ${date}</h6>
+                        <p><strong>Clock-ins:</strong> ${count}</p>
+                        <p><em>API endpoint available at /api/drill-down/daily-attendance</em></p>
+                    </div>
+                `;
+            });
+    }
+    
+    function drillDownWeeklyHours(week, hours) {
+        showDrillDownModal('Weekly Hours Breakdown', `
+            <div class="mb-3">
+                <h6>Week: ${week}</h6>
+                <p>Total Hours: ${hours}</p>
+            </div>
+            <div id="drillDownContent">
+                <div class="alert alert-info">
+                    <h6>Hours Breakdown for ${week}</h6>
+                    <p><strong>Total Hours:</strong> ${hours}</p>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <small class="text-muted">Regular Hours:</small>
+                            <div class="h6">${Math.min(hours, 40).toFixed(1)}h</div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Overtime Hours:</small>
+                            <div class="h6">${Math.max(0, hours - 40).toFixed(1)}h</div>
+                        </div>
+                    </div>
+                    <hr>
+                    <p><em>Detailed view would show daily breakdowns, employee contributions, and productivity metrics.</em></p>
+                </div>
+            </div>
+        `);
+    }
+    
+    function drillDownLeaveStatus(status, count) {
+        showDrillDownModal('Leave Applications Details', `
+            <div class="mb-3">
+                <h6>Status: ${status}</h6>
+                <p>Count: ${count} applications</p>
+            </div>
+            <div id="drillDownContent">
+                <div class="alert alert-info">
+                    <h6>${status} Leave Applications (${count})</h6>
+                    <div class="mt-3">
+                        <p><em>Detailed breakdown would include:</em></p>
+                        <ul>
+                            <li>Employee names and departments</li>
+                            <li>Leave dates and duration</li>
+                            <li>Leave types (Annual, Sick, Personal)</li>
+                            <li>Application dates and approvers</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+    
+    function drillDownHourlyPattern(hour, count) {
+        showDrillDownModal('Hourly Clock-in Pattern', `
+            <div class="mb-3">
+                <h6>Time: ${hour}:00</h6>
+                <p>Clock-ins: ${count}</p>
+            </div>
+            <div id="drillDownContent">
+                <div class="alert alert-info">
+                    <h6>Clock-ins at ${hour}:00 (${count} total)</h6>
+                    <div class="mt-3">
+                        <p><em>Pattern analysis would show:</em></p>
+                        <ul>
+                            <li>Employee names and departments</li>
+                            <li>Frequency of clock-ins at this time</li>
+                            <li>Shift schedules and compliance</li>
+                            <li>Location and device information</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+    
+    function drillDownProductivity(employeeName, hours) {
+        showDrillDownModal('Employee Productivity Details', `
+            <div class="mb-3">
+                <h6>Employee: ${employeeName}</h6>
+                <p>Total Hours: ${hours}</p>
+            </div>
+            <div id="drillDownContent">
+                <div class="alert alert-info">
+                    <h6>${employeeName} - Productivity Analysis</h6>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <small class="text-muted">Total Hours:</small>
+                            <div class="h6">${hours}h</div>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Avg Daily:</small>
+                            <div class="h6">${(hours / 7).toFixed(1)}h</div>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Efficiency:</small>
+                            <div class="h6">${hours > 40 ? 'High' : hours > 30 ? 'Medium' : 'Low'}</div>
+                        </div>
+                    </div>
+                    <hr>
+                    <p><em>Detailed analysis would include task completion rates, project contributions, and performance metrics.</em></p>
+                </div>
+            </div>
+        `);
+    }
+    
+    function showDrillDownModal(title, content) {
+        const modalHtml = `
+            <div class="modal fade" id="drillDownModal" tabindex="-1" aria-labelledby="drillDownModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="drillDownModalLabel">${title}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${content}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" onclick="exportDrillDownData()">Export Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if present
+        const existingModal = document.getElementById('drillDownModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
+        modal.show();
+    }
+    
+    function generateAttendanceDetails(data) {
+        if (!data.entries || data.entries.length === 0) {
+            return '<div class="alert alert-warning">No attendance data found for this date.</div>';
+        }
+        
+        let html = `
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title text-primary">${data.summary.total_hours}</h6>
+                            <small class="text-muted">Total Hours</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title text-success">${data.summary.completed_shifts}</h6>
+                            <small class="text-muted">Completed Shifts</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title text-warning">${data.summary.active_employees}</h6>
+                            <small class="text-muted">Still Active</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Clock In</th>
+                            <th>Clock Out</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        data.entries.forEach(entry => {
+            html += `
+                <tr>
+                    <td>${entry.employee}</td>
+                    <td>${entry.department}</td>
+                    <td>${entry.clock_in}</td>
+                    <td>${entry.clock_out}</td>
+                    <td>${entry.total_hours}h</td>
+                    <td><span class="badge ${entry.status === 'Active' ? 'bg-warning' : 'bg-success'}">${entry.status}</span></td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        return html;
+    }
+    
+    function exportDrillDownData() {
+        // Simple CSV export functionality
+        const modalTitle = document.getElementById('drillDownModalLabel').textContent;
+        const content = document.getElementById('drillDownContent').textContent;
+        
+        const csvContent = `"Report","${modalTitle}"\n"Content","${content.replace(/"/g, '""')}"`;
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${modalTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+    
+    // Add click handlers to existing charts
+    setTimeout(() => {
+        // Daily Attendance Chart Click Handler
+        const dailyChart = Chart.getChart('dailyAttendanceChart');
+        if (dailyChart) {
+            dailyChart.options.onClick = (event, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const date = analyticsData.daily_attendance.labels[index];
+                    const count = analyticsData.daily_attendance.data[index];
+                    drillDownDailyAttendance(date, count);
+                }
+            };
+            dailyChart.options.onHover = (event, elements) => {
+                event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+            };
+            dailyChart.update();
+        }
+        
+        // Weekly Hours Chart Click Handler
+        const weeklyChart = Chart.getChart('weeklyHoursChart');
+        if (weeklyChart) {
+            weeklyChart.options.onClick = (event, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const week = analyticsData.weekly_hours.labels[index];
+                    const hours = analyticsData.weekly_hours.data[index];
+                    drillDownWeeklyHours(week, hours);
+                }
+            };
+            weeklyChart.options.onHover = (event, elements) => {
+                event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+            };
+            weeklyChart.update();
+        }
+        
+        // Leave Status Chart Click Handler
+        const leaveChart = Chart.getChart('leaveStatusChart');
+        if (leaveChart) {
+            leaveChart.options.onClick = (event, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const status = analyticsData.leave_distribution.labels[index];
+                    const count = analyticsData.leave_distribution.data[index];
+                    drillDownLeaveStatus(status, count);
+                }
+            };
+            leaveChart.options.onHover = (event, elements) => {
+                event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+            };
+            leaveChart.update();
+        }
+        
+        // Hourly Patterns Chart Click Handler
+        const hourlyChart = Chart.getChart('hourlyPatternsChart');
+        if (hourlyChart) {
+            hourlyChart.options.onClick = (event, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const hour = analyticsData.hourly_patterns.labels[index];
+                    const count = analyticsData.hourly_patterns.data[index];
+                    drillDownHourlyPattern(hour, count);
+                }
+            };
+            hourlyChart.options.onHover = (event, elements) => {
+                event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+            };
+            hourlyChart.update();
+        }
+        
+        // Productivity Chart Click Handler
+        const productivityChart = Chart.getChart('productivityChart');
+        if (productivityChart && analyticsData.productivity_insights.length > 0) {
+            productivityChart.options.onClick = (event, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const employee = analyticsData.productivity_insights[index];
+                    drillDownProductivity(employee.name, employee.hours);
+                }
+            };
+            productivityChart.options.onHover = (event, elements) => {
+                event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+            };
+            productivityChart.update();
+        }
+    }, 1000);
 });
 </script>
 {% endblock %}
