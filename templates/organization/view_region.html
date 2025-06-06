@@ -170,7 +170,7 @@
                                     <p class="card-text text-muted small">
                                         Code: {{ site.code }}<br>
                                         {% if site.manager_name %}Manager: {{ site.manager_name }}<br>{% endif %}
-                                        Departments: {{ site.departments|length }}
+                                        Departments: {{ site.departments.count() }}
                                     </p>
                                     <div class="mt-auto">
                                         <a href="{{ url_for('organization.view_site', site_id=site.id) }}" class="btn btn-sm btn-outline-primary">
