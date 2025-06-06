@@ -559,6 +559,48 @@ def api_system_info():
         'supported_platforms': ['web', 'ios', 'android']
     })
 
+@api_bp.route('/system-info', methods=['GET'])
+def api_system_info_legacy():
+    """Legacy system info endpoint for frontend compatibility"""
+    return api_system_info()
+
+# ====================
+# DATABASE STATUS APIs
+# ====================
+
+@api_bp.route('/db-status', methods=['GET'])
+def api_database_status():
+    """Database status endpoint for frontend monitoring"""
+    try:
+        from app import db
+        from models import User, TimeEntry, Schedule, LeaveApplication
+        
+        # Test database connection
+        db.session.execute(db.text('SELECT 1'))
+        
+        # Get table counts for monitoring
+        table_counts = {
+            'users': User.query.count(),
+            'time_entries': TimeEntry.query.count(),
+            'schedules': Schedule.query.count(),
+            'leave_applications': LeaveApplication.query.count()
+        }
+        
+        return {
+            'status': 'connected',
+            'message': 'Database connection successful',
+            'tables': table_counts,
+            'timestamp': datetime.utcnow().isoformat() + 'Z'
+        }
+        
+    except Exception as e:
+        logging.error(f"Database status check failed: {e}")
+        return {
+            'status': 'error',
+            'message': str(e),
+            'timestamp': datetime.utcnow().isoformat() + 'Z'
+        }, 500
+
 # ====================
 # DRILL-DOWN ANALYTICS APIs
 # ====================
