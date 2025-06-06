@@ -59,6 +59,7 @@ def create_app(config_class=Config):
     from api import api_bp
     from automation_engine import automation_bp
     from ai_scheduling import ai_scheduling_bp
+    from organization_management import org_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(time_attendance_bp)
@@ -68,6 +69,7 @@ def create_app(config_class=Config):
     app.register_blueprint(pay_codes_bp)
     app.register_blueprint(payroll_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(org_bp)
     
     # Register additional API routes without version prefix for frontend compatibility
     from api import api_bp as api_v1_bp

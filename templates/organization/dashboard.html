@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Organizational Hierarchy - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .org-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        border-left: 4px solid #27C1E3;
+    }
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #27C1E3;
+    }
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .company-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    .company-card:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .company-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .company-code {
+        background: #f8f9fa;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    .hierarchy-tree {
+        font-family: monospace;
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-sitemap"></i> Organizational Hierarchy</h2>
+            <p class="text-muted">Manage your company structure across regions, sites, and departments</p>
+        </div>
+        <div>
+            <a href="{{ url_for('organization.create_company') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Company
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="org-card text-center">
+                <div class="stat-number">{{ stats.total_companies }}</div>
+                <div class="stat-label">Companies</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="org-card text-center">
+                <div class="stat-number">{{ stats.total_regions }}</div>
+                <div class="stat-label">Regions</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="org-card text-center">
+                <div class="stat-number">{{ stats.total_sites }}</div>
+                <div class="stat-label">Sites</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="org-card text-center">
+                <div class="stat-number">{{ stats.total_departments }}</div>
+                <div class="stat-label">Departments</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="org-card text-center">
+                <div class="stat-number">{{ stats.total_employees }}</div>
+                <div class="stat-label">Total Employees</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Companies List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-building"></i> Companies Overview</h5>
+                </div>
+                <div class="card-body">
+                    {% if companies %}
+                        {% for company in companies %}
+                        <div class="company-card">
+                            <div class="company-header">
+                                <div>
+                                    <h5 class="mb-1">
+                                        <a href="{{ url_for('organization.view_company', company_id=company.id) }}" 
+                                           class="text-decoration-none">
+                                            {{ company.name }}
+                                        </a>
+                                        <span class="company-code">{{ company.code }}</span>
+                                    </h5>
+                                    {% if company.legal_name %}
+                                    <p class="text-muted mb-0">{{ company.legal_name }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-success">Active</span>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="hierarchy-tree">
+                                        📍 {{ company.city or 'Not specified' }}, {{ company.country }}
+                                        {% if company.timezone %}
+                                        <br>🕐 {{ company.timezone }}
+                                        {% endif %}
+                                        {% if company.currency %}
+                                        <br>💰 {{ company.currency }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row text-center">
+                                        <div class="col-3">
+                                            <strong>{{ company.regions.filter_by(is_active=True).count() }}</strong>
+                                            <br><small class="text-muted">Regions</small>
+                                        </div>
+                                        <div class="col-3">
+                                            <strong>0</strong>
+                                            <br><small class="text-muted">Sites</small>
+                                        </div>
+                                        <div class="col-3">
+                                            <strong>0</strong>
+                                            <br><small class="text-muted">Departments</small>
+                                        </div>
+                                        <div class="col-3">
+                                            <strong>0</strong>
+                                            <br><small class="text-muted">Employees</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <a href="{{ url_for('organization.view_company', company_id=company.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                                <a href="{{ url_for('organization.edit_company', company_id=company.id) }}" 
+                                   class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{{ url_for('organization.create_region', company_id=company.id) }}" 
+                                   class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-plus"></i> Add Region
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No Companies Found</h4>
+                            <p class="text-muted">Create your first company to start building your organizational hierarchy.</p>
+                            <a href="{{ url_for('organization.create_company') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First Company
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add search functionality
+function searchOrganization() {
+    const searchTerm = document.getElementById('orgSearch').value;
+    if (searchTerm.length >= 2) {
+        fetch(`/organization/api/search?q=${encodeURIComponent(searchTerm)}`)
+            .then(response => response.json())
+            .then(data => {
+                displaySearchResults(data.results);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+            });
+    }
+}
+
+function displaySearchResults(results) {
+    // Implementation for search results display
+    console.log('Search results:', results);
+}
+</script>
+{% endblock %}

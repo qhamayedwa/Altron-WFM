@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Create Company{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-building"></i> Create New Company</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Company Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="code" class="form-label">Company Code *</label>
+                                    <input type="text" class="form-control" id="code" name="code" required maxlength="10" style="text-transform: uppercase;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="legal_name" class="form-label">Legal Name</label>
+                            <input type="text" class="form-control" id="legal_name" name="legal_name">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="registration_number" class="form-label">Registration Number</label>
+                                    <input type="text" class="form-control" id="registration_number" name="registration_number">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tax_number" class="form-label">Tax Number</label>
+                                    <input type="text" class="form-control" id="tax_number" name="tax_number">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h5>Contact Information</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone</label>
+                                    <input type="text" class="form-control" id="phone" name="phone">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="website" class="form-label">Website</label>
+                            <input type="url" class="form-control" id="website" name="website">
+                        </div>
+
+                        <hr>
+                        <h5>Address</h5>
+                        
+                        <div class="mb-3">
+                            <label for="address_line1" class="form-label">Address Line 1</label>
+                            <input type="text" class="form-control" id="address_line1" name="address_line1">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address_line2" class="form-label">Address Line 2</label>
+                            <input type="text" class="form-control" id="address_line2" name="address_line2">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="city" class="form-label">City</label>
+                                    <input type="text" class="form-control" id="city" name="city">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="state_province" class="form-label">State/Province</label>
+                                    <input type="text" class="form-control" id="state_province" name="state_province">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="postal_code" class="form-label">Postal Code</label>
+                                    <input type="text" class="form-control" id="postal_code" name="postal_code">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="country" class="form-label">Country</label>
+                            <select class="form-control" id="country" name="country">
+                                <option value="South Africa" selected>South Africa</option>
+                                <option value="United States">United States</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="Canada">Canada</option>
+                                <option value="Australia">Australia</option>
+                            </select>
+                        </div>
+
+                        <hr>
+                        <h5>Settings</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="timezone" class="form-label">Timezone</label>
+                                    <select class="form-control" id="timezone" name="timezone">
+                                        <option value="Africa/Johannesburg" selected>Africa/Johannesburg</option>
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York">America/New_York</option>
+                                        <option value="Europe/London">Europe/London</option>
+                                        <option value="Australia/Sydney">Australia/Sydney</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="currency" class="form-label">Currency</label>
+                                    <select class="form-control" id="currency" name="currency">
+                                        <option value="ZAR" selected>ZAR - South African Rand</option>
+                                        <option value="USD">USD - US Dollar</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                        <option value="GBP">GBP - British Pound</option>
+                                        <option value="CAD">CAD - Canadian Dollar</option>
+                                        <option value="AUD">AUD - Australian Dollar</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="fiscal_year_start" class="form-label">Fiscal Year Start (Month)</label>
+                                    <select class="form-control" id="fiscal_year_start" name="fiscal_year_start">
+                                        <option value="1">January</option>
+                                        <option value="2">February</option>
+                                        <option value="3">March</option>
+                                        <option value="4" selected>April</option>
+                                        <option value="5">May</option>
+                                        <option value="6">June</option>
+                                        <option value="7">July</option>
+                                        <option value="8">August</option>
+                                        <option value="9">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('organization.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Company
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-generate company code from name
+document.getElementById('name').addEventListener('input', function() {
+    const name = this.value;
+    const code = name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
+    document.getElementById('code').value = code;
+});
+</script>
+{% endblock %}
