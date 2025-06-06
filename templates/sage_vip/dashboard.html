@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}SAGE VIP Integration - Altron WFM{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i data-feather="link" class="me-2"></i>
+                        SAGE VIP Payroll Integration
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Manage bidirectional data synchronization between Altron WFM and SAGE VIP Payroll system.</p>
+                    
+                    <!-- Connection Status -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <i data-feather="wifi" class="text-info mb-2" style="width: 48px; height: 48px;"></i>
+                                    <h5>Connection Status</h5>
+                                    <a href="{{ url_for('sage_vip.test_connection') }}" class="btn btn-outline-info">
+                                        Test Connection
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <i data-feather="settings" class="text-warning mb-2" style="width: 48px; height: 48px;"></i>
+                                    <h5>Integration Settings</h5>
+                                    {% if current_user.has_role('Super User') %}
+                                    <a href="{{ url_for('sage_vip.settings') }}" class="btn btn-outline-warning">
+                                        Configure Settings
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">Contact Administrator</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Synchronization Options -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="mb-3">Data Synchronization</h5>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Employee Sync -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i data-feather="users" class="text-primary mb-3" style="width: 40px; height: 40px;"></i>
+                                    <h6>Employee Data</h6>
+                                    <p class="text-muted small">Sync employee information from SAGE VIP to WFM</p>
+                                    <form method="POST" action="{{ url_for('sage_vip.sync_employees') }}" class="d-inline">
+                                        <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('This will sync all employee data from SAGE VIP. Continue?')">
+                                            <i data-feather="download" class="me-1"></i>
+                                            Pull from SAGE
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timesheet Push -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i data-feather="clock" class="text-success mb-3" style="width: 40px; height: 40px;"></i>
+                                    <h6>Time Entries</h6>
+                                    <p class="text-muted small">Push time entries from WFM to SAGE VIP</p>
+                                    <a href="{{ url_for('sage_vip.push_timesheet') }}" class="btn btn-success btn-sm">
+                                        <i data-feather="upload" class="me-1"></i>
+                                        Push to SAGE
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Leave Push -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i data-feather="umbrella" class="text-warning mb-3" style="width: 40px; height: 40px;"></i>
+                                    <h6>Leave Applications</h6>
+                                    <p class="text-muted small">Push leave data from WFM to SAGE VIP</p>
+                                    <a href="{{ url_for('sage_vip.push_leave') }}" class="btn btn-warning btn-sm">
+                                        <i data-feather="upload" class="me-1"></i>
+                                        Push to SAGE
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Payroll Pull -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i data-feather="dollar-sign" class="text-info mb-3" style="width: 40px; height: 40px;"></i>
+                                    <h6>Payroll Data</h6>
+                                    <p class="text-muted small">Retrieve processed payroll from SAGE VIP</p>
+                                    <a href="{{ url_for('sage_vip.pull_payroll') }}" class="btn btn-info btn-sm">
+                                        <i data-feather="download" class="me-1"></i>
+                                        Pull from SAGE
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pay Codes Sync -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i data-feather="tag" class="text-secondary mb-3" style="width: 40px; height: 40px;"></i>
+                                    <h6>Pay Codes</h6>
+                                    <p class="text-muted small">Sync pay codes from SAGE VIP to WFM</p>
+                                    <form method="POST" action="{{ url_for('sage_vip.sync_pay_codes') }}" class="d-inline">
+                                        <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('This will sync pay codes from SAGE VIP. Continue?')">
+                                            <i data-feather="download" class="me-1"></i>
+                                            Pull from SAGE
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Integration Logs -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i data-feather="file-text" class="text-dark mb-3" style="width: 40px; height: 40px;"></i>
+                                    <h6>Integration Logs</h6>
+                                    <p class="text-muted small">View synchronization history and logs</p>
+                                    <a href="{{ url_for('sage_vip.integration_logs') }}" class="btn btn-dark btn-sm">
+                                        <i data-feather="eye" class="me-1"></i>
+                                        View Logs
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Feather icons
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+});
+</script>
+{% endblock %}
