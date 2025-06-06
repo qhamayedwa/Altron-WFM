@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pay_rule.name }} - Pay Rules{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>
+                        <i data-feather="dollar-sign" class="me-2"></i>
+                        {{ pay_rule.name }}
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('pay_rules.manage_pay_rules') }}">Pay Rules</a></li>
+                            <li class="breadcrumb-item active">{{ pay_rule.name }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('pay_rules.edit_pay_rule', rule_id=pay_rule.id) }}" class="btn btn-primary">
+                        <i data-feather="edit" class="me-2"></i>
+                        Edit Rule
+                    </a>
+                    <a href="{{ url_for('pay_rules.manage_pay_rules') }}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-2"></i>
+                        Back to Rules
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rule Details -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Rule Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Basic Information</h6>
+                            <table class="table table-borderless table-sm">
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ pay_rule.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Description:</strong></td>
+                                    <td>{{ pay_rule.description or 'No description provided' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Priority:</strong></td>
+                                    <td><span class="badge bg-secondary">{{ pay_rule.priority }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if pay_rule.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ pay_rule.created_at.strftime('%B %d, %Y at %I:%M %p') if pay_rule.created_at else 'Unknown' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Rule Configuration</h6>
+                            {% set conditions = pay_rule.get_conditions() %}
+                            {% set actions = pay_rule.get_actions() %}
+                            
+                            <div class="mb-3">
+                                <strong>Conditions:</strong>
+                                {% if conditions %}
+                                    <ul class="list-unstyled mt-2">
+                                        {% if conditions.get('day_of_week') %}
+                                            <li><i data-feather="calendar" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Days: 
+                                                {% for day in conditions.day_of_week %}
+                                                    {% if day == 0 %}Sunday{% elif day == 1 %}Monday{% elif day == 2 %}Tuesday{% elif day == 3 %}Wednesday{% elif day == 4 %}Thursday{% elif day == 5 %}Friday{% elif day == 6 %}Saturday{% endif %}{% if not loop.last %}, {% endif %}
+                                                {% endfor %}
+                                            </li>
+                                        {% endif %}
+                                        {% if conditions.get('time_range') %}
+                                            <li><i data-feather="clock" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Time: {{ conditions.time_range.start }}:00 - {{ conditions.time_range.end }}:00
+                                            </li>
+                                        {% endif %}
+                                        {% if conditions.get('overtime_threshold') %}
+                                            <li><i data-feather="trending-up" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Overtime Threshold: {{ conditions.overtime_threshold }} hours
+                                            </li>
+                                        {% endif %}
+                                        {% if conditions.get('employee_ids') %}
+                                            <li><i data-feather="users" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Specific Employees: {{ conditions.employee_ids|length }} employee(s)
+                                            </li>
+                                        {% endif %}
+                                        {% if conditions.get('roles') %}
+                                            <li><i data-feather="shield" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Roles: {{ conditions.roles|join(', ') }}
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                {% else %}
+                                    <span class="text-muted">No conditions specified</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <strong>Actions:</strong>
+                                {% if actions %}
+                                    <ul class="list-unstyled mt-2">
+                                        {% if actions.get('multiplier') %}
+                                            <li><i data-feather="x" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Rate Multiplier: {{ actions.multiplier }}x
+                                            </li>
+                                        {% endif %}
+                                        {% if actions.get('bonus_amount') %}
+                                            <li><i data-feather="plus" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Bonus Amount: {{ "R%.2f"|format(actions.bonus_amount) }}
+                                            </li>
+                                        {% endif %}
+                                        {% if actions.get('hourly_rate') %}
+                                            <li><i data-feather="dollar-sign" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Fixed Hourly Rate: {{ "R%.2f"|format(actions.hourly_rate) }}
+                                            </li>
+                                        {% endif %}
+                                        {% if actions.get('deduction_amount') %}
+                                            <li><i data-feather="minus" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                Deduction: {{ "R%.2f"|format(actions.deduction_amount) }}
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                {% else %}
+                                    <span class="text-muted">No actions specified</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Calculations -->
+            {% if recent_calculations %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Pay Calculations Using This Rule</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Pay Period</th>
+                                    <th>Gross Pay</th>
+                                    <th>Calculated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for calc in recent_calculations %}
+                                <tr>
+                                    <td>{{ calc.employee.first_name }} {{ calc.employee.last_name }}</td>
+                                    <td>{{ calc.pay_period_start.strftime('%m/%d/%Y') }} - {{ calc.pay_period_end.strftime('%m/%d/%Y') }}</td>
+                                    <td>{{ "R%.2f"|format(calc.gross_pay) }}</td>
+                                    <td>{{ calc.calculated_at.strftime('%m/%d/%Y %I:%M %p') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('payroll.view_calculation', calc_id=calc.id) }}" class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Rule Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('pay_rules.edit_pay_rule', rule_id=pay_rule.id) }}" class="btn btn-primary">
+                            <i data-feather="edit" class="me-2"></i>
+                            Edit Rule
+                        </a>
+                        {% if pay_rule.is_active %}
+                            <button class="btn btn-warning" onclick="toggleRuleStatus({{ pay_rule.id }}, false)">
+                                <i data-feather="pause" class="me-2"></i>
+                                Deactivate Rule
+                            </button>
+                        {% else %}
+                            <button class="btn btn-success" onclick="toggleRuleStatus({{ pay_rule.id }}, true)">
+                                <i data-feather="play" class="me-2"></i>
+                                Activate Rule
+                            </button>
+                        {% endif %}
+                        <a href="{{ url_for('pay_rules.test_rules') }}?rule_id={{ pay_rule.id }}" class="btn btn-outline-info">
+                            <i data-feather="check-circle" class="me-2"></i>
+                            Test Rule
+                        </a>
+                        <button class="btn btn-outline-danger" onclick="confirmDeleteRule({{ pay_rule.id }}, '{{ pay_rule.name }}')">
+                            <i data-feather="trash-2" class="me-2"></i>
+                            Delete Rule
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Rule Usage</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <h4 class="text-primary">{{ recent_calculations|length }}</h4>
+                        <small class="text-muted">Recent calculations using this rule</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteRuleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the pay rule "<span id="deleteRuleName"></span>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteRuleForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" class="btn btn-danger">Delete Rule</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDeleteRule(ruleId, ruleName) {
+    document.getElementById('deleteRuleName').textContent = ruleName;
+    document.getElementById('deleteRuleForm').action = `/pay-rules/${ruleId}/delete`;
+    new bootstrap.Modal(document.getElementById('deleteRuleModal')).show();
+}
+
+function toggleRuleStatus(ruleId, newStatus) {
+    const action = newStatus ? 'activate' : 'deactivate';
+    if (confirm(`Are you sure you want to ${action} this pay rule?`)) {
+        fetch(`/pay-rules/${ruleId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ is_active: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating rule status: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error updating rule status: ' + error.message);
+        });
+    }
+}
+
+// Initialize feather icons
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+});
+</script>
+{% endblock %}
