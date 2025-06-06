@@ -76,7 +76,7 @@ def clock_out():
             }), 400
         
         # Clock out
-        active_entry.clock_out_time = datetime.now()
+        active_entry.clock_out_time = get_current_time()
         active_entry.status = 'Closed'
         
         db.session.commit()
