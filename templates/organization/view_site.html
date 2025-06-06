@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.name }} - {{ site.region.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('organization.dashboard') }}">Organization</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('organization.view_company', company_id=site.region.company.id) }}">{{ site.region.company.name }}</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('organization.view_region', region_id=site.region.id) }}">{{ site.region.name }}</a>
+                            </li>
+                            <li class="breadcrumb-item active">{{ site.name }}</li>
+                        </ol>
+                    </nav>
+                    <h2>
+                        <i data-feather="map-pin" class="me-2"></i>
+                        {{ site.name }}
+                    </h2>
+                    <p class="text-muted">{{ site.description or 'Site operations and management' }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('organization.create_department', site_id=site.id) }}" class="btn btn-primary">
+                        <i data-feather="plus" class="me-2"></i>Add Department
+                    </a>
+                </div>
+            </div>
+
+            <!-- Site Details Card -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i data-feather="info" class="me-2"></i>
+                                Site Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Site Code:</strong></td>
+                                            <td>{{ site.code }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Region:</strong></td>
+                                            <td>{{ site.region.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Company:</strong></td>
+                                            <td>{{ site.region.company.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Manager:</strong></td>
+                                            <td>{{ site.manager_name or 'Not assigned' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Email:</strong></td>
+                                            <td>{{ site.email or 'Not provided' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Phone:</strong></td>
+                                            <td>{{ site.phone or 'Not provided' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>City:</strong></td>
+                                            <td>{{ site.city or 'Not specified' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>State/Province:</strong></td>
+                                            <td>{{ site.state_province or 'Not specified' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Postal Code:</strong></td>
+                                            <td>{{ site.postal_code or 'Not specified' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Timezone:</strong></td>
+                                            <td>{{ site.timezone or site.region.timezone or 'Africa/Johannesburg' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Status:</strong></td>
+                                            <td>
+                                                <span class="badge bg-success">Active</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            {% if site.address_line1 %}
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Address:</strong><br>
+                                    {{ site.address_line1 }}<br>
+                                    {% if site.address_line2 %}{{ site.address_line2 }}<br>{% endif %}
+                                    {{ site.city }}{% if site.state_province %}, {{ site.state_province }}{% endif %}
+                                    {% if site.postal_code %} {{ site.postal_code }}{% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistics Card -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i data-feather="bar-chart-2" class="me-2"></i>
+                                Statistics
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-12 mb-3">
+                                    <div class="stat-item">
+                                        <h3 class="text-primary">{{ stats.departments }}</h3>
+                                        <small class="text-muted">Departments</small>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="stat-item">
+                                        <h3 class="text-info">{{ stats.employees }}</h3>
+                                        <small class="text-muted">Total Employees</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Departments List -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i data-feather="users" class="me-2"></i>
+                        Departments in {{ site.name }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if departments %}
+                    <div class="row">
+                        {% for department in departments %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <a href="{{ url_for('organization.view_department', department_id=department.id) }}" class="text-decoration-none">
+                                            {{ department.name }}
+                                        </a>
+                                    </h6>
+                                    <p class="card-text text-muted small">
+                                        Code: {{ department.code }}<br>
+                                        {% if department.manager_name %}Manager: {{ department.manager_name }}<br>{% endif %}
+                                        Employees: 0
+                                    </p>
+                                    <div class="mt-auto">
+                                        <a href="{{ url_for('organization.view_department', department_id=department.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i data-feather="eye" class="me-1"></i>View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i data-feather="users" class="text-muted" style="width: 64px; height: 64px;"></i>
+                        <h5 class="text-muted mt-3">No Departments Yet</h5>
+                        <p class="text-muted">This site doesn't have any departments yet.</p>
+                        <a href="{{ url_for('organization.create_department', site_id=site.id) }}" class="btn btn-primary">
+                            <i data-feather="plus" class="me-2"></i>Add First Department
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-item h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

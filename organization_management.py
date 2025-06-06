@@ -275,8 +275,7 @@ def view_site(site_id):
     # Get site statistics
     stats = {
         'departments': Department.query.filter_by(site_id=site_id, is_active=True).count(),
-        'employees': db.session.query(User).join(Department).filter(
-            Department.site_id == site_id, User.is_active == True).count()
+        'employees': db.session.query(User).filter(User.is_active == True).count()
     }
     
     return render_template('organization/view_site.html', 
