@@ -542,9 +542,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Parse analytics data from server
     const analyticsData = {{ analytics_data|tojson }};
     
-    // Chart.js default configuration
-    Chart.defaults.color = '#ffffff';
-    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+    // Chart.js default configuration for light theme
+    Chart.defaults.color = '#495057';
+    Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.1)';
     
     // 1. Daily Attendance Chart
     const dailyCtx = document.getElementById('dailyAttendanceChart');
@@ -568,13 +568,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Daily Clock-ins',
+                        color: '#495057',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
                     }
                 },
                 scales: {
-                    y: {
-                        beginAtZero: true,
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Date',
+                            color: '#495057',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
                         ticks: {
-                            stepSize: 1
+                            color: '#495057'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Clock-ins',
+                            color: '#495057',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            color: '#495057'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
                         }
                     }
                 }
@@ -603,11 +644,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Weekly Hours Distribution',
+                        color: '#495057',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
                     }
                 },
                 scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Week',
+                            color: '#495057',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            color: '#495057'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
                     y: {
-                        beginAtZero: true
+                        display: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Hours Worked',
+                            color: '#495057',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            color: '#495057'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
                     }
                 }
             }
@@ -637,7 +721,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom'
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            color: '#495057',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Leave Applications Status',
+                        color: '#495057',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
                     }
                 }
             }
@@ -665,18 +766,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Clock-in Time Patterns',
+                        color: '#495057',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
                     }
                 },
                 scales: {
-                    y: {
-                        beginAtZero: true,
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Hour of Day',
+                            color: '#495057',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
                         ticks: {
-                            stepSize: 1
+                            maxTicksLimit: 12,
+                            color: '#495057'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
                         }
                     },
-                    x: {
+                    y: {
+                        display: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Clock-ins',
+                            color: '#495057',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
                         ticks: {
-                            maxTicksLimit: 12
+                            stepSize: 1,
+                            color: '#495057'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
                         }
                     }
                 }
