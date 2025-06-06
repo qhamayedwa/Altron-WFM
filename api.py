@@ -602,6 +602,68 @@ def api_database_status():
         }, 500
 
 # ====================
+# USER MANAGEMENT APIs
+# ====================
+
+@api_bp.route('/users', methods=['GET'])
+@login_required
+def api_users():
+    """Get users list for manager selection dropdowns"""
+    try:
+        # Get role filter from query parameters
+        role_filter = request.args.get('role', '')
+        search_term = request.args.get('search', '')
+        
+        # Build query
+        query = User.query.filter(User.is_active == True)
+        
+        # Apply role filter if specified
+        if role_filter:
+            roles = [r.strip() for r in role_filter.split(',')]
+            query = query.filter(User.role.in_(roles))
+        
+        # Apply search filter if specified
+        if search_term:
+            search_filter = f"%{search_term}%"
+            query = query.filter(
+                or_(
+                    User.username.ilike(search_filter),
+                    User.email.ilike(search_filter),
+                    User.first_name.ilike(search_filter),
+                    User.last_name.ilike(search_filter)
+                )
+            )
+        
+        users = query.order_by(User.username).all()
+        
+        # Format user data for API response
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': getattr(user, 'first_name', ''),
+                'last_name': getattr(user, 'last_name', ''),
+                'phone': getattr(user, 'phone', ''),
+                'role': user.role,
+                'department': getattr(user, 'department', ''),
+                'employee_id': getattr(user, 'employee_id', '')
+            })
+        
+        return api_response(True, data={
+            'users': users_data,
+            'total': len(users_data)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"API users error: {e}")
+        return api_response(False, error={
+            'code': 'API_ERROR',
+            'message': 'Failed to fetch users'
+        }, status_code=500)
+
+# ====================
 # DRILL-DOWN ANALYTICS APIs
 # ====================
 

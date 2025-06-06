@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let managers = [];
 
     // Fetch managers on page load
-    fetch('/api/users?role=Manager,Admin,Super User')
+    fetch('/api/v1/users?role=Manager,Admin,Super User')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
