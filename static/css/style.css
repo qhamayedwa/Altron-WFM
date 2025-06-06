@@ -1,6 +1,26 @@
 /* Professional Enterprise Theme */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Universal white text for all purple/indigo backgrounds */
+.card-header,
+.table thead th,
+.stats-card,
+.btn-primary,
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.badge.bg-primary,
+.pagination .page-item.active .page-link,
+.pagination .page-link:hover,
+.dropdown-item:hover,
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active,
+.alert-primary,
+*[class*="bg-primary"],
+*[style*="primary-gradient"] {
+    color: white !important;
+}
+
 :root {
     /* Primary Brand Colors */
     --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
@@ -369,7 +389,7 @@ body {
 
 .table thead th {
     background: var(--primary-gradient);
-    color: white;
+    color: white !important;
     border: none;
     padding: var(--spacing-lg);
     font-weight: 600;
@@ -510,6 +530,7 @@ body {
 
 .badge.bg-primary {
     background: var(--primary-gradient) !important;
+    color: white !important;
 }
 
 .badge.bg-success {
@@ -542,7 +563,7 @@ body {
 .pagination .page-link:hover {
     background: var(--primary-gradient);
     border-color: var(--primary-dark);
-    color: white;
+    color: white !important;
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
@@ -550,7 +571,7 @@ body {
 .pagination .page-item.active .page-link {
     background: var(--primary-gradient);
     border-color: var(--primary-dark);
-    color: white;
+    color: white !important;
     box-shadow: var(--shadow-md);
 }
 
@@ -574,7 +595,7 @@ body {
 
 .dropdown-item:hover {
     background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-dark) 100%);
-    color: white;
+    color: white !important;
     transform: translateX(4px);
 }
 
