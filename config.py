@@ -1,8 +1,12 @@
 import os
 from dotenv import load_dotenv
+from datetime import timezone, timedelta
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Define South African timezone (GMT+2)
+SAST = timezone(timedelta(hours=2))
 
 class Config:
     """Flask configuration class"""
@@ -27,6 +31,9 @@ class Config:
     
     # Application settings
     APP_NAME = os.environ.get('APP_NAME', 'Flask PostgreSQL App')
+    
+    # Timezone configuration
+    TIMEZONE = SAST
     
 class DevelopmentConfig(Config):
     """Development configuration"""

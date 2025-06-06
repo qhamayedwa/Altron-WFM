@@ -40,6 +40,12 @@ def create_app(config_class=Config):
     from currency_formatter import currency_filter
     app.jinja_env.filters['currency'] = currency_filter
     
+    # Register timezone filters for templates
+    from timezone_utils import datetime_filter, date_filter, time_filter
+    app.jinja_env.filters['datetime'] = datetime_filter
+    app.jinja_env.filters['date'] = date_filter
+    app.jinja_env.filters['time'] = time_filter
+    
     # Register blueprints/routes
     from routes import main_bp
     from auth_simple import auth_bp
