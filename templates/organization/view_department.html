@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}{{ department.name }} - {{ department.site.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('organization.dashboard') }}">Organization</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('organization.view_company', company_id=department.site.region.company.id) }}">{{ department.site.region.company.name }}</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('organization.view_region', region_id=department.site.region.id) }}">{{ department.site.region.name }}</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('organization.view_site', site_id=department.site.id) }}">{{ department.site.name }}</a>
+                            </li>
+                            <li class="breadcrumb-item active">{{ department.name }}</li>
+                        </ol>
+                    </nav>
+                    <h2>
+                        <i data-feather="users" class="me-2"></i>
+                        {{ department.name }}
+                    </h2>
+                    <p class="text-muted">{{ department.description or 'Department operations and management' }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('organization.edit_department', department_id=department.id) }}" class="btn btn-outline-primary me-2">
+                        <i data-feather="edit" class="me-2"></i>Edit Department
+                    </a>
+                    <a href="#" class="btn btn-primary">
+                        <i data-feather="user-plus" class="me-2"></i>Add Employee
+                    </a>
+                </div>
+            </div>
+
+            <!-- Department Details Card -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i data-feather="info" class="me-2"></i>
+                                Department Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Department Code:</strong></td>
+                                            <td>{{ department.code }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Site:</strong></td>
+                                            <td>{{ department.site.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Region:</strong></td>
+                                            <td>{{ department.site.region.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Company:</strong></td>
+                                            <td>{{ department.site.region.company.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Manager:</strong></td>
+                                            <td>{{ department.manager_name or 'Not assigned' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Email:</strong></td>
+                                            <td>{{ department.email or 'Not provided' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Phone:</strong></td>
+                                            <td>{{ department.phone or 'Not provided' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Extension:</strong></td>
+                                            <td>{{ department.extension or 'Not provided' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Cost Center:</strong></td>
+                                            <td>{{ department.cost_center or 'Not specified' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Budget Code:</strong></td>
+                                            <td>{{ department.budget_code or 'Not specified' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Standard Hours/Day:</strong></td>
+                                            <td>{{ department.standard_hours_per_day or 8.0 }} hours</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Standard Hours/Week:</strong></td>
+                                            <td>{{ department.standard_hours_per_week or 40.0 }} hours</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            {% if department.description %}
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Description:</strong><br>
+                                    {{ department.description }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistics Card -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i data-feather="bar-chart-2" class="me-2"></i>
+                                Statistics
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-12 mb-3">
+                                    <div class="stat-item">
+                                        <h3 class="text-primary">{{ stats.employees }}</h3>
+                                        <small class="text-muted">Total Employees</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="stat-item">
+                                        <h5 class="text-success">{{ stats.active_employees }}</h5>
+                                        <small class="text-muted">Active</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="stat-item">
+                                        <h5 class="text-warning">{{ stats.inactive_employees }}</h5>
+                                        <small class="text-muted">Inactive</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employees List -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i data-feather="users" class="me-2"></i>
+                        Employees in {{ department.name }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if employees %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Employee ID</th>
+                                    <th>Name</th>
+                                    <th>Position</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in employees %}
+                                <tr>
+                                    <td>{{ employee.employee_id }}</td>
+                                    <td>{{ employee.first_name }} {{ employee.last_name }}</td>
+                                    <td>{{ employee.position or 'Not specified' }}</td>
+                                    <td>{{ employee.email }}</td>
+                                    <td>{{ employee.phone_number or employee.mobile_number or 'Not provided' }}</td>
+                                    <td>
+                                        {% if employee.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('auth.edit_user', user_id=employee.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i data-feather="edit" class="me-1"></i>Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i data-feather="user-x" class="text-muted" style="width: 64px; height: 64px;"></i>
+                        <h5 class="text-muted mt-3">No Employees Yet</h5>
+                        <p class="text-muted">This department doesn't have any employees assigned yet.</p>
+                        <a href="#" class="btn btn-primary">
+                            <i data-feather="user-plus" class="me-2"></i>Add First Employee
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-item h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+.stat-item h5 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin-bottom: 0.5rem;
+}
+
+.table th {
+    border-top: none;
+}
+</style>
+{% endblock %}
