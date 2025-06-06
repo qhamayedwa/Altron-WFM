@@ -7,9 +7,136 @@ from sqlalchemy import func, and_, or_
 import logging
 import csv
 import io
+import json
 
 # Create blueprint for main routes
 main_bp = Blueprint('main', __name__)
+
+def generate_dashboard_analytics(is_manager_or_admin, user_id=None):
+    """Generate comprehensive analytics data for dashboard charts"""
+    try:
+        # Time range for analytics - last 30 days
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=30)
+        
+        # Base query filters
+        base_filter = TimeEntry.clock_in_time >= start_date
+        if not is_manager_or_admin and user_id:
+            base_filter = and_(base_filter, TimeEntry.user_id == user_id)
+        
+        # 1. Daily attendance trends (last 7 days)
+        daily_data = []
+        for i in range(7):
+            day = end_date - timedelta(days=i)
+            day_entries = TimeEntry.query.filter(
+                and_(
+                    func.date(TimeEntry.clock_in_time) == day,
+                    base_filter if not user_id else and_(base_filter, TimeEntry.user_id == user_id)
+                )
+            ).count()
+            daily_data.append({
+                'date': day.strftime('%m/%d'),
+                'entries': day_entries
+            })
+        daily_data.reverse()
+        
+        # 2. Weekly hours distribution
+        weekly_hours = []
+        week_labels = []
+        for i in range(4):  # Last 4 weeks
+            week_start = end_date - timedelta(days=end_date.weekday() + (7 * i))
+            week_end = week_start + timedelta(days=6)
+            
+            week_entries = TimeEntry.query.filter(
+                and_(
+                    TimeEntry.clock_in_time >= week_start,
+                    TimeEntry.clock_in_time <= week_end + timedelta(days=1),
+                    base_filter if not user_id else and_(base_filter, TimeEntry.user_id == user_id)
+                )
+            ).count()
+            
+            weekly_hours.append(week_entries * 8)  # Assume 8 hours per entry
+            week_labels.append(f"Week {week_start.strftime('%m/%d')}")
+        
+        weekly_hours.reverse()
+        week_labels.reverse()
+        
+        # 3. Leave application status distribution
+        if is_manager_or_admin:
+            leave_stats = {
+                'pending': LeaveApplication.query.filter_by(status='pending').count(),
+                'approved': LeaveApplication.query.filter_by(status='approved').count(),
+                'rejected': LeaveApplication.query.filter_by(status='rejected').count()
+            }
+        else:
+            leave_stats = {
+                'pending': LeaveApplication.query.filter_by(user_id=user_id, status='pending').count(),
+                'approved': LeaveApplication.query.filter_by(user_id=user_id, status='approved').count(),
+                'rejected': LeaveApplication.query.filter_by(user_id=user_id, status='rejected').count()
+            }
+        
+        # 4. Employee productivity insights (for managers)
+        productivity_data = []
+        if is_manager_or_admin:
+            # Get top 5 most active employees with explicit join condition
+            active_employees = db.session.query(
+                User.username,
+                func.count(TimeEntry.id).label('entry_count')
+            ).join(TimeEntry, User.id == TimeEntry.user_id).filter(
+                TimeEntry.clock_in_time >= start_date
+            ).group_by(User.id, User.username).order_by(
+                func.count(TimeEntry.id).desc()
+            ).limit(5).all()
+            
+            productivity_data = [
+                {'name': emp.username, 'hours': emp.entry_count * 8}
+                for emp in active_employees
+            ]
+        
+        # 5. Time tracking patterns (hourly distribution)
+        hourly_patterns = [0] * 24
+        time_entries = TimeEntry.query.filter(base_filter).all()
+        
+        for entry in time_entries:
+            if entry.clock_in_time:
+                hour = entry.clock_in_time.hour
+                hourly_patterns[hour] += 1
+        
+        return {
+            'daily_attendance': {
+                'labels': [d['date'] for d in daily_data],
+                'data': [d['entries'] for d in daily_data]
+            },
+            'weekly_hours': {
+                'labels': week_labels,
+                'data': weekly_hours
+            },
+            'leave_distribution': {
+                'labels': ['Pending', 'Approved', 'Rejected'],
+                'data': [leave_stats['pending'], leave_stats['approved'], leave_stats['rejected']]
+            },
+            'productivity_insights': productivity_data,
+            'hourly_patterns': {
+                'labels': [f"{i}:00" for i in range(24)],
+                'data': hourly_patterns
+            },
+            'insights': {
+                'peak_hour': hourly_patterns.index(max(hourly_patterns)) if hourly_patterns else 9,
+                'total_entries_month': sum([d['entries'] for d in daily_data]),
+                'avg_daily_entries': sum([d['entries'] for d in daily_data]) / len(daily_data) if daily_data else 0,
+                'most_productive_day': max(daily_data, key=lambda x: x['entries'])['date'] if daily_data else 'N/A'
+            }
+        }
+    except Exception as e:
+        logging.error(f"Error generating analytics: {e}")
+        return {
+            'daily_attendance': {'labels': [], 'data': []},
+            'weekly_hours': {'labels': [], 'data': []},
+            'leave_distribution': {'labels': [], 'data': []},
+            'productivity_insights': [],
+            'hourly_patterns': {'labels': [], 'data': []},
+            'insights': {'peak_hour': 9, 'total_entries_month': 0, 'avg_daily_entries': 0, 'most_productive_day': 'N/A'}
+        }
 
 @main_bp.route('/')
 @login_required
@@ -139,6 +266,9 @@ def index():
         if hasattr(current_user, 'has_role') and (current_user.has_role('Manager') or current_user.has_role('Super User')):
             pending_approvals = LeaveApplication.query.filter_by(status='Pending').count()
         
+        # Generate analytics data for charts
+        analytics_data = generate_dashboard_analytics(is_manager_or_admin, current_user.id if not is_manager_or_admin else None)
+        
         return render_template('dashboard.html',
                              total_employees=total_employees,
                              active_schedules=active_schedules,
@@ -150,7 +280,8 @@ def index():
                              active_pay_codes=active_pay_codes,
                              weekly_hours=weekly_hours,
                              current_status=current_status,
-                             pending_approvals=pending_approvals)
+                             pending_approvals=pending_approvals,
+                             analytics_data=analytics_data)
     except Exception as e:
         logging.error(f"Error in dashboard route: {e}")
         flash("An error occurred while loading the dashboard.", "error")
