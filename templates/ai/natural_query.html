@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Ask AI - Natural Language Queries - WFM{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>
+                        <i data-feather="message-circle" class="me-2"></i>
+                        Ask AI About Your Workforce
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('ai.ai_dashboard') }}">AI Insights</a></li>
+                            <li class="breadcrumb-item active">Natural Query</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Query Interface -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="zap" class="me-2"></i>
+                        AI-Powered Workforce Assistant
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Ask questions about your workforce data in natural language. The AI will analyze your data and provide insights.</p>
+                    
+                    <div class="mb-3">
+                        <label for="ai-query" class="form-label">Your Question:</label>
+                        <textarea class="form-control" id="ai-query" rows="3" 
+                                  placeholder="Example: What are our busiest hours? Which employees work the most overtime? Are there any attendance patterns I should know about?"></textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" onclick="submitQuery()">
+                            <i data-feather="send" class="me-2"></i>
+                            Ask AI
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="clearQuery()">
+                            <i data-feather="x" class="me-2"></i>
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Section -->
+    <div class="row" id="response-section" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="cpu" class="me-2"></i>
+                        AI Response
+                    </h5>
+                </div>
+                <div class="card-body" id="ai-response">
+                    <!-- Response will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Example Questions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="help-circle" class="me-2"></i>
+                        Example Questions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Attendance & Time Tracking</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="#" class="text-decoration-none" onclick="setQuery('What are our busiest hours?')">• What are our busiest hours?</a></li>
+                                <li><a href="#" class="text-decoration-none" onclick="setQuery('Which employees are consistently late?')">• Which employees are consistently late?</a></li>
+                                <li><a href="#" class="text-decoration-none" onclick="setQuery('Show me attendance trends for this month')">• Show me attendance trends for this month</a></li>
+                                <li><a href="#" class="text-decoration-none" onclick="setQuery('What is our average daily attendance rate?')">• What is our average daily attendance rate?</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Scheduling & Operations</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="#" class="text-decoration-none" onclick="setQuery('How can we optimize our scheduling?')">• How can we optimize our scheduling?</a></li>
+                                <li><a href="#" class="text-decoration-none" onclick="setQuery('Which days need more coverage?')">• Which days need more coverage?</a></li>
+                                <li><a href="#" class="text-decoration-none" onclick="setQuery('What is our overtime cost this month?')">• What is our overtime cost this month?</a></li>
+                                <li><a href="#" class="text-decoration-none" onclick="setQuery('Are there any scheduling conflicts?')">• Are there any scheduling conflicts?</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+    
+    // Handle Enter key in textarea
+    document.getElementById('ai-query').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            submitQuery();
+        }
+    });
+});
+
+function setQuery(questionText) {
+    document.getElementById('ai-query').value = questionText;
+    document.getElementById('ai-query').focus();
+}
+
+function clearQuery() {
+    document.getElementById('ai-query').value = '';
+    document.getElementById('response-section').style.display = 'none';
+    document.getElementById('ai-query').focus();
+}
+
+async function submitQuery() {
+    const queryText = document.getElementById('ai-query').value.trim();
+    const responseSection = document.getElementById('response-section');
+    const responseDiv = document.getElementById('ai-response');
+    
+    if (!queryText) {
+        alert('Please enter a question before submitting.');
+        return;
+    }
+    
+    // Show response section and loading state
+    responseSection.style.display = 'block';
+    responseDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm me-3" role="status">
+                <span class="visually-hidden">Processing...</span>
+            </div>
+            <div>
+                <strong>AI is analyzing your question...</strong>
+                <div class="small text-muted">This may take a few moments</div>
+            </div>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/ai/api/natural-query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: queryText })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.result) {
+            const result = data.result;
+            responseDiv.innerHTML = `
+                <div class="alert alert-light border">
+                    <h6 class="mb-3">
+                        <i data-feather="zap" class="me-2"></i>
+                        AI Analysis Complete
+                    </h6>
+                    
+                    <div class="mb-4">
+                        <h6>Response:</h6>
+                        <p class="mb-0">${result.response}</p>
+                    </div>
+                    
+                    ${result.insights && result.insights.length > 0 ? `
+                        <div class="mb-4">
+                            <h6>Key Insights:</h6>
+                            <ul class="mb-0">
+                                ${result.insights.map(insight => `<li>${insight}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    ${result.suggested_actions && result.suggested_actions.length > 0 ? `
+                        <div class="mb-4">
+                            <h6>Suggested Actions:</h6>
+                            <ul class="mb-0">
+                                ${result.suggested_actions.map(action => `<li class="text-primary">${action}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    ${result.related_data && Object.keys(result.related_data).length > 0 ? `
+                        <div>
+                            <h6>Related Data:</h6>
+                            <div class="row">
+                                ${Object.entries(result.related_data).map(([key, value]) => `
+                                    <div class="col-md-6 mb-2">
+                                        <strong>${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> ${value}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="text-end">
+                    <small class="text-muted">
+                        Query processed at ${new Date().toLocaleTimeString()}
+                    </small>
+                </div>
+            `;
+        } else {
+            let errorMessage = 'Unable to process your query.';
+            
+            if (data.error) {
+                if (data.error.includes('quota') || data.error.includes('insufficient_quota')) {
+                    errorMessage = 'OpenAI API quota exceeded. Please check your billing details or try again later.';
+                } else if (data.error.includes('429')) {
+                    errorMessage = 'API rate limit reached. Please wait a moment and try again.';
+                } else {
+                    errorMessage = data.error;
+                }
+            }
+            
+            responseDiv.innerHTML = `
+                <div class="alert alert-warning">
+                    <div class="d-flex align-items-center">
+                        <i data-feather="alert-triangle" class="me-3"></i>
+                        <div>
+                            <strong>Query Processing Issue</strong>
+                            <div class="mt-1">${errorMessage}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <h6>Alternative Options:</h6>
+                    <ul class="mb-0">
+                        <li>Check the <a href="{{ url_for('main.reports') }}">Reports section</a> for detailed analytics</li>
+                        <li>Use the <a href="{{ url_for('time_attendance.team_timecard') }}">Team Timecard</a> for attendance data</li>
+                        <li>View <a href="{{ url_for('scheduling.manage_schedules') }}">Schedule Management</a> for scheduling insights</li>
+                    </ul>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        responseDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <div class="d-flex align-items-center">
+                    <i data-feather="alert-circle" class="me-3"></i>
+                    <div>
+                        <strong>Connection Error</strong>
+                        <div class="mt-1">Unable to connect to AI service. Please check your network connection and try again.</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    feather.replace();
+    
+    // Scroll to response
+    responseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+{% endblock %}

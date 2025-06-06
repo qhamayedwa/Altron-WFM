@@ -34,12 +34,12 @@ class WFMIntelligence:
             start_date = end_date - timedelta(days=days)
             
             query = Schedule.query.filter(
-                Schedule.date >= start_date,
-                Schedule.date <= end_date
+                func.date(Schedule.start_time) >= start_date,
+                func.date(Schedule.start_time) <= end_date
             )
             
             if department_id:
-                query = query.join(User).filter(User.department_id == department_id)
+                query = query.join(User).filter(User.department == str(department_id))
             
             schedules = query.all()
             
@@ -47,12 +47,12 @@ class WFMIntelligence:
             schedule_data = []
             for schedule in schedules:
                 schedule_data.append({
-                    'date': schedule.date.isoformat(),
-                    'day_of_week': schedule.date.weekday(),
+                    'date': schedule.start_time.date().isoformat(),
+                    'day_of_week': schedule.start_time.weekday(),
                     'start_time': schedule.start_time.strftime('%H:%M'),
                     'end_time': schedule.end_time.strftime('%H:%M'),
-                    'duration_hours': schedule.duration_hours,
-                    'shift_type': schedule.shift_type.name if schedule.shift_type else 'Regular',
+                    'duration_hours': schedule.duration_hours(),
+                    'shift_type': schedule.shift_type.name if hasattr(schedule, 'shift_type') and schedule.shift_type else 'Regular',
                     'employee_id': schedule.user_id,
                     'status': schedule.status
                 })
@@ -96,9 +96,15 @@ class WFMIntelligence:
             
         except Exception as e:
             logging.error(f"AI scheduling analysis error: {e}")
+            error_msg = str(e)
+            if 'quota' in error_msg.lower() or 'insufficient_quota' in error_msg.lower():
+                error_msg = 'OpenAI API quota exceeded. Please check your billing details.'
+            elif '429' in error_msg:
+                error_msg = 'API rate limit reached. Please try again in a few moments.'
             return {
                 'success': False,
-                'error': str(e)
+                'error': error_msg,
+                'fallback_available': True
             }
     
     def generate_payroll_insights(self, pay_period_start: date, pay_period_end: date) -> Dict[str, Any]:
@@ -188,9 +194,15 @@ class WFMIntelligence:
             
         except Exception as e:
             logging.error(f"AI payroll insights error: {e}")
+            error_msg = str(e)
+            if 'quota' in error_msg.lower() or 'insufficient_quota' in error_msg.lower():
+                error_msg = 'OpenAI API quota exceeded. Please check your billing details.'
+            elif '429' in error_msg:
+                error_msg = 'API rate limit reached. Please try again in a few moments.'
             return {
                 'success': False,
-                'error': str(e)
+                'error': error_msg,
+                'fallback_available': True
             }
     
     def analyze_attendance_patterns(self, employee_id: Optional[int] = None, days: int = 30) -> Dict[str, Any]:
@@ -280,13 +292,13 @@ class WFMIntelligence:
             # Get historical data for the same day of week
             day_of_week = target_date.weekday()
             historical_schedules = Schedule.query.filter(
-                func.extract('dow', Schedule.date) == day_of_week
+                func.extract('dow', Schedule.start_time) == day_of_week
             ).limit(50).all()
             
             # Get employee availability and preferences
             employees_query = User.query.filter(User.is_active == True)
             if department_id:
-                employees_query = employees_query.filter(User.department_id == department_id)
+                employees_query = employees_query.filter(User.department == str(department_id))
             
             employees = employees_query.all()
             
