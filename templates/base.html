@@ -19,6 +19,56 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/light-theme.css') }}">
     
+    <!-- Sub-dropdown styles -->
+    <style>
+        .dropdown-submenu {
+            position: relative;
+        }
+        
+        .dropdown-submenu .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -1px;
+            margin-left: -1px;
+            border-radius: 0 6px 6px 6px;
+        }
+        
+        .dropdown-submenu:hover .dropdown-menu {
+            display: block;
+        }
+        
+        .dropdown-submenu .dropdown-toggle::after {
+            display: block;
+            content: " ";
+            float: right;
+            width: 0;
+            height: 0;
+            border-color: transparent;
+            border-style: solid;
+            border-width: 5px 0 5px 5px;
+            border-left-color: #ccc;
+            margin-top: 5px;
+            margin-right: -10px;
+        }
+        
+        .dropdown-submenu .dropdown-toggle[aria-expanded="true"]::after {
+            border-left-color: #007bff;
+        }
+        
+        @media (max-width: 767px) {
+            .dropdown-submenu .dropdown-menu {
+                position: static;
+                float: none;
+                width: auto;
+                margin-top: 0;
+                background-color: #f8f9fa;
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+    
     <!-- Mobile optimizations -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -51,99 +101,117 @@
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
                         
-                        <!-- Personal Section -->
-                        <li><h6 class="dropdown-header">Personal</h6></li>
-                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.my_timecard') }}">
-                            <i data-feather="clock" class="me-2"></i>
-                            My Timecard
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('scheduling.my_schedule') }}">
-                            <i data-feather="calendar" class="me-2"></i>
-                            My Schedule
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('leave_management.my_leave') }}">
-                            <i data-feather="umbrella" class="me-2"></i>
-                            My Leave
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('pulse_survey.pulse_dashboard') }}">
-                            <i data-feather="message-circle" class="me-2"></i>
-                            Team Communication
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('main.reports') }}">
-                            <i data-feather="bar-chart-2" class="me-2"></i>
-                            Reports
-                        </a></li>
+                        <!-- Personal Section as Sub-dropdown -->
+                        <li class="dropdown-submenu">
+                            <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i data-feather="user" class="me-2"></i>
+                                Personal
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.my_timecard') }}">
+                                    <i data-feather="clock" class="me-2"></i>
+                                    My Timecard
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('scheduling.my_schedule') }}">
+                                    <i data-feather="calendar" class="me-2"></i>
+                                    My Schedule
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('leave_management.my_leave') }}">
+                                    <i data-feather="umbrella" class="me-2"></i>
+                                    My Leave
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('pulse_survey.pulse_dashboard') }}">
+                                    <i data-feather="message-circle" class="me-2"></i>
+                                    Team Communication
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('main.reports') }}">
+                                    <i data-feather="bar-chart-2" class="me-2"></i>
+                                    Reports
+                                </a></li>
+                            </ul>
+                        </li>
                         
                         {% if current_user.has_role('Manager') or current_user.has_role('Admin') or current_user.has_role('Super User') %}
-                        <li><hr class="dropdown-divider"></li>
+                        <!-- Management Section as Sub-dropdown -->
+                        <li class="dropdown-submenu">
+                            <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i data-feather="users" class="me-2"></i>
+                                Management
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.team_timecard') }}">
+                                    <i data-feather="users" class="me-2"></i>
+                                    Team Timecard
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.time_exceptions') }}">
+                                    <i data-feather="alert-triangle" class="me-2"></i>
+                                    Time Exceptions
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('scheduling.manage_schedules') }}">
+                                    <i data-feather="calendar" class="me-2"></i>
+                                    Manage Schedules
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('scheduling.shift_types') }}">
+                                    <i data-feather="clock" class="me-2"></i>
+                                    Shift Types
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('ai_scheduling.ai_dashboard') }}">
+                                    <i data-feather="cpu" class="me-2"></i>
+                                    AI Scheduling
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('leave_management.team_applications') }}">
+                                    <i data-feather="umbrella" class="me-2"></i>
+                                    Team Leave Applications
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('leave_management.apply_for_employee') }}">
+                                    <i data-feather="user-plus" class="me-2"></i>
+                                    Apply Leave for Employee
+                                </a></li>
+                            </ul>
+                        </li>
                         
-                        <!-- Management Section -->
-                        <li><h6 class="dropdown-header">Management</h6></li>
-                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.team_timecard') }}">
-                            <i data-feather="users" class="me-2"></i>
-                            Team Timecard
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.time_exceptions') }}">
-                            <i data-feather="alert-triangle" class="me-2"></i>
-                            Time Exceptions
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('scheduling.manage_schedules') }}">
-                            <i data-feather="calendar" class="me-2"></i>
-                            Manage Schedules
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('scheduling.shift_types') }}">
-                            <i data-feather="clock" class="me-2"></i>
-                            Shift Types
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('ai_scheduling.ai_dashboard') }}">
-                            <i data-feather="cpu" class="me-2"></i>
-                            AI Scheduling
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('leave_management.team_applications') }}">
-                            <i data-feather="umbrella" class="me-2"></i>
-                            Team Leave Applications
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('leave_management.apply_for_employee') }}">
-                            <i data-feather="user-plus" class="me-2"></i>
-                            Apply Leave for Employee
-                        </a></li>
-                        
-                        <!-- Super User Administration Section -->
+                        <!-- Super User Administration Section as Sub-dropdown -->
                         {% if current_user.has_role('Super User') %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li><h6 class="dropdown-header">Administration</h6></li>
-                        <li><a class="dropdown-item" href="{{ url_for('auth.user_management') }}">
-                            <i data-feather="users" class="me-2"></i>
-                            User Management
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.admin_dashboard') }}">
-                            <i data-feather="shield" class="me-2"></i>
-                            Time Attendance Admin
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.manual_entry') }}">
-                            <i data-feather="edit" class="me-2"></i>
-                            Manual Time Entry
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('leave_management.manage_leave_types') }}">
-                            <i data-feather="tag" class="me-2"></i>
-                            Leave Types
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('leave_management.manage_leave_balances') }}">
-                            <i data-feather="trending-up" class="me-2"></i>
-                            Leave Balances
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('pay_rules.manage_pay_rules') }}">
-                            <i data-feather="dollar-sign" class="me-2"></i>
-                            Pay Rules Engine
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('pay_rules.calculate_pay') }}">
-                            <i data-feather="credit-card" class="me-2"></i>
-                            Calculate Pay
-                        </a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('pay_codes.manage_pay_codes') }}">
-                            <i data-feather="tag" class="me-2"></i>
-                            Pay Codes
-                        </a></li>
+                        <li class="dropdown-submenu">
+                            <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i data-feather="shield" class="me-2"></i>
+                                Administration
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.user_management') }}">
+                                    <i data-feather="users" class="me-2"></i>
+                                    User Management
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.admin_dashboard') }}">
+                                    <i data-feather="shield" class="me-2"></i>
+                                    Time Attendance Admin
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.manual_entry') }}">
+                                    <i data-feather="edit" class="me-2"></i>
+                                    Manual Time Entry
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('leave_management.manage_leave_types') }}">
+                                    <i data-feather="tag" class="me-2"></i>
+                                    Leave Types
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('leave_management.manage_leave_balances') }}">
+                                    <i data-feather="trending-up" class="me-2"></i>
+                                    Leave Balances
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('pay_rules.manage_pay_rules') }}">
+                                    <i data-feather="dollar-sign" class="me-2"></i>
+                                    Pay Rules Engine
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('pay_rules.calculate_pay') }}">
+                                    <i data-feather="credit-card" class="me-2"></i>
+                                    Calculate Pay
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('pay_codes.manage_pay_codes') }}">
+                                    <i data-feather="tag" class="me-2"></i>
+                                    Pay Codes
+                                </a></li>
+                            </ul>
+                        </li>
                         {% endif %}
                         {% endif %}
                     </ul>
@@ -339,9 +407,34 @@
             console.log('Global error:', event.error);
         });
         
+        // Initialize sub-dropdown functionality
+        function initSubDropdowns() {
+            // Handle sub-dropdown clicks for mobile
+            document.querySelectorAll('.dropdown-submenu .dropdown-toggle').forEach(function(element) {
+                element.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const submenu = this.nextElementSibling;
+                    const isVisible = submenu.style.display === 'block';
+                    
+                    // Hide all other submenus
+                    document.querySelectorAll('.dropdown-submenu .dropdown-menu').forEach(function(menu) {
+                        menu.style.display = 'none';
+                    });
+                    
+                    // Toggle current submenu
+                    if (!isVisible) {
+                        submenu.style.display = 'block';
+                    }
+                });
+            });
+        }
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             checkDatabaseStatus();
+            initSubDropdowns();
             // Check database status every 30 seconds
             setInterval(checkDatabaseStatus, 30000);
         });
