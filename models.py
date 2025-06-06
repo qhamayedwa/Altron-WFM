@@ -180,6 +180,22 @@ class User(UserMixin, db.Model):
         if self.has_role(role.name):
             self.roles.remove(role)
     
+    def is_system_super_admin(self):
+        """Check if user is system super admin (can manage all tenants)"""
+        return self.has_role('system_super_admin')
+    
+    def is_tenant_admin(self):
+        """Check if user is admin of their tenant"""
+        return self.has_role('tenant_admin') or self.has_role('system_super_admin')
+    
+    def can_manage_tenant(self, tenant_id=None):
+        """Check if user can manage a specific tenant"""
+        if self.is_system_super_admin():
+            return True
+        if self.is_tenant_admin() and (tenant_id is None or self.tenant_id == tenant_id):
+            return True
+        return False
+    
     @property
     def full_name(self):
         """Get user's full name"""

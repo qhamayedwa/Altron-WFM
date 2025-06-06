@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Organization Management - System Administration{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Organization Management</h1>
+                <div>
+                    <a href="{{ url_for('tenant.admin_create_organization') }}" class="btn btn-primary">
+                        <i data-feather="plus"></i> Create New Organization
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="building" class="text-primary" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Total Organizations</h6>
+                            <h4 class="mb-0">{{ tenants|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="check-circle" class="text-success" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Active Organizations</h6>
+                            <h4 class="mb-0">{{ tenants|selectattr("is_active")|list|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="users" class="text-info" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Total Users</h6>
+                            <h4 class="mb-0">{{ tenants|sum(attribute='user_count') }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="globe" class="text-warning" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Multi-Tenant</h6>
+                            <p class="mb-0">System</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Organizations Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">All Organizations</h5>
+        </div>
+        <div class="card-body">
+            {% if tenants %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Organization</th>
+                            <th>Subdomain</th>
+                            <th>Admin Email</th>
+                            <th>Users</th>
+                            <th>Plan</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tenant in tenants %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ tenant.name }}</strong>
+                                    {% if tenant.domain %}
+                                    <br><small class="text-muted">{{ tenant.domain }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <code>{{ tenant.subdomain }}</code>
+                            </td>
+                            <td>{{ tenant.admin_email }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ tenant.user_count }}</span> / 
+                                <span class="badge bg-light text-dark">{{ tenant.max_users }}</span>
+                                {% if tenant.is_over_limit %}
+                                <i data-feather="alert-triangle" class="text-warning" style="width: 16px; height: 16px;"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if tenant.subscription_plan == 'enterprise' %}success{% elif tenant.subscription_plan == 'premium' %}warning{% else %}secondary{% endif %}">
+                                    {{ tenant.subscription_plan|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if tenant.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ tenant.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('tenant.admin_edit_tenant', tenant_id=tenant.id) }}" 
+                                       class="btn btn-outline-primary">
+                                        <i data-feather="edit-2" style="width: 14px; height: 14px;"></i>
+                                    </a>
+                                    <a href="{{ url_for('tenant.create_tenant_admin', tenant_id=tenant.id) }}" 
+                                       class="btn btn-outline-success" title="Create Tenant Admin">
+                                        <i data-feather="user-plus" style="width: 14px; height: 14px;"></i>
+                                    </a>
+                                    <a href="{{ url_for('tenant.view_tenant_details', tenant_id=tenant.id) }}" 
+                                       class="btn btn-outline-info">
+                                        <i data-feather="eye" style="width: 14px; height: 14px;"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i data-feather="building" style="width: 48px; height: 48px;" class="text-muted mb-3"></i>
+                <h5 class="text-muted">No Organizations Found</h5>
+                <p class="text-muted">Get started by creating your first organization.</p>
+                <a href="{{ url_for('tenant.admin_create_organization') }}" class="btn btn-primary">
+                    <i data-feather="plus"></i> Create First Organization
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Multi-Tenancy Information -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Multi-Tenant System Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Data Isolation</h6>
+                            <p class="text-muted">Each organization has completely isolated data including:</p>
+                            <ul class="text-muted">
+                                <li>Users and roles</li>
+                                <li>Time tracking records</li>
+                                <li>Schedules and shifts</li>
+                                <li>Leave applications</li>
+                                <li>Payroll data</li>
+                                <li>Custom settings</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Role Hierarchy</h6>
+                            <ul class="text-muted">
+                                <li><strong>System Super Admin:</strong> Manages all organizations</li>
+                                <li><strong>Tenant Admin:</strong> Manages their organization</li>
+                                <li><strong>Manager:</strong> Manages employees within organization</li>
+                                <li><strong>Employee:</strong> Basic access within organization</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Feather icons
+feather.replace();
+</script>
+{% endblock %}
