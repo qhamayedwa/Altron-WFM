@@ -5,51 +5,61 @@
 {% block content %}
 <div class="container-fluid">
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Dashboard</h1>
+    <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <span class="text-muted">{{ current_user.username }}</span>
-            <span class="text-muted ms-3">Today</span>
+            <h1 class="display-6 fw-bold text-dark mb-2">Dashboard</h1>
+            <p class="text-muted mb-0 fs-5">Welcome back, {{ current_user.first_name or current_user.username }}</p>
+        </div>
+        <div class="text-end">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <div class="text-muted small">Current Status</div>
+                    <div class="fw-semibold">{{ current_time.strftime('%H:%M') if current_time else 'Loading...' }}</div>
+                </div>
+                <div class="vr me-3"></div>
+                <div>
+                    <div class="text-muted small">{{ current_time.strftime('%B %d, %Y') if current_time else 'Today' }}</div>
+                    <div class="fw-semibold text-primary">{{ current_user.department or 'Employee' }}</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-4">
+    <div class="row mb-5">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            {% if current_user.has_role('Manager') or current_user.has_role('Admin') or current_user.has_role('Super User') %}
-                                <div class="text-muted small">Total Employees</div>
-                            {% else %}
-                                <div class="text-muted small">My Profile</div>
-                            {% endif %}
-                            <div class="h4 mb-0">{{ total_employees }}</div>
-                        </div>
-                        <div class="text-primary">
-                            <i data-feather="users" class="feather-xl"></i>
-                        </div>
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if current_user.has_role('Manager') or current_user.has_role('Admin') or current_user.has_role('Super User') %}
+                            <div class="text-white-50 fw-medium mb-1">Total Employees</div>
+                            <div class="display-6 fw-bold mb-0">{{ total_employees }}</div>
+                        {% else %}
+                            <div class="text-white-50 fw-medium mb-1">My Profile</div>
+                            <div class="display-6 fw-bold mb-0">Active</div>
+                        {% endif %}
+                    </div>
+                    <div class="text-white-50">
+                        <i data-feather="users" style="width: 48px; height: 48px;"></i>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-success border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            {% if current_user.has_role('Manager') or current_user.has_role('Admin') or current_user.has_role('Super User') %}
-                                <div class="text-muted small">Currently Clocked In</div>
-                            {% else %}
-                                <div class="text-muted small">My Clock Status</div>
-                            {% endif %}
-                            <div class="h4 mb-0">{{ clocked_in_now }}</div>
-                        </div>
-                        <div class="text-success">
-                            <i data-feather="clock" class="feather-xl"></i>
-                        </div>
+            <div class="stats-card users">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if current_user.has_role('Manager') or current_user.has_role('Admin') or current_user.has_role('Super User') %}
+                            <div class="text-white-50 fw-medium mb-1">Currently Clocked In</div>
+                            <div class="display-6 fw-bold mb-0">{{ clocked_in_now }}</div>
+                        {% else %}
+                            <div class="text-white-50 fw-medium mb-1">My Clock Status</div>
+                            <div class="display-6 fw-bold mb-0">{{ 'In' if current_status else 'Out' }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="text-white-50">
+                        <i data-feather="clock" style="width: 48px; height: 48px;"></i>
                     </div>
                 </div>
             </div>
