@@ -1,84 +1,90 @@
 {% extends "base.html" %}
 
-{% block title %}Ask AI - Natural Language Queries - WFM{% endblock %}
+{% block title %}AI Assistant - Natural Language Query{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="row mb-4">
+<div class="container mt-4">
+    <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2>
-                        <i data-feather="message-circle" class="me-2"></i>
-                        Ask AI About Your Workforce
+                    <h2 class="mb-1">
+                        <i data-feather="message-square" class="me-2"></i>
+                        AI Assistant
                     </h2>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ url_for('ai.ai_dashboard') }}">AI Insights</a></li>
-                            <li class="breadcrumb-item active">Natural Query</li>
-                        </ol>
-                    </nav>
+                    <p class="text-muted mb-0">Ask questions about your workforce data in natural language</p>
                 </div>
+                <a href="{{ url_for('ai.ai_dashboard') }}" class="btn btn-outline-secondary">
+                    <i data-feather="arrow-left" class="me-2"></i>Back to AI Dashboard
+                </a>
             </div>
-        </div>
-    </div>
 
-    <!-- Query Interface -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
+            <!-- Query Interface -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i data-feather="zap" class="me-2"></i>
-                        AI-Powered Workforce Assistant
+                        <i data-feather="message-circle" class="me-2"></i>
+                        Ask Your Question
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-3">Ask questions about your workforce data in natural language. The AI will analyze your data and provide insights.</p>
-                    
-                    <div class="mb-3">
-                        <label for="ai-query" class="form-label">Your Question:</label>
-                        <textarea class="form-control" id="ai-query" rows="3" 
-                                  placeholder="Example: What are our busiest hours? Which employees work the most overtime? Are there any attendance patterns I should know about?"></textarea>
+                    <form id="queryForm">
+                        <div class="mb-3">
+                            <label for="natural_query" class="form-label">Your Question</label>
+                            <textarea class="form-control" id="natural_query" name="query" rows="3" 
+                                placeholder="e.g., Show me attendance patterns for the last month, or Which employees work the most overtime?"
+                                required></textarea>
+                            <div class="form-text">Ask questions about schedules, attendance, payroll, or employee patterns</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="insertSample('attendance')">
+                                    Sample: Attendance
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="insertSample('schedules')">
+                                    Sample: Schedules
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="insertSample('payroll')">
+                                    Sample: Payroll
+                                </button>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="queryBtn">
+                                <i data-feather="send" class="me-2"></i>Ask AI
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Response Section -->
+            <div id="response-section" style="display: none;">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i data-feather="message-square" class="me-2"></i>
+                            AI Response
+                        </h5>
                     </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-primary" onclick="submitQuery()">
-                            <i data-feather="send" class="me-2"></i>
-                            Ask AI
-                        </button>
-                        <button class="btn btn-outline-secondary" onclick="clearQuery()">
-                            <i data-feather="x" class="me-2"></i>
-                            Clear
-                        </button>
+                    <div class="card-body" id="ai-response">
+                        <!-- AI response will be populated here -->
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Response Section -->
-    <div class="row" id="response-section" style="display: none;">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i data-feather="cpu" class="me-2"></i>
-                        AI Response
-                    </h5>
-                </div>
-                <div class="card-body" id="ai-response">
-                    <!-- Response will be loaded here -->
+            <!-- Loading State -->
+            <div id="loading-section" style="display: none;">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <h5>Processing Your Question...</h5>
+                        <p class="text-muted">AI is analyzing your workforce data</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Example Questions -->
-    <div class="row">
-        <div class="col-12">
+            <!-- Example Questions -->
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -88,22 +94,28 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h6>Attendance & Time Tracking</h6>
+                        <div class="col-md-4">
+                            <h6 class="text-primary">Attendance</h6>
                             <ul class="list-unstyled">
-                                <li><a href="#" class="text-decoration-none" onclick="setQuery('What are our busiest hours?')">• What are our busiest hours?</a></li>
-                                <li><a href="#" class="text-decoration-none" onclick="setQuery('Which employees are consistently late?')">• Which employees are consistently late?</a></li>
-                                <li><a href="#" class="text-decoration-none" onclick="setQuery('Show me attendance trends for this month')">• Show me attendance trends for this month</a></li>
-                                <li><a href="#" class="text-decoration-none" onclick="setQuery('What is our average daily attendance rate?')">• What is our average daily attendance rate?</a></li>
+                                <li><a href="#" onclick="setQuery('Show me attendance patterns for this month')" class="text-decoration-none">• Monthly attendance patterns</a></li>
+                                <li><a href="#" onclick="setQuery('Which employees are frequently late?')" class="text-decoration-none">• Late arrival analysis</a></li>
+                                <li><a href="#" onclick="setQuery('What are the busiest days of the week?')" class="text-decoration-none">• Peak attendance days</a></li>
                             </ul>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Scheduling & Operations</h6>
+                        <div class="col-md-4">
+                            <h6 class="text-success">Scheduling</h6>
                             <ul class="list-unstyled">
-                                <li><a href="#" class="text-decoration-none" onclick="setQuery('How can we optimize our scheduling?')">• How can we optimize our scheduling?</a></li>
-                                <li><a href="#" class="text-decoration-none" onclick="setQuery('Which days need more coverage?')">• Which days need more coverage?</a></li>
-                                <li><a href="#" class="text-decoration-none" onclick="setQuery('What is our overtime cost this month?')">• What is our overtime cost this month?</a></li>
-                                <li><a href="#" class="text-decoration-none" onclick="setQuery('Are there any scheduling conflicts?')">• Are there any scheduling conflicts?</a></li>
+                                <li><a href="#" onclick="setQuery('Analyze our current scheduling efficiency')" class="text-decoration-none">• Scheduling efficiency</a></li>
+                                <li><a href="#" onclick="setQuery('Which departments need more coverage?')" class="text-decoration-none">• Coverage analysis</a></li>
+                                <li><a href="#" onclick="setQuery('Show schedule conflicts this week')" class="text-decoration-none">• Schedule conflicts</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-info">Payroll</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="#" onclick="setQuery('Calculate overtime costs for last month')" class="text-decoration-none">• Overtime analysis</a></li>
+                                <li><a href="#" onclick="setQuery('Show payroll trends by department')" class="text-decoration-none">• Department payroll</a></li>
+                                <li><a href="#" onclick="setQuery('Identify unusual payroll patterns')" class="text-decoration-none">• Payroll anomalies</a></li>
                             </ul>
                         </div>
                     </div>
@@ -112,173 +124,227 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    feather.replace();
-    
-    // Handle Enter key in textarea
-    document.getElementById('ai-query').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            submitQuery();
-        }
+    // Handle form submission
+    document.getElementById('queryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        processNaturalQuery();
     });
 });
 
-function setQuery(questionText) {
-    document.getElementById('ai-query').value = questionText;
-    document.getElementById('ai-query').focus();
+function insertSample(type) {
+    const textarea = document.getElementById('natural_query');
+    const samples = {
+        attendance: "Show me attendance patterns for the last 30 days and identify any concerning trends",
+        schedules: "Analyze our current scheduling efficiency and suggest improvements",
+        payroll: "Calculate overtime costs and identify departments with highest payroll expenses"
+    };
+    textarea.value = samples[type] || '';
+    textarea.focus();
 }
 
-function clearQuery() {
-    document.getElementById('ai-query').value = '';
-    document.getElementById('response-section').style.display = 'none';
-    document.getElementById('ai-query').focus();
+function setQuery(query) {
+    document.getElementById('natural_query').value = query;
+    document.getElementById('natural_query').focus();
 }
 
-async function submitQuery() {
-    const queryText = document.getElementById('ai-query').value.trim();
-    const responseSection = document.getElementById('response-section');
-    const responseDiv = document.getElementById('ai-response');
+function processNaturalQuery() {
+    const query = document.getElementById('natural_query').value.trim();
     
-    if (!queryText) {
-        alert('Please enter a question before submitting.');
+    if (!query) {
+        showError('Please enter a question');
         return;
     }
     
-    // Show response section and loading state
-    responseSection.style.display = 'block';
-    responseDiv.innerHTML = `
-        <div class="d-flex align-items-center">
-            <div class="spinner-border spinner-border-sm me-3" role="status">
-                <span class="visually-hidden">Processing...</span>
-            </div>
-            <div>
-                <strong>AI is analyzing your question...</strong>
-                <div class="small text-muted">This may take a few moments</div>
-            </div>
-        </div>
-    `;
+    // Show loading state
+    document.getElementById('response-section').style.display = 'none';
+    document.getElementById('loading-section').style.display = 'block';
     
-    try {
-        const response = await fetch('/ai/api/natural-query', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query: queryText })
-        });
+    // Update button state
+    const btn = document.getElementById('queryBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+    
+    // Call AI natural query API
+    fetch('/ai/api/natural-query', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: query })
+    })
+    .then(response => response.json())
+    .then(result => {
+        displayAIResponse(result);
+    })
+    .catch(error => {
+        console.error('Natural query error:', error);
+        showError('Failed to process your question. Please try again.');
+    })
+    .finally(() => {
+        // Reset button state
+        btn.disabled = false;
+        btn.innerHTML = '<i data-feather="send" class="me-2"></i>Ask AI';
+        feather.replace();
         
-        const data = await response.json();
-        
-        if (data.success && data.result) {
-            const result = data.result;
-            responseDiv.innerHTML = `
-                <div class="alert alert-light border">
-                    <h6 class="mb-3">
-                        <i data-feather="zap" class="me-2"></i>
-                        AI Analysis Complete
-                    </h6>
-                    
-                    <div class="mb-4">
-                        <h6>Response:</h6>
-                        <p class="mb-0">${result.response}</p>
-                    </div>
-                    
-                    ${result.insights && result.insights.length > 0 ? `
-                        <div class="mb-4">
-                            <h6>Key Insights:</h6>
-                            <ul class="mb-0">
-                                ${result.insights.map(insight => `<li>${insight}</li>`).join('')}
-                            </ul>
-                        </div>
-                    ` : ''}
-                    
-                    ${result.suggested_actions && result.suggested_actions.length > 0 ? `
-                        <div class="mb-4">
-                            <h6>Suggested Actions:</h6>
-                            <ul class="mb-0">
-                                ${result.suggested_actions.map(action => `<li class="text-primary">${action}</li>`).join('')}
-                            </ul>
-                        </div>
-                    ` : ''}
-                    
-                    ${result.related_data && Object.keys(result.related_data).length > 0 ? `
-                        <div>
-                            <h6>Related Data:</h6>
-                            <div class="row">
-                                ${Object.entries(result.related_data).map(([key, value]) => `
-                                    <div class="col-md-6 mb-2">
-                                        <strong>${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> ${value}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="text-end">
-                    <small class="text-muted">
-                        Query processed at ${new Date().toLocaleTimeString()}
-                    </small>
-                </div>
-            `;
-        } else {
-            let errorMessage = 'Unable to process your query.';
-            
-            if (data.error) {
-                if (data.error.includes('quota') || data.error.includes('insufficient_quota')) {
-                    errorMessage = 'OpenAI API quota exceeded. Please check your billing details or try again later.';
-                } else if (data.error.includes('429')) {
-                    errorMessage = 'API rate limit reached. Please wait a moment and try again.';
-                } else {
-                    errorMessage = data.error;
-                }
-            }
-            
-            responseDiv.innerHTML = `
-                <div class="alert alert-warning">
-                    <div class="d-flex align-items-center">
-                        <i data-feather="alert-triangle" class="me-3"></i>
-                        <div>
-                            <strong>Query Processing Issue</strong>
-                            <div class="mt-1">${errorMessage}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="alert alert-info mt-3">
-                    <h6>Alternative Options:</h6>
-                    <ul class="mb-0">
-                        <li>Check the <a href="{{ url_for('main.reports') }}">Reports section</a> for detailed analytics</li>
-                        <li>Use the <a href="{{ url_for('time_attendance.team_timecard') }}">Team Timecard</a> for attendance data</li>
-                        <li>View <a href="{{ url_for('scheduling.manage_schedules') }}">Schedule Management</a> for scheduling insights</li>
-                    </ul>
-                </div>
-            `;
-        }
-        
-    } catch (error) {
+        // Hide loading state
+        document.getElementById('loading-section').style.display = 'none';
+    });
+}
+
+function displayAIResponse(result) {
+    const responseDiv = document.getElementById('ai-response');
+    
+    if (!result.success) {
         responseDiv.innerHTML = `
-            <div class="alert alert-danger">
-                <div class="d-flex align-items-center">
-                    <i data-feather="alert-circle" class="me-3"></i>
-                    <div>
-                        <strong>Connection Error</strong>
-                        <div class="mt-1">Unable to connect to AI service. Please check your network connection and try again.</div>
-                    </div>
+            <div class="alert alert-warning">
+                <i data-feather="alert-triangle" class="me-2"></i>
+                ${result.error || 'Unable to process your question'}
+            </div>
+            <div class="mt-3">
+                <h6>Statistical Analysis Available</h6>
+                <p class="text-muted">While AI natural language processing requires additional configuration, 
+                our system can provide statistical insights through the dashboard and specific analysis tools.</p>
+                <div class="d-grid gap-2 d-md-flex">
+                    <a href="{{ url_for('ai.ai_dashboard') }}" class="btn btn-primary">
+                        <i data-feather="bar-chart-2" class="me-2"></i>View Analytics Dashboard
+                    </a>
+                    <a href="{{ url_for('ai.scheduling_optimizer') }}" class="btn btn-outline-primary">
+                        <i data-feather="cpu" class="me-2"></i>Schedule Optimizer
+                    </a>
                 </div>
             </div>
         `;
+        feather.replace();
+        document.getElementById('response-section').style.display = 'block';
+        return;
     }
     
-    feather.replace();
+    const insights = result.insights || {};
     
-    // Scroll to response
-    responseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    responseDiv.innerHTML = `
+        <div class="mb-4">
+            <h6>Analysis Results</h6>
+            <div class="alert alert-info">
+                <p class="mb-0">${insights.summary || 'Analysis completed successfully'}</p>
+            </div>
+        </div>
+        
+        ${insights.data_points ? `
+        <div class="mb-4">
+            <h6>Key Data Points</h6>
+            <ul class="list-group list-group-flush">
+                ${insights.data_points.map(point => `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        ${point.description}
+                        <span class="badge bg-primary rounded-pill">${point.value}</span>
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
+        ` : ''}
+        
+        ${insights.recommendations ? `
+        <div class="mb-4">
+            <h6>Recommendations</h6>
+            <div class="row">
+                ${insights.recommendations.map((rec, index) => `
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-left-primary">
+                            <div class="card-body">
+                                <h6 class="text-primary">${rec.title}</h6>
+                                <p class="mb-0">${rec.description}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-outline-primary me-2" onclick="exportResponse()">
+                <i data-feather="download" class="me-2"></i>Export Results
+            </button>
+            <button class="btn btn-primary" onclick="askFollowUp()">
+                <i data-feather="plus" class="me-2"></i>Ask Follow-up
+            </button>
+        </div>
+    `;
+    
+    feather.replace();
+    document.getElementById('response-section').style.display = 'block';
+}
+
+function exportResponse() {
+    // Implementation for exporting response
+    showSuccess('Export feature will be available soon.');
+}
+
+function askFollowUp() {
+    document.getElementById('natural_query').value = '';
+    document.getElementById('natural_query').focus();
+    document.getElementById('response-section').style.display = 'none';
+}
+
+function showError(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-danger alert-dismissible fade show';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.container').insertBefore(alert, document.querySelector('.container').firstChild);
+}
+
+function showSuccess(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.container').insertBefore(alert, document.querySelector('.container').firstChild);
 }
 </script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.border-left-primary {
+    border-left: 4px solid #007bff !important;
+}
+
+.btn-group .btn {
+    border-radius: 0.375rem;
+    margin-right: 0.5rem;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.text-decoration-none:hover {
+    text-decoration: underline !important;
+}
+</style>
 {% endblock %}
