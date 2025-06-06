@@ -33,6 +33,46 @@
             border-radius: 0 6px 6px 6px;
         }
         
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            .dropdown-menu {
+                position: absolute !important;
+                right: 0 !important;
+                left: auto !important;
+                min-width: 250px !important;
+                transform: none !important;
+            }
+            
+            .dropdown-submenu .dropdown-menu {
+                position: static !important;
+                float: none !important;
+                width: 100% !important;
+                margin-top: 0 !important;
+                margin-left: 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                background-color: #f8f9fa !important;
+            }
+            
+            .dropdown-submenu .dropdown-item {
+                padding-left: 2rem !important;
+            }
+            
+            .navbar {
+                padding: 0.5rem 1rem !important;
+            }
+            
+            .navbar-brand {
+                font-size: 1.1rem !important;
+            }
+            
+            .btn.dropdown-toggle {
+                font-size: 0.9rem !important;
+                padding: 0.5rem 0.75rem !important;
+            }
+        }
+        
         .dropdown-submenu:hover .dropdown-menu {
             display: block;
         }
