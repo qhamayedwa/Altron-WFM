@@ -104,11 +104,16 @@
                                 </div>
                             </td>
                             
-                            {% set weekly_total = 0 %}
                             {% for date in week_dates %}
                             {% set entries = user_data.entries[date] %}
-                            {% set daily_total = entries | sum(attribute='total_hours') if entries else 0 %}
-                            {% set weekly_total = weekly_total + daily_total %}
+                            {% set daily_total = 0 %}
+                            {% if entries %}
+                                {% for entry in entries %}
+                                    {% if entry.total_hours %}
+                                        {% set daily_total = daily_total + entry.total_hours %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
                             
                             <td class="time-cell" data-date="{{ date.strftime('%Y-%m-%d') }}" data-user="{{ user_data.user.id }}">
                                 {% if entries %}
@@ -155,10 +160,10 @@
                             
                             <td class="weekly-total-cell text-center">
                                 <div class="total-display">
-                                    <strong class="h5 text-primary">{{ "%.1f"|format(weekly_total) }}h</strong>
-                                    {% if weekly_total > 40 %}
+                                    <strong class="h5 text-primary">{{ "%.1f"|format(user_data.weekly_total) }}h</strong>
+                                    {% if user_data.overtime_hours > 0 %}
                                     <div class="overtime-indicator">
-                                        <span class="badge bg-warning">{{ "%.1f"|format(weekly_total - 40) }}h OT</span>
+                                        <span class="badge bg-warning">{{ "%.1f"|format(user_data.overtime_hours) }}h OT</span>
                                     </div>
                                     {% endif %}
                                 </div>
@@ -250,21 +255,30 @@ document.addEventListener('DOMContentLoaded', function() {
 function calculateSummaryStats() {
     let totalHours = 0;
     let overtimeHours = 0;
-    let employeeCount = {{ calendar_data|length }};
+    let employeeCount = 0;
     
-    // Calculate totals from weekly total cells
+    // Calculate totals from weekly total cells that show pre-calculated backend values
     document.querySelectorAll('.weekly-total-cell .total-display strong').forEach(cell => {
-        const hours = parseFloat(cell.textContent.replace('h', ''));
+        employeeCount++;
+        const hoursText = cell.textContent.replace('h', '');
+        const hours = parseFloat(hoursText);
         if (!isNaN(hours)) {
             totalHours += hours;
-            if (hours > 40) {
-                overtimeHours += (hours - 40);
-            }
+        }
+    });
+    
+    // Calculate overtime from overtime badges
+    document.querySelectorAll('.overtime-indicator .badge').forEach(badge => {
+        const overtimeText = badge.textContent.replace('h OT', '');
+        const overtime = parseFloat(overtimeText);
+        if (!isNaN(overtime)) {
+            overtimeHours += overtime;
         }
     });
     
     const avgHours = employeeCount > 0 ? totalHours / employeeCount : 0;
     
+    document.getElementById('total-employees').textContent = employeeCount;
     document.getElementById('total-hours').textContent = totalHours.toFixed(1);
     document.getElementById('overtime-hours').textContent = overtimeHours.toFixed(1);
     document.getElementById('avg-hours').textContent = avgHours.toFixed(1);

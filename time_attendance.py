@@ -331,19 +331,29 @@ def team_calendar():
     for user in users:
         calendar_data[user.id] = {
             'user': user,
-            'entries': {}
+            'entries': {},
+            'weekly_total': 0,
+            'overtime_hours': 0
         }
         
         # Initialize empty entries for each day
         for date_obj in week_dates:
             calendar_data[user.id]['entries'][date_obj] = []
     
-    # Populate actual time entries
+    # Populate actual time entries and calculate totals
     for entry in time_entries:
         if entry.user_id in calendar_data:
             entry_date = entry.clock_in_time.date()
             if entry_date in calendar_data[entry.user_id]['entries']:
                 calendar_data[entry.user_id]['entries'][entry_date].append(entry)
+                
+                # Add to weekly total
+                if entry.total_hours:
+                    calendar_data[entry.user_id]['weekly_total'] += entry.total_hours
+                    
+                    # Calculate overtime (assuming 40 hour standard week)
+                    if calendar_data[entry.user_id]['weekly_total'] > 40:
+                        calendar_data[entry.user_id]['overtime_hours'] = calendar_data[entry.user_id]['weekly_total'] - 40
     
     # Get available departments for filter
     departments = db.session.query(User.department).filter(
