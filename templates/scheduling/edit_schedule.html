@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Schedule - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="edit" class="me-2"></i>
+            Edit Employee Schedule
+        </h2>
+        <a href="{{ url_for('scheduling.manage_schedules') }}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="me-2"></i>
+            Back to Schedules
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Schedule Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="user_id" class="form-label">Employee *</label>
+                                <select class="form-select" id="user_id" name="user_id" required>
+                                    <option value="">Select Employee</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}" {{ 'selected' if schedule and schedule.user_id == user.id else '' }}>
+                                        {{ user.username }} - {{ user.full_name if user.full_name else user.email }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="shift_type_id" class="form-label">Shift Type</label>
+                                <select class="form-select" id="shift_type_id" name="shift_type_id">
+                                    <option value="">Custom Schedule</option>
+                                    {% for shift_type in shift_types %}
+                                    <option value="{{ shift_type.id }}" 
+                                            {{ 'selected' if schedule and schedule.shift_type_id == shift_type.id else '' }}
+                                            data-start="{{ shift_type.default_start_time.strftime('%H:%M') if shift_type.default_start_time else '' }}"
+                                            data-end="{{ shift_type.default_end_time.strftime('%H:%M') if shift_type.default_end_time else '' }}">
+                                        {{ shift_type.name }} 
+                                        {% if shift_type.default_start_time and shift_type.default_end_time %}
+                                        ({{ shift_type.default_start_time.strftime('%I:%M %p') }} - {{ shift_type.default_end_time.strftime('%I:%M %p') }})
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_datetime" class="form-label">Start Date & Time *</label>
+                                <input type="datetime-local" class="form-control" id="start_datetime" name="start_datetime" 
+                                       value="{{ schedule.start_time.strftime('%Y-%m-%dT%H:%M') if schedule and schedule.start_time else '' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="end_datetime" class="form-label">End Date & Time *</label>
+                                <input type="datetime-local" class="form-control" id="end_datetime" name="end_datetime" 
+                                       value="{{ schedule.end_time.strftime('%Y-%m-%dT%H:%M') if schedule and schedule.end_time else '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Any special instructions or notes for this schedule...">{{ schedule.notes if schedule else '' }}</textarea>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                           {{ 'checked' if schedule and schedule.is_active else 'checked' }}>
+                                    <label class="form-check-label" for="is_active">
+                                        Active Schedule (uncheck to disable)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if schedule %}
+                        <div class="alert alert-warning">
+                            <i data-feather="alert-triangle" class="me-2"></i>
+                            <strong>Schedule Information:</strong>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Created: {{ schedule.created_at.strftime('%B %d, %Y at %I:%M %p') if schedule.created_at else 'Unknown' }}<br>
+                                    {% if schedule.updated_at %}
+                                    Last Modified: {{ schedule.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="alert alert-info">
+                            <i data-feather="info" class="me-2"></i>
+                            <strong>Note:</strong> Changes to this schedule will check for conflicts with other existing schedules.
+                            The employee will be notified of any schedule changes.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="{{ url_for('scheduling.manage_schedules') }}" class="btn btn-outline-secondary">
+                                    Cancel
+                                </a>
+                                {% if schedule and schedule.id %}
+                                <button type="button" class="btn btn-outline-danger ms-2" onclick="confirmDelete()">
+                                    <i data-feather="trash-2" class="me-2"></i>
+                                    Delete Schedule
+                                </button>
+                                {% endif %}
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="save" class="me-2"></i>
+                                Update Schedule
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if schedule and schedule.id %}
+                    <!-- Hidden form for deletion -->
+                    <form id="deleteForm" method="POST" action="{{ url_for('scheduling.delete_schedule', schedule_id=schedule.id) }}" style="display: none;">
+                        <input type="hidden" name="confirm_delete" value="1">
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if schedule and schedule.id %}
+            <!-- Schedule Analysis -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="clock" class="me-2"></i>
+                        Schedule Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h4 class="text-primary" id="duration">
+                                {% if schedule and schedule.start_time and schedule.end_time %}
+                                {% set duration = ((schedule.end_time - schedule.start_time).total_seconds() / 3600) %}
+                                {{ "%.1f"|format(duration) }}h
+                                {% else %}
+                                -
+                                {% endif %}
+                            </h4>
+                            <p class="text-muted mb-0">Duration</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-success" id="conflicts">
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                            </h4>
+                            <p class="text-muted mb-0">Conflicts</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-info" id="day-type">
+                                {% if schedule and schedule.start_time %}
+                                {{ schedule.start_time.strftime('%A') }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </h4>
+                            <p class="text-muted mb-0">Day of Week</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-warning" id="status">
+                                {{ 'Active' if schedule and schedule.is_active else 'Inactive' }}
+                            </h4>
+                            <p class="text-muted mb-0">Status</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+
+    // Set default times when shift type is selected
+    document.getElementById('shift_type_id').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const startTime = selectedOption.getAttribute('data-start');
+        const endTime = selectedOption.getAttribute('data-end');
+        
+        if (startTime && endTime) {
+            // Get current date from the start datetime input or use today
+            const currentStartValue = document.getElementById('start_datetime').value;
+            const currentDate = currentStartValue ? currentStartValue.split('T')[0] : new Date().toISOString().split('T')[0];
+            
+            // Set new times
+            document.getElementById('start_datetime').value = currentDate + 'T' + startTime;
+            document.getElementById('end_datetime').value = currentDate + 'T' + endTime;
+            
+            updateDuration();
+        }
+    });
+
+    // Calculate duration when times change
+    function updateDuration() {
+        const startDateTime = document.getElementById('start_datetime').value;
+        const endDateTime = document.getElementById('end_datetime').value;
+        
+        if (startDateTime && endDateTime) {
+            const start = new Date(startDateTime);
+            const end = new Date(endDateTime);
+            
+            if (end > start) {
+                const diff = (end - start) / (1000 * 60 * 60); // Convert to hours
+                document.getElementById('duration').textContent = diff.toFixed(1) + 'h';
+                
+                // Update day of week
+                document.getElementById('day-type').textContent = start.toLocaleDateString('en-US', { weekday: 'long' });
+            } else {
+                document.getElementById('duration').textContent = 'Invalid';
+            }
+        }
+    }
+
+    function confirmDelete() {
+        if (confirm('Are you sure you want to delete this schedule? This action cannot be undone.\n\nThe employee will be notified of this schedule cancellation.')) {
+            document.getElementById('deleteForm').submit();
+        }
+    }
+
+    // Check for conflicts when form values change
+    function checkConflicts() {
+        const userId = document.getElementById('user_id').value;
+        const startDateTime = document.getElementById('start_datetime').value;
+        const endDateTime = document.getElementById('end_datetime').value;
+        
+        if (userId && startDateTime && endDateTime) {
+            const scheduleId = {{ schedule.id if schedule else 'null' }};
+            
+            fetch('/scheduling/api/check-conflicts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    start_datetime: startDateTime,
+                    end_datetime: endDateTime,
+                    exclude_schedule_id: scheduleId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const conflictsElement = document.getElementById('conflicts');
+                if (data.conflicts && data.conflicts.length > 0) {
+                    conflictsElement.innerHTML = `<span class="text-danger">${data.conflicts.length}</span>`;
+                    conflictsElement.title = `${data.conflicts.length} conflict(s) found`;
+                } else {
+                    conflictsElement.innerHTML = '<span class="text-success">0</span>';
+                    conflictsElement.title = 'No conflicts';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking conflicts:', error);
+                document.getElementById('conflicts').innerHTML = '<span class="text-muted">?</span>';
+            });
+        }
+    }
+
+    // Load initial conflict check if editing existing schedule
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if schedule and schedule.id %}
+        checkConflicts();
+        {% endif %}
+    });
+
+    document.getElementById('start_datetime').addEventListener('change', function() {
+        updateDuration();
+        checkConflicts();
+    });
+    
+    document.getElementById('end_datetime').addEventListener('change', function() {
+        updateDuration();
+        checkConflicts();
+    });
+    
+    document.getElementById('user_id').addEventListener('change', checkConflicts);
+</script>
+{% endblock %}
