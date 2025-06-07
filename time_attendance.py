@@ -284,6 +284,88 @@ def team_timecard():
                          start_date=start_date,
                          end_date=end_date)
 
+@time_attendance_bp.route('/team-calendar')
+@role_required('Manager', 'Admin', 'Super User')
+def team_calendar():
+    """View team time cards in calendar format"""
+    # Get week start date from query params or default to current week
+    week_start_param = request.args.get('week_start')
+    department_filter = request.args.get('department')
+    
+    if week_start_param:
+        try:
+            week_start = datetime.strptime(week_start_param, '%Y-%m-%d').date()
+        except ValueError:
+            week_start = date.today()
+    else:
+        week_start = date.today()
+    
+    # Calculate start of week (Monday)
+    days_since_monday = week_start.weekday()
+    week_start = week_start - timedelta(days=days_since_monday)
+    week_end = week_start + timedelta(days=6)
+    
+    # Generate date range for the week
+    week_dates = []
+    current_date = week_start
+    while current_date <= week_end:
+        week_dates.append(current_date)
+        current_date += timedelta(days=1)
+    
+    # Get all active users
+    users_query = User.query.filter_by(is_active=True)
+    if department_filter:
+        users_query = users_query.filter_by(department=department_filter)
+    users = users_query.order_by(User.username).all()
+    
+    # Get time entries for the week
+    time_entries = TimeEntry.query.filter(
+        and_(
+            TimeEntry.clock_in_time >= datetime.combine(week_start, datetime.min.time()),
+            TimeEntry.clock_in_time <= datetime.combine(week_end, datetime.max.time())
+        )
+    ).all()
+    
+    # Organize time entries by user and date
+    calendar_data = {}
+    for user in users:
+        calendar_data[user.id] = {
+            'user': user,
+            'entries': {}
+        }
+        
+        # Initialize empty entries for each day
+        for date_obj in week_dates:
+            calendar_data[user.id]['entries'][date_obj] = []
+    
+    # Populate actual time entries
+    for entry in time_entries:
+        if entry.user_id in calendar_data:
+            entry_date = entry.clock_in_time.date()
+            if entry_date in calendar_data[entry.user_id]['entries']:
+                calendar_data[entry.user_id]['entries'][entry_date].append(entry)
+    
+    # Get available departments for filter
+    departments = db.session.query(User.department).filter(
+        User.department.isnot(None),
+        User.is_active == True
+    ).distinct().all()
+    departments = [dept[0] for dept in departments if dept[0]]
+    
+    # Calculate navigation dates
+    prev_week = week_start - timedelta(days=7)
+    next_week = week_start + timedelta(days=7)
+    
+    return render_template('time_attendance/team_calendar.html',
+                         calendar_data=calendar_data,
+                         week_dates=week_dates,
+                         week_start=week_start,
+                         week_end=week_end,
+                         prev_week=prev_week,
+                         next_week=next_week,
+                         departments=departments,
+                         selected_department=department_filter)
+
 @time_attendance_bp.route('/approve-entry/<int:entry_id>', methods=['POST'])
 @role_required('Manager', 'Admin', 'Super User')
 def approve_time_entry(entry_id):

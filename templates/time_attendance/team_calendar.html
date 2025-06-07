@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block title %}Team Time Card Calendar - Flask PostgreSQL App{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i data-feather="calendar" class="me-2"></i>
+                Team Time Card Calendar
+            </h2>
+            <p class="text-muted mb-0">Week of {{ week_start.strftime('%B %d') }} - {{ week_end.strftime('%B %d, %Y') }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('time_attendance.team_timecard') }}" class="btn btn-outline-secondary">
+                <i data-feather="list" class="me-2"></i>List View
+            </a>
+            <button class="btn btn-primary" onclick="printCalendar()">
+                <i data-feather="printer" class="me-2"></i>Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters and Navigation -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="week_start" class="form-label">Week Starting</label>
+                    <input type="date" class="form-control" id="week_start" name="week_start" 
+                           value="{{ week_start.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="department" class="form-label">Department</label>
+                    <select class="form-select" id="department" name="department">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {{ 'selected' if dept == selected_department else '' }}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="filter" class="me-2"></i>Apply Filters
+                    </button>
+                    <a href="{{ url_for('time_attendance.team_calendar') }}" class="btn btn-outline-secondary ms-2">
+                        <i data-feather="x" class="me-2"></i>Clear
+                    </a>
+                </div>
+                <div class="col-md-3 text-end">
+                    <div class="btn-group">
+                        <a href="{{ url_for('time_attendance.team_calendar', week_start=prev_week.strftime('%Y-%m-%d'), department=selected_department) }}" 
+                           class="btn btn-outline-primary">
+                            <i data-feather="chevron-left"></i> Previous Week
+                        </a>
+                        <a href="{{ url_for('time_attendance.team_calendar', week_start=next_week.strftime('%Y-%m-%d'), department=selected_department) }}" 
+                           class="btn btn-outline-primary">
+                            Next Week <i data-feather="chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Calendar Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0" id="calendar-table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="employee-column">Employee</th>
+                            {% for date in week_dates %}
+                            <th class="date-column text-center">
+                                <div class="fw-bold">{{ date.strftime('%a') }}</div>
+                                <div class="small">{{ date.strftime('%m/%d') }}</div>
+                            </th>
+                            {% endfor %}
+                            <th class="total-column text-center">Weekly Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user_id, user_data in calendar_data.items() %}
+                        <tr class="employee-row">
+                            <td class="employee-info">
+                                <div class="d-flex align-items-center">
+                                    <div class="employee-avatar me-3">
+                                        <div class="avatar-circle">
+                                            {{ user_data.user.username[0].upper() }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ user_data.user.username }}</div>
+                                        <div class="text-muted small">
+                                            {{ user_data.user.full_name if user_data.user.full_name else user_data.user.email }}
+                                        </div>
+                                        {% if user_data.user.department %}
+                                        <div class="text-muted small">{{ user_data.user.department }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            {% set weekly_total = 0 %}
+                            {% for date in week_dates %}
+                            {% set entries = user_data.entries[date] %}
+                            {% set daily_total = entries | sum(attribute='total_hours') if entries else 0 %}
+                            {% set weekly_total = weekly_total + daily_total %}
+                            
+                            <td class="time-cell" data-date="{{ date.strftime('%Y-%m-%d') }}" data-user="{{ user_data.user.id }}">
+                                {% if entries %}
+                                    {% for entry in entries %}
+                                    <div class="time-entry {{ 'approved' if entry.approved_by_manager_id else 'pending' }}">
+                                        <div class="time-range">
+                                            <i data-feather="clock" class="small-icon"></i>
+                                            {{ entry.clock_in_time.strftime('%H:%M') }}
+                                            {% if entry.clock_out_time %}
+                                            - {{ entry.clock_out_time.strftime('%H:%M') }}
+                                            {% else %}
+                                            - <span class="text-warning">Open</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if entry.total_hours %}
+                                        <div class="total-hours">
+                                            <strong>{{ "%.1f"|format(entry.total_hours) }}h</strong>
+                                            {% if entry.overtime_hours > 0 %}
+                                            <span class="overtime-badge">+{{ "%.1f"|format(entry.overtime_hours) }}h OT</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                        {% if entry.notes %}
+                                        <div class="entry-notes">
+                                            <i data-feather="message-circle" class="small-icon"></i>
+                                            {{ entry.notes[:30] }}{{ '...' if entry.notes|length > 30 else '' }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                    
+                                    {% if daily_total > 0 %}
+                                    <div class="daily-total">
+                                        Total: <strong>{{ "%.1f"|format(daily_total) }}h</strong>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                <div class="no-entries">
+                                    <span class="text-muted">No entries</span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            
+                            <td class="weekly-total-cell text-center">
+                                <div class="total-display">
+                                    <strong class="h5 text-primary">{{ "%.1f"|format(weekly_total) }}h</strong>
+                                    {% if weekly_total > 40 %}
+                                    <div class="overtime-indicator">
+                                        <span class="badge bg-warning">{{ "%.1f"|format(weekly_total - 40) }}h OT</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        {% if not calendar_data %}
+                        <tr>
+                            <td colspan="{{ week_dates|length + 2 }}" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i data-feather="users" class="me-2"></i>
+                                    No employees found for the selected criteria
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 id="total-employees">{{ calendar_data|length }}</h3>
+                    <p class="mb-0">Employees</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 id="total-hours">0</h3>
+                    <p class="mb-0">Total Hours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3 id="overtime-hours">0</h3>
+                    <p class="mb-0">Overtime Hours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 id="avg-hours">0</h3>
+                    <p class="mb-0">Avg Hours/Employee</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Entry Details Modal -->
+<div class="modal fade" id="entryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Time Entry Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="entryModalBody">
+                <!-- Entry details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="approveEntryBtn" style="display: none;">Approve Entry</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+    calculateSummaryStats();
+    setupEventListeners();
+});
+
+function calculateSummaryStats() {
+    let totalHours = 0;
+    let overtimeHours = 0;
+    let employeeCount = {{ calendar_data|length }};
+    
+    // Calculate totals from weekly total cells
+    document.querySelectorAll('.weekly-total-cell .total-display strong').forEach(cell => {
+        const hours = parseFloat(cell.textContent.replace('h', ''));
+        if (!isNaN(hours)) {
+            totalHours += hours;
+            if (hours > 40) {
+                overtimeHours += (hours - 40);
+            }
+        }
+    });
+    
+    const avgHours = employeeCount > 0 ? totalHours / employeeCount : 0;
+    
+    document.getElementById('total-hours').textContent = totalHours.toFixed(1);
+    document.getElementById('overtime-hours').textContent = overtimeHours.toFixed(1);
+    document.getElementById('avg-hours').textContent = avgHours.toFixed(1);
+}
+
+function setupEventListeners() {
+    // Make time entries clickable for details
+    document.querySelectorAll('.time-entry').forEach(entry => {
+        entry.style.cursor = 'pointer';
+        entry.addEventListener('click', function(e) {
+            e.preventDefault();
+            showEntryDetails(this);
+        });
+    });
+    
+    // Handle cell hover effects
+    document.querySelectorAll('.time-cell').forEach(cell => {
+        cell.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        
+        cell.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+}
+
+function showEntryDetails(entryElement) {
+    // Extract entry information and show in modal
+    const timeRange = entryElement.querySelector('.time-range').textContent;
+    const totalHours = entryElement.querySelector('.total-hours')?.textContent || 'N/A';
+    const notes = entryElement.querySelector('.entry-notes')?.textContent || 'No notes';
+    
+    const modalBody = document.getElementById('entryModalBody');
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-6"><strong>Time:</strong></div>
+            <div class="col-6">${timeRange}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-6"><strong>Total Hours:</strong></div>
+            <div class="col-6">${totalHours}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-6"><strong>Notes:</strong></div>
+            <div class="col-6">${notes}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-6"><strong>Status:</strong></div>
+            <div class="col-6">
+                <span class="badge ${entryElement.classList.contains('approved') ? 'bg-success' : 'bg-warning'}">
+                    ${entryElement.classList.contains('approved') ? 'Approved' : 'Pending Approval'}
+                </span>
+            </div>
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('entryModal')).show();
+}
+
+function printCalendar() {
+    const printContent = document.getElementById('calendar-table').outerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Team Time Card Calendar - ${document.querySelector('p.text-muted').textContent}</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                @media print {
+                    .table { font-size: 12px; }
+                    .time-entry { margin-bottom: 5px; }
+                    .employee-column { width: 150px; }
+                    .date-column { width: 120px; }
+                    .total-column { width: 100px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container-fluid">
+                <h3 class="text-center mb-4">Team Time Card Calendar</h3>
+                <p class="text-center">${document.querySelector('p.text-muted').textContent}</p>
+                ${printContent}
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Quick navigation shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+            case 'ArrowLeft':
+                e.preventDefault();
+                document.querySelector('a[href*="prev_week"]')?.click();
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                document.querySelector('a[href*="next_week"]')?.click();
+                break;
+            case 'p':
+                e.preventDefault();
+                printCalendar();
+                break;
+        }
+    }
+});
+</script>
+
+<style>
+.employee-column {
+    width: 200px;
+    min-width: 200px;
+}
+
+.date-column {
+    width: 140px;
+    min-width: 140px;
+}
+
+.total-column {
+    width: 120px;
+    min-width: 120px;
+}
+
+.employee-info {
+    padding: 1rem;
+    border-right: 2px solid #dee2e6;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.time-cell {
+    padding: 0.5rem;
+    vertical-align: top;
+    min-height: 80px;
+    position: relative;
+}
+
+.time-entry {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.time-entry:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.time-entry.approved {
+    border-left: 4px solid #28a745;
+}
+
+.time-entry.pending {
+    border-left: 4px solid #ffc107;
+}
+
+.time-range {
+    font-size: 0.85rem;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.total-hours {
+    font-size: 0.9rem;
+    color: #007bff;
+}
+
+.entry-notes {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.daily-total {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.weekly-total-cell {
+    background-color: #f8f9fa;
+    border-left: 2px solid #dee2e6;
+}
+
+.total-display {
+    padding: 1rem;
+}
+
+.overtime-badge {
+    background: #ffc107;
+    color: #212529;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+}
+
+.overtime-indicator {
+    margin-top: 0.5rem;
+}
+
+.no-entries {
+    text-align: center;
+    padding: 2rem 0.5rem;
+    color: #6c757d;
+}
+
+.small-icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .employee-column {
+        width: 150px;
+        min-width: 150px;
+    }
+    
+    .date-column {
+        width: 100px;
+        min-width: 100px;
+    }
+    
+    .time-entry {
+        font-size: 0.8rem;
+        padding: 0.3rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .btn, .card-body .row, .modal { display: none !important; }
+    .table { font-size: 11px; }
+    .time-entry { margin-bottom: 3px; }
+}
+</style>
+{% endblock %}
