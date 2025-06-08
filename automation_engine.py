@@ -575,7 +575,7 @@ def workflow_config():
     """Time & Attendance workflow configuration interface"""
     from flask_login import login_required
     from auth_simple import super_user_required
-    from flask import render_template
+    from flask import render_template, flash, redirect, url_for
     
     @login_required
     @super_user_required
@@ -588,16 +588,15 @@ def workflow_config():
             # Get current workflow statistics
             today = datetime.now().date()
             
-            # Count pending approvals (late entries, overtime, etc.)
+            # Count pending approvals (entries missing clock-out times)
             pending_approvals = TimeEntry.query.filter(
                 and_(
                     func.date(TimeEntry.clock_in_time) >= today - timedelta(days=7),
-                    TimeEntry.requires_approval == True,
-                    TimeEntry.manager_approved == False
+                    TimeEntry.clock_out_time.is_(None)
                 )
             ).count()
             
-            # Count exceptions today (missing clock-outs, late arrivals)
+            # Count exceptions today (missing clock-outs)
             exceptions_today = TimeEntry.query.filter(
                 and_(
                     func.date(TimeEntry.clock_in_time) == today,
@@ -646,12 +645,11 @@ def save_workflow_config():
                 ).first()
                 
                 if not config:
-                    config = WorkflowConfig(
-                        config_name=section_name,
-                        user_id=current_user.id,
-                        config_data=json.dumps(section_data),
-                        is_active=True
-                    )
+                    config = WorkflowConfig()
+                    config.config_name = section_name
+                    config.user_id = current_user.id
+                    config.config_data = json.dumps(section_data)
+                    config.is_active = True
                     db.session.add(config)
                 else:
                     config.config_data = json.dumps(section_data)
