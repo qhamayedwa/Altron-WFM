@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Automation & Workflows - WFM System{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="settings" class="me-2"></i>
+            Automation & Workflow Management
+        </h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-success" onclick="runAllWorkflows()">
+                <i data-feather="play" class="me-2"></i>
+                Run All Workflows
+            </button>
+            <button class="btn btn-outline-secondary" onclick="refreshStatus()">
+                <i data-feather="refresh-cw" class="me-2"></i>
+                Refresh Status
+            </button>
+        </div>
+    </div>
+
+    <!-- System Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6 text-primary">{{ workflow_stats.total_employees }}</div>
+                    <h6 class="card-title">Active Employees</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6 text-warning">{{ workflow_stats.pending_leave_applications }}</div>
+                    <h6 class="card-title">Pending Applications</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6 text-info">{{ workflow_stats.open_time_entries }}</div>
+                    <h6 class="card-title">Open Time Entries</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6 text-success">{{ workflow_stats.active_workflows }}</div>
+                    <h6 class="card-title">Active Workflows</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Management -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="cpu" class="me-2"></i>
+                Automated Workflows
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for workflow in workflows %}
+                <div class="col-md-4 mb-3">
+                    <div class="card border-{{ 'success' if workflow.enabled else 'secondary' }}">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ workflow.name }}</h6>
+                            <span class="badge bg-{{ 'success' if workflow.status == 'Ready' else 'warning' }}">
+                                {{ workflow.status }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text small">{{ workflow.description }}</p>
+                            <div class="mb-2">
+                                <strong>Schedule:</strong> {{ workflow.schedule }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Last Run:</strong> 
+                                <span class="text-muted">{{ workflow.last_run }}</span>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary btn-sm" 
+                                        onclick="runWorkflow('{{ workflow.id }}', '{{ workflow.name }}')"
+                                        {% if not workflow.enabled %}disabled{% endif %}>
+                                    <i data-feather="play" class="me-1"></i>
+                                    Run Now
+                                </button>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" 
+                                           id="enable_{{ workflow.id }}"
+                                           {% if workflow.enabled %}checked{% endif %}
+                                           onchange="toggleWorkflow('{{ workflow.id }}')">
+                                    <label class="form-check-label" for="enable_{{ workflow.id }}">
+                                        Auto-run Enabled
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Configuration -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="sliders" class="me-2"></i>
+                Workflow Configuration
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Leave Accrual Configuration -->
+                <div class="col-md-6">
+                    <h6>Leave Accrual Settings</h6>
+                    <form class="mb-3">
+                        <div class="mb-2">
+                            <label class="form-label">Target Month/Year</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <select class="form-select form-select-sm" id="accrual_month">
+                                        <option value="current">Current Month</option>
+                                        {% for month in range(1, 13) %}
+                                        <option value="{{ month }}">{{ month }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <select class="form-select form-select-sm" id="accrual_year">
+                                        <option value="current">Current Year</option>
+                                        {% for year in range(2024, 2027) %}
+                                        <option value="{{ year }}">{{ year }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="process_all_employees" checked>
+                            <label class="form-check-label" for="process_all_employees">
+                                Process All Active Employees
+                            </label>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Notification Configuration -->
+                <div class="col-md-6">
+                    <h6>Notification Settings</h6>
+                    <form class="mb-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="send_leave_alerts" checked>
+                            <label class="form-check-label" for="send_leave_alerts">
+                                Leave Expiration Alerts
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="send_approval_reminders" checked>
+                            <label class="form-check-label" for="send_approval_reminders">
+                                Approval Reminders
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="send_schedule_notifications" checked>
+                            <label class="form-check-label" for="send_schedule_notifications">
+                                Schedule Change Notifications
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="activity" class="me-2"></i>
+                Recent Automation Activity
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if recent_history %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Workflow</th>
+                                <th>Run Time</th>
+                                <th>Status</th>
+                                <th>Records Processed</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for run in recent_history %}
+                            <tr>
+                                <td>{{ run.workflow_name }}</td>
+                                <td>{{ run.run_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if run.status == 'Success' else 'danger' }}">
+                                        {{ run.status }}
+                                    </span>
+                                </td>
+                                <td>{{ run.records_processed }}</td>
+                                <td>{{ run.duration }}s</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-muted py-4">
+                    <i data-feather="inbox" style="width: 48px; height: 48px;"></i>
+                    <p class="mt-2">No automation runs recorded yet</p>
+                    <p class="small">Manual workflow executions will appear here</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="workflowModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Running Workflow</h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p id="workflow-status">Processing...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function runWorkflow(workflowId, workflowName) {
+    const modal = new bootstrap.Modal(document.getElementById('workflowModal'));
+    document.getElementById('workflow-status').textContent = `Running ${workflowName}...`;
+    modal.show();
+    
+    let endpoint;
+    switch(workflowId) {
+        case 'leave_accrual':
+            endpoint = '/automation/run-accrual';
+            break;
+        case 'notifications':
+            endpoint = '/automation/run-notifications';
+            break;
+        case 'payroll':
+            endpoint = '/automation/run-payroll';
+            break;
+        default:
+            console.error('Unknown workflow:', workflowId);
+            modal.hide();
+            return;
+    }
+    
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        modal.hide();
+        if (data.success) {
+            showAlert('success', `${workflowName} completed successfully. ${data.message}`);
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showAlert('danger', `Error running ${workflowName}: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        modal.hide();
+        showAlert('danger', `Error running ${workflowName}: ${error.message}`);
+    });
+}
+
+function runAllWorkflows() {
+    if (confirm('Are you sure you want to run all workflows? This may take several minutes.')) {
+        const workflows = ['leave_accrual', 'notifications', 'payroll'];
+        let completed = 0;
+        
+        const modal = new bootstrap.Modal(document.getElementById('workflowModal'));
+        modal.show();
+        
+        workflows.forEach((workflowId, index) => {
+            setTimeout(() => {
+                document.getElementById('workflow-status').textContent = `Running workflow ${index + 1} of ${workflows.length}...`;
+                runWorkflow(workflowId, workflowId);
+            }, index * 5000); // 5 second delay between workflows
+        });
+    }
+}
+
+function toggleWorkflow(workflowId) {
+    const checkbox = document.getElementById(`enable_${workflowId}`);
+    const enabled = checkbox.checked;
+    
+    // In a real implementation, this would save to database
+    showAlert('info', `Workflow ${workflowId} ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+function refreshStatus() {
+    location.reload();
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+
+{% endblock %}

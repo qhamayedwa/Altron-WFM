@@ -14,7 +14,7 @@ from models import (
     TimeEntry, Schedule, PayCalculation
 )
 
-automation_bp = Blueprint('automation', __name__)
+automation_bp = Blueprint('automation', __name__, url_prefix='/automation')
 
 class AutomationEngine:
     """Central automation engine for system-wide automated tasks"""
@@ -417,6 +417,68 @@ class AutomationEngine:
         }
 
 # Automation routes for manual triggering and monitoring
+
+@automation_bp.route('/dashboard')
+def workflow_dashboard():
+    """Workflow configuration dashboard for Super Users"""
+    from flask_login import login_required
+    from auth_simple import super_user_required
+    from flask import render_template
+    
+    @login_required
+    @super_user_required
+    def _dashboard():
+        # Get workflow status and statistics
+        engine = AutomationEngine()
+        
+        # Get recent automation history
+        recent_history = []
+        
+        # Calculate workflow statistics
+        workflow_stats = {
+            'total_employees': User.query.filter_by(is_active=True).count(),
+            'pending_leave_applications': LeaveApplication.query.filter_by(status='Pending').count(),
+            'open_time_entries': TimeEntry.query.filter_by(status='Open').count(),
+            'active_workflows': 3  # Leave Accrual, Notifications, Payroll
+        }
+        
+        # Define available workflows
+        workflows = [
+            {
+                'id': 'leave_accrual',
+                'name': 'Monthly Leave Accrual',
+                'description': 'Automatically calculate and update employee leave balances',
+                'schedule': 'Monthly (1st day)',
+                'last_run': 'Not run yet',
+                'status': 'Ready',
+                'enabled': True
+            },
+            {
+                'id': 'notifications',
+                'name': 'Automated Notifications',
+                'description': 'Send leave expiration alerts and approval reminders',
+                'schedule': 'Daily (9:00 AM)',
+                'last_run': 'Not run yet',
+                'status': 'Ready',
+                'enabled': True
+            },
+            {
+                'id': 'payroll',
+                'name': 'Payroll Processing',
+                'description': 'Calculate payroll with overtime and exception detection',
+                'schedule': 'Weekly (Fridays)',
+                'last_run': 'Not run yet',
+                'status': 'Ready',
+                'enabled': True
+            }
+        ]
+        
+        return render_template('automation/dashboard.html',
+                             workflows=workflows,
+                             workflow_stats=workflow_stats,
+                             recent_history=recent_history)
+    
+    return _dashboard()
 
 @automation_bp.route('/run-accrual', methods=['POST'])
 def manual_accrual():
