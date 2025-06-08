@@ -182,6 +182,9 @@ def super_admin_dashboard():
         'alerts-notifications-section'
     ]
     
+    print(f"DEBUG: visible_sections = {visible_sections}")
+    print(f"DEBUG: dashboard_data has keys: {list(dashboard_data.keys())}")
+    
     return render_template('dashboard_super_admin.html', 
                          visible_sections=visible_sections,
                          **dashboard_data)
