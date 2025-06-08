@@ -16,11 +16,31 @@ time_attendance_bp = Blueprint('time_attendance', __name__, url_prefix='/time')
 @login_required
 def clock_in():
     """Employee clock-in endpoint"""
-    print(f"Clock-in endpoint called by user {current_user.username}")
+    print(f"=== CLOCK-IN DEBUG START ===")
+    print(f"User: {current_user.username} (ID: {current_user.id})")
     print(f"Request method: {request.method}")
     print(f"Request is_json: {request.is_json}")
+    print(f"Request content type: {request.content_type}")
+    print(f"Request headers: {dict(request.headers)}")
     print(f"Request form data: {request.form}")
-    print(f"Request JSON data: {request.get_json()}")
+    try:
+        json_data = request.get_json()
+        print(f"Request JSON data: {json_data}")
+    except Exception as json_error:
+        print(f"Error getting JSON: {json_error}")
+        json_data = {}
+    
+    # Simple test response first
+    if True:  # Always return success for now to test
+        response_data = {
+            'success': True,
+            'message': 'Test response - clock in endpoint reached',
+            'debug': True
+        }
+        print(f"=== RETURNING SUCCESS RESPONSE ===")
+        print(f"Response data: {response_data}")
+        return jsonify(response_data)
+    
     try:
         # Check if user already has an open time entry
         open_entry = TimeEntry.query.filter_by(
