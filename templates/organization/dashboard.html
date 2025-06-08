@@ -114,20 +114,20 @@
                     <h5><i class="fas fa-building"></i> Companies Overview</h5>
                 </div>
                 <div class="card-body">
-                    {% if companies %}
-                        {% for company in companies %}
+                    {% if company_details %}
+                        {% for detail in company_details %}
                         <div class="company-card">
                             <div class="company-header">
                                 <div>
                                     <h5 class="mb-1">
-                                        <a href="{{ url_for('organization.view_company', company_id=company.id) }}" 
+                                        <a href="{{ url_for('organization.view_company', company_id=detail.company.id) }}" 
                                            class="text-decoration-none">
-                                            {{ company.name }}
+                                            {{ detail.company.name }}
                                         </a>
-                                        <span class="company-code">{{ company.code }}</span>
+                                        <span class="company-code">{{ detail.company.code }}</span>
                                     </h5>
-                                    {% if company.legal_name %}
-                                    <p class="text-muted mb-0">{{ company.legal_name }}</p>
+                                    {% if detail.company.legal_name %}
+                                    <p class="text-muted mb-0">{{ detail.company.legal_name }}</p>
                                     {% endif %}
                                 </div>
                                 <div class="text-end">
@@ -138,31 +138,31 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="hierarchy-tree">
-                                        📍 {{ company.city or 'Not specified' }}, {{ company.country }}
-                                        {% if company.timezone %}
-                                        <br>🕐 {{ company.timezone }}
+                                        📍 {{ detail.company.city or 'Not specified' }}, {{ detail.company.country }}
+                                        {% if detail.company.timezone %}
+                                        <br>🕐 {{ detail.company.timezone }}
                                         {% endif %}
-                                        {% if company.currency %}
-                                        <br>💰 {{ company.currency }}
+                                        {% if detail.company.currency %}
+                                        <br>💰 {{ detail.company.currency }}
                                         {% endif %}
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="row text-center">
                                         <div class="col-3">
-                                            <strong>{{ company.regions.filter_by(is_active=True).count() }}</strong>
+                                            <strong>{{ detail.regions }}</strong>
                                             <br><small class="text-muted">Regions</small>
                                         </div>
                                         <div class="col-3">
-                                            <strong>0</strong>
+                                            <strong>{{ detail.sites }}</strong>
                                             <br><small class="text-muted">Sites</small>
                                         </div>
                                         <div class="col-3">
-                                            <strong>0</strong>
+                                            <strong>{{ detail.departments }}</strong>
                                             <br><small class="text-muted">Departments</small>
                                         </div>
                                         <div class="col-3">
-                                            <strong>0</strong>
+                                            <strong>{{ detail.employees }}</strong>
                                             <br><small class="text-muted">Employees</small>
                                         </div>
                                     </div>
@@ -170,15 +170,15 @@
                             </div>
                             
                             <div class="mt-3">
-                                <a href="{{ url_for('organization.view_company', company_id=company.id) }}" 
+                                <a href="{{ url_for('organization.view_company', company_id=detail.company.id) }}" 
                                    class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-eye"></i> View Details
                                 </a>
-                                <a href="{{ url_for('organization.edit_company', company_id=company.id) }}" 
+                                <a href="{{ url_for('organization.edit_company', company_id=detail.company.id) }}" 
                                    class="btn btn-outline-secondary btn-sm">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
-                                <a href="{{ url_for('organization.create_region', company_id=company.id) }}" 
+                                <a href="{{ url_for('organization.create_region', company_id=detail.company.id) }}" 
                                    class="btn btn-outline-success btn-sm">
                                     <i class="fas fa-plus"></i> Add Region
                                 </a>

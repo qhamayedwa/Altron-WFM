@@ -27,8 +27,26 @@ def dashboard():
         'total_employees': User.query.filter_by(is_active=True).count()
     }
     
+    # Calculate detailed company statistics
+    company_details = []
+    for company in companies:
+        sites_count = db.session.query(Site).join(Region).filter(
+            Region.company_id == company.id, Site.is_active == True).count()
+        departments_count = db.session.query(Department).join(Site).join(Region).filter(
+            Region.company_id == company.id, Department.is_active == True).count()
+        employees_count = db.session.query(User).join(Department).join(Site).join(Region).filter(
+            Region.company_id == company.id, User.is_active == True).count()
+        
+        company_details.append({
+            'company': company,
+            'regions': company.regions.filter_by(is_active=True).count(),
+            'sites': sites_count,
+            'departments': departments_count,
+            'employees': employees_count
+        })
+    
     return render_template('organization/dashboard.html', 
-                         companies=companies, stats=stats)
+                         companies=companies, stats=stats, company_details=company_details)
 
 # Company Management
 @org_bp.route('/companies')
@@ -91,7 +109,8 @@ def view_company(company_id):
             Region.company_id == company_id, Site.is_active == True).count(),
         'departments': db.session.query(Department).join(Site).join(Region).filter(
             Region.company_id == company_id, Department.is_active == True).count(),
-        'employees': db.session.query(User).filter(User.is_active == True).count()
+        'employees': db.session.query(User).join(Department).join(Site).join(Region).filter(
+            Region.company_id == company_id, User.is_active == True).count()
     }
     
     return render_template('organization/view_company.html', 
