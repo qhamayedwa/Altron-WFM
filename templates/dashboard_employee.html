@@ -35,7 +35,11 @@
                         <i data-feather="clock" class="me-2"></i>
                         Today's Time Tracking
                     </h5>
-                    <span class="badge bg-success">Active</span>
+                    {% if personal_stats.is_clocked_in %}
+                        <span class="badge bg-success">Active</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -43,9 +47,16 @@
                             <div class="mb-3">
                                 <h6>Current Status</h6>
                                 <div class="d-flex align-items-center">
-                                    <div class="status-indicator bg-success me-2"></div>
-                                    <span class="fw-bold">Clocked In</span>
-                                    <small class="text-muted ms-2">since 8:00 AM</small>
+                                    {% if personal_stats.is_clocked_in %}
+                                        <div class="status-indicator bg-success me-2"></div>
+                                        <span class="fw-bold">Clocked In</span>
+                                        {% if personal_stats.clock_in_time %}
+                                            <small class="text-muted ms-2">since {{ personal_stats.clock_in_time.strftime('%I:%M %p') }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="status-indicator bg-secondary me-2"></div>
+                                        <span class="fw-bold">Clocked Out</span>
+                                    {% endif %}
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -344,7 +355,7 @@ function initializePersonalAttendanceChart() {
 }
 
 function updateClockStatus() {
-    fetch('/time/current-status')
+    fetch('/api/v1/time/current-status')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -412,7 +423,7 @@ function clockIn() {
                 longitude: position.coords.longitude
             };
             
-            fetch('/time/clock-in', {
+            fetch('/api/v1/time/clock-in', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -435,7 +446,7 @@ function clockIn() {
     } else {
         showAlert('warning', 'Geolocation not supported. Clocking in without location.');
         // Clock in without location
-        fetch('/time/clock-in', {
+        fetch('/api/v1/time/clock-in', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

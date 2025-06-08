@@ -737,18 +737,7 @@ def employee_dashboard():
     
     # Get employee-specific data
     today = datetime.now().date()
-    personal_stats = {
-        'hours_today': 0,
-        'hours_week': 0,
-        'leave_balance': 0,
-        'upcoming_shifts': Schedule.query.filter(
-            and_(
-                Schedule.user_id == current_user.id,
-                Schedule.start_time >= datetime.combine(today, datetime.min.time()),
-                Schedule.start_time <= datetime.combine(today + timedelta(days=7), datetime.max.time())
-            )
-        ).count()
-    }
+    week_start = today - timedelta(days=today.weekday())  # Monday of current week
     
     # Calculate hours worked today
     today_entries = TimeEntry.query.filter(
@@ -758,10 +747,55 @@ def employee_dashboard():
         )
     ).all()
     
+    hours_today = 0
     for entry in today_entries:
         if entry.clock_out_time:
             hours = (entry.clock_out_time - entry.clock_in_time).total_seconds() / 3600
-            personal_stats['hours_today'] += hours
+            hours_today += hours
+    
+    # Calculate hours worked this week
+    week_entries = TimeEntry.query.filter(
+        and_(
+            TimeEntry.user_id == current_user.id,
+            func.date(TimeEntry.clock_in_time) >= week_start,
+            TimeEntry.clock_out_time.isnot(None)
+        )
+    ).all()
+    
+    hours_week = 0
+    for entry in week_entries:
+        hours = (entry.clock_out_time - entry.clock_in_time).total_seconds() / 3600
+        hours_week += hours
+    
+    # Get current clock status
+    active_entry = TimeEntry.query.filter(
+        and_(
+            TimeEntry.user_id == current_user.id,
+            TimeEntry.clock_out_time.is_(None)
+        )
+    ).first()
+    
+    # Get leave balance
+    leave_balance = db.session.execute(text("""
+        SELECT COALESCE(SUM(days_allocated - days_used), 0) 
+        FROM leave_balances 
+        WHERE user_id = :user_id
+    """), {'user_id': current_user.id}).scalar() or 0
+    
+    personal_stats = {
+        'hours_today': round(hours_today, 1),
+        'hours_week': round(hours_week, 1),
+        'leave_balance': int(leave_balance),
+        'is_clocked_in': active_entry is not None,
+        'clock_in_time': active_entry.clock_in_time if active_entry else None,
+        'upcoming_shifts': Schedule.query.filter(
+            and_(
+                Schedule.user_id == current_user.id,
+                Schedule.start_time >= datetime.combine(today, datetime.min.time()),
+                Schedule.start_time <= datetime.combine(today + timedelta(days=7), datetime.max.time())
+            )
+        ).count()
+    }
     
     dashboard_data['personal_stats'] = personal_stats
     
