@@ -175,10 +175,7 @@ def index():
             # Leave Applications (Pending) - Organization-wide
             pending_leave = LeaveApplication.query.filter_by(status='pending').count()
             
-            # Recent Activity (Last 5 entries) - Organization-wide
-            recent_entries = TimeEntry.query.filter(
-                TimeEntry.clock_in_time >= datetime.now() - timedelta(days=7)
-            ).order_by(TimeEntry.clock_in_time.desc()).limit(5).all()
+
         else:
             # Personal statistics only for basic users/employees
             total_employees = 1  # Just the current user
@@ -215,13 +212,7 @@ def index():
                 status='pending'
             ).count()
             
-            # Personal Recent Activity (Last 5 entries)
-            recent_entries = TimeEntry.query.filter(
-                and_(
-                    TimeEntry.user_id == current_user.id,
-                    TimeEntry.clock_in_time >= datetime.now() - timedelta(days=7)
-                )
-            ).order_by(TimeEntry.clock_in_time.desc()).limit(5).all()
+
         
         # Pay Rules Count
         active_pay_rules = PayRule.query.filter_by(is_active=True).count()
@@ -308,7 +299,7 @@ def index():
                              today_entries=today_entries,
                              clocked_in_now=clocked_in_now,
                              pending_leave=pending_leave,
-                             recent_entries=recent_entries,
+
                              active_pay_rules=active_pay_rules,
                              active_pay_codes=active_pay_codes,
                              weekly_hours=weekly_hours,
@@ -336,7 +327,7 @@ def index():
                              today_entries=0,
                              clocked_in_now=0,
                              pending_leave=0,
-                             recent_entries=[],
+
                              active_pay_rules=0,
                              active_pay_codes=0,
                              weekly_hours=0,
