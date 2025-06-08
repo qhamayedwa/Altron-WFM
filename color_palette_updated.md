@@ -9,8 +9,8 @@
 - **Success:** `#10b981` to `#059669` (Green gradient)
 - **Warning:** `#3A9CA8` to `#2F7D87` (Primary gradient)
 - **Danger:** `#ef4444` to `#dc2626` (Red gradient)
-- **Info:** `#1F8A9E` to `#1E40AF` (Teal-blue gradient)
-- **Secondary:** `#1F8A9E` (Darker teal accent)
+- **Info:** `#db6e0a` to `#b8590a` (Orange gradient)
+- **Secondary:** `#db6e0a` (Orange accent)
 
 ## Neutral Palette
 - **50:** `#f9fafb` (Lightest)

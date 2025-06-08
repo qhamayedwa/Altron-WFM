@@ -31,8 +31,8 @@
     --accent-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
     --accent-warning: linear-gradient(135deg, #3A9CA8 0%, #2F7D87 100%);
     --accent-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    --accent-info: linear-gradient(135deg, #1F8A9E 0%, #1E40AF 100%);
-    --accent-secondary: #1F8A9E;
+    --accent-info: linear-gradient(135deg, #db6e0a 0%, #b8590a 100%);
+    --accent-secondary: #db6e0a;
     
     /* Neutral Palette */
     --neutral-50: #f9fafb;
@@ -79,7 +79,7 @@
     --app-primary: var(--primary-light);
     --app-secondary: var(--neutral-500);
     --app-success: #10b981;
-    --app-info: #1F8A9E;
+    --app-info: #db6e0a;
     --app-warning: #f59e0b;
     --app-danger: #ef4444;
     --bs-primary: #3A9CA8;
@@ -140,31 +140,31 @@
 }
 
 .text-info {
-    color: #1F8A9E !important;
+    color: #db6e0a !important;
 }
 
 .bg-info {
-    background-color: #1F8A9E !important;
+    background-color: #db6e0a !important;
 }
 
 .btn-info {
-    background-color: #1F8A9E !important;
-    border-color: #1F8A9E !important;
+    background-color: #db6e0a !important;
+    border-color: #db6e0a !important;
 }
 
 .btn-info:hover {
-    background-color: #1a757f !important;
-    border-color: #1a757f !important;
+    background-color: #b8590a !important;
+    border-color: #b8590a !important;
 }
 
 .badge.bg-info {
-    background-color: #1F8A9E !important;
+    background-color: #db6e0a !important;
 }
 
 .alert-info {
-    background-color: rgba(31, 138, 158, 0.1) !important;
-    border-color: #1F8A9E !important;
-    color: #1F8A9E !important;
+    background-color: rgba(219, 110, 10, 0.1) !important;
+    border-color: #db6e0a !important;
+    color: #db6e0a !important;
 }
 
 /* Enhanced Modern Styling */
