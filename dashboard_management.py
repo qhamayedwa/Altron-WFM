@@ -328,25 +328,49 @@ def get_dashboard_data():
             'completed_today': today_completed
         }
         
-        # Payroll Statistics - Calculate from actual time data
-        # Calculate total hours worked this month
+        # Payroll Statistics with department filtering
         current_month = datetime.now().month
         current_year = datetime.now().year
         
-        monthly_hours = db.session.execute(text("""
-            SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (clock_out_time - clock_in_time))/3600), 0) 
-            FROM time_entries 
-            WHERE EXTRACT(MONTH FROM clock_in_time) = :month 
-            AND EXTRACT(YEAR FROM clock_in_time) = :year
-            AND clock_in_time IS NOT NULL AND clock_out_time IS NOT NULL
-        """), {'month': current_month, 'year': current_year}).scalar() or 0
-        
-        # Calculate payroll based on actual employee hourly rates
-        # Get average hourly rate from employee data or use default calculation
-        avg_hourly_rate = db.session.execute(text("""
-            SELECT COALESCE(AVG(hourly_rate), 150) FROM users 
-            WHERE hourly_rate IS NOT NULL AND is_active = true
-        """)).scalar() or 150
+        if is_super_user:
+            monthly_hours = db.session.execute(text("""
+                SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (clock_out_time - clock_in_time))/3600), 0) 
+                FROM time_entries 
+                WHERE EXTRACT(MONTH FROM clock_in_time) = :month 
+                AND EXTRACT(YEAR FROM clock_in_time) = :year
+                AND clock_in_time IS NOT NULL AND clock_out_time IS NOT NULL
+            """), {'month': current_month, 'year': current_year}).scalar() or 0
+            
+            avg_hourly_rate = db.session.execute(text("""
+                SELECT COALESCE(AVG(hourly_rate), 150) FROM users 
+                WHERE hourly_rate IS NOT NULL AND is_active = true
+            """)).scalar() or 150
+        elif is_manager and user_department_id:
+            monthly_hours = db.session.execute(text("""
+                SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_time))/3600), 0) 
+                FROM time_entries te 
+                JOIN users u ON te.user_id = u.id 
+                WHERE EXTRACT(MONTH FROM te.clock_in_time) = :month 
+                AND EXTRACT(YEAR FROM te.clock_in_time) = :year
+                AND te.clock_in_time IS NOT NULL AND te.clock_out_time IS NOT NULL
+                AND u.department_id = :dept_id
+            """), {'month': current_month, 'year': current_year, 'dept_id': user_department_id}).scalar() or 0
+            
+            avg_hourly_rate = db.session.execute(text("""
+                SELECT COALESCE(AVG(hourly_rate), 150) FROM users 
+                WHERE hourly_rate IS NOT NULL AND is_active = true AND department_id = :dept_id
+            """), {'dept_id': user_department_id}).scalar() or 150
+        else:
+            monthly_hours = db.session.execute(text("""
+                SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (clock_out_time - clock_in_time))/3600), 0) 
+                FROM time_entries 
+                WHERE EXTRACT(MONTH FROM clock_in_time) = :month 
+                AND EXTRACT(YEAR FROM clock_in_time) = :year
+                AND clock_in_time IS NOT NULL AND clock_out_time IS NOT NULL
+                AND user_id = :user_id
+            """), {'month': current_month, 'year': current_year, 'user_id': current_user.id}).scalar() or 0
+            
+            avg_hourly_rate = getattr(current_user, 'hourly_rate', 150) or 150
         
         estimated_payroll = float(monthly_hours) * float(avg_hourly_rate)
         
@@ -360,24 +384,61 @@ def get_dashboard_data():
             'processed_employees': total_users
         }
         
-        # Leave Management Statistics
-        pending_applications = db.session.execute(text(
-            "SELECT COUNT(*) FROM leave_applications WHERE status = 'Pending'"
-        )).scalar() or 0
-        
-        approved_month = db.session.execute(text("""
-            SELECT COUNT(*) FROM leave_applications 
-            WHERE status = 'Approved' 
-            AND EXTRACT(MONTH FROM created_at) = :month
-            AND EXTRACT(YEAR FROM created_at) = :year
-        """), {'month': current_month, 'year': current_year}).scalar() or 0
-        
-        # Calculate actual leave balance issues
-        # Count employees with negative balances (using actual fields)
-        balance_issues = db.session.execute(text("""
-            SELECT COUNT(DISTINCT user_id) FROM leave_balances 
-            WHERE balance < 0
-        """)).scalar() or 0
+        # Leave Management Statistics with department filtering
+        if is_super_user:
+            pending_applications = db.session.execute(text(
+                "SELECT COUNT(*) FROM leave_applications WHERE status = 'Pending'"
+            )).scalar() or 0
+            
+            approved_month = db.session.execute(text("""
+                SELECT COUNT(*) FROM leave_applications 
+                WHERE status = 'Approved' 
+                AND EXTRACT(MONTH FROM created_at) = :month
+                AND EXTRACT(YEAR FROM created_at) = :year
+            """), {'month': current_month, 'year': current_year}).scalar() or 0
+            
+            balance_issues = db.session.execute(text("""
+                SELECT COUNT(DISTINCT user_id) FROM leave_balances 
+                WHERE balance < 0
+            """)).scalar() or 0
+        elif is_manager and user_department_id:
+            pending_applications = db.session.execute(text("""
+                SELECT COUNT(*) FROM leave_applications la 
+                JOIN users u ON la.user_id = u.id 
+                WHERE la.status = 'Pending' AND u.department_id = :dept_id
+            """), {'dept_id': user_department_id}).scalar() or 0
+            
+            approved_month = db.session.execute(text("""
+                SELECT COUNT(*) FROM leave_applications la 
+                JOIN users u ON la.user_id = u.id 
+                WHERE la.status = 'Approved' 
+                AND EXTRACT(MONTH FROM la.created_at) = :month
+                AND EXTRACT(YEAR FROM la.created_at) = :year
+                AND u.department_id = :dept_id
+            """), {'month': current_month, 'year': current_year, 'dept_id': user_department_id}).scalar() or 0
+            
+            balance_issues = db.session.execute(text("""
+                SELECT COUNT(DISTINCT lb.user_id) FROM leave_balances lb 
+                JOIN users u ON lb.user_id = u.id 
+                WHERE lb.balance < 0 AND u.department_id = :dept_id
+            """), {'dept_id': user_department_id}).scalar() or 0
+        else:
+            pending_applications = db.session.execute(text(
+                "SELECT COUNT(*) FROM leave_applications WHERE status = 'Pending' AND user_id = :user_id"
+            ), {'user_id': current_user.id}).scalar() or 0
+            
+            approved_month = db.session.execute(text("""
+                SELECT COUNT(*) FROM leave_applications 
+                WHERE status = 'Approved' 
+                AND EXTRACT(MONTH FROM created_at) = :month
+                AND EXTRACT(YEAR FROM created_at) = :year
+                AND user_id = :user_id
+            """), {'month': current_month, 'year': current_year, 'user_id': current_user.id}).scalar() or 0
+            
+            balance_issues = db.session.execute(text("""
+                SELECT COUNT(*) FROM leave_balances 
+                WHERE balance < 0 AND user_id = :user_id
+            """), {'user_id': current_user.id}).scalar() or 0
         
         leave_stats = {
             'pending_applications': pending_applications,
@@ -385,21 +446,56 @@ def get_dashboard_data():
             'balance_issues': balance_issues
         }
         
-        # Schedule Statistics - Calculate from actual schedule data
-        total_schedules = db.session.execute(text("SELECT COUNT(*) FROM schedules")).scalar() or 0
-        
-        # Get today's scheduled shifts
-        shifts_today = db.session.execute(text("""
-            SELECT COUNT(*) FROM schedules 
-            WHERE DATE(start_time) = :today
-        """), {'today': today}).scalar() or 0
-        
-        # Get upcoming shifts (next 7 days)
-        next_week = today + timedelta(days=7)
-        upcoming_shifts = db.session.execute(text("""
-            SELECT COUNT(*) FROM schedules 
-            WHERE DATE(start_time) BETWEEN :today AND :next_week
-        """), {'today': today, 'next_week': next_week}).scalar() or 0
+        # Schedule Statistics with department filtering
+        if is_super_user:
+            total_schedules = db.session.execute(text("SELECT COUNT(*) FROM schedules")).scalar() or 0
+            
+            shifts_today = db.session.execute(text("""
+                SELECT COUNT(*) FROM schedules 
+                WHERE DATE(start_time) = :today
+            """), {'today': today}).scalar() or 0
+            
+            next_week = today + timedelta(days=7)
+            upcoming_shifts = db.session.execute(text("""
+                SELECT COUNT(*) FROM schedules 
+                WHERE DATE(start_time) BETWEEN :today AND :next_week
+            """), {'today': today, 'next_week': next_week}).scalar() or 0
+        elif is_manager and user_department_id:
+            total_schedules = db.session.execute(text("""
+                SELECT COUNT(*) FROM schedules s 
+                JOIN users u ON s.user_id = u.id 
+                WHERE u.department_id = :dept_id
+            """), {'dept_id': user_department_id}).scalar() or 0
+            
+            shifts_today = db.session.execute(text("""
+                SELECT COUNT(*) FROM schedules s 
+                JOIN users u ON s.user_id = u.id 
+                WHERE DATE(s.start_time) = :today AND u.department_id = :dept_id
+            """), {'today': today, 'dept_id': user_department_id}).scalar() or 0
+            
+            next_week = today + timedelta(days=7)
+            upcoming_shifts = db.session.execute(text("""
+                SELECT COUNT(*) FROM schedules s 
+                JOIN users u ON s.user_id = u.id 
+                WHERE DATE(s.start_time) BETWEEN :today AND :next_week
+                AND u.department_id = :dept_id
+            """), {'today': today, 'next_week': next_week, 'dept_id': user_department_id}).scalar() or 0
+        else:
+            total_schedules = db.session.execute(text(
+                "SELECT COUNT(*) FROM schedules WHERE user_id = :user_id"
+            ), {'user_id': current_user.id}).scalar() or 0
+            
+            shifts_today = db.session.execute(text("""
+                SELECT COUNT(*) FROM schedules 
+                WHERE DATE(start_time) = :today AND user_id = :user_id
+            """), {'today': today, 'user_id': current_user.id}).scalar() or 0
+            
+            next_week = today + timedelta(days=7)
+            upcoming_shifts = db.session.execute(text("""
+                SELECT COUNT(*) FROM schedules 
+                WHERE DATE(start_time) BETWEEN :today AND :next_week
+                AND user_id = :user_id
+            """), {'today': today, 'next_week': next_week, 'user_id': current_user.id}).scalar() or 0
         
         # Calculate coverage rate based on scheduled vs actual attendance
         coverage_rate = min(100, (today_entries / max(1, shifts_today)) * 100) if shifts_today > 0 else 100
