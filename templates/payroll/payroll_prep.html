@@ -74,7 +74,7 @@
                             <small class="text-muted">OT Hours</small>
                         </div>
                         <div class="col-3">
-                            <strong>${{ "%.2f"|format(payroll_summary.gross_pay or 0) }}</strong><br>
+                            <strong>R{{ "%.2f"|format(payroll_summary.gross_pay or 0) }}</strong><br>
                             <small class="text-muted">Gross Pay</small>
                         </div>
                     </div>
@@ -136,10 +136,10 @@
                                     </td>
                                     <td>{{ "%.2f"|format(employee_data.regular_hours) }}</td>
                                     <td>{{ "%.2f"|format(employee_data.overtime_hours) }}</td>
-                                    <td>${{ "%.2f"|format(employee_data.base_rate) }}</td>
-                                    <td>${{ "%.2f"|format(employee_data.regular_pay) }}</td>
-                                    <td>${{ "%.2f"|format(employee_data.overtime_pay) }}</td>
-                                    <td><strong>${{ "%.2f"|format(employee_data.gross_pay) }}</strong></td>
+                                    <td>R{{ "%.2f"|format(employee_data.base_rate) }}</td>
+                                    <td>R{{ "%.2f"|format(employee_data.regular_pay) }}</td>
+                                    <td>R{{ "%.2f"|format(employee_data.overtime_pay) }}</td>
+                                    <td><strong>R{{ "%.2f"|format(employee_data.gross_pay) }}</strong></td>
                                     <td>
                                         {% if employee_data.has_exceptions %}
                                             <span class="badge bg-warning">Exception</span>

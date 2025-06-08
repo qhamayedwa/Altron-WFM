@@ -175,7 +175,7 @@
                                     <td>{{ period.regular_hours }} hrs</td>
                                     <td>{{ period.overtime_hours }} hrs</td>
                                     <td>{{ period.total_hours }} hrs</td>
-                                    <td>${{ "%.2f"|format(period.gross_pay) }}</td>
+                                    <td>R{{ "%.2f"|format(period.gross_pay) }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

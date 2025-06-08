@@ -258,7 +258,7 @@ def reports():
                     'regular_hours': min(user_data['total_hours'], 40),
                     'overtime_hours': max(0, user_data['total_hours'] - 40),
                     'total_hours': user_data['total_hours'],
-                    'gross_pay': user_data['total_hours'] * 15.0  # $15/hour base rate
+                    'gross_pay': user_data['total_hours'] * 15.0  # R15/hour base rate
                 }
                 pay_period_summary.append(pay_period)
 
@@ -409,7 +409,7 @@ def export_payroll_csv():
             total_hours = len(user_entries) * 8  # Simplified calculation
             regular_hours = min(total_hours, 40)
             overtime_hours = max(0, total_hours - 40)
-            gross_pay = total_hours * 15.0  # $15/hour base rate
+            gross_pay = total_hours * 15.0  # R15/hour base rate
             
             writer.writerow([
                 user.username, 
