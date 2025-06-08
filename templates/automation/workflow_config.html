@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}Workflow Configuration - WFM System{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="settings" class="me-2"></i>
+            Time & Attendance Workflow Configuration
+        </h2>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('automation.workflow_dashboard') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="me-2"></i>
+                Back to Dashboard
+            </a>
+            <button class="btn btn-primary" onclick="saveAllWorkflows()">
+                <i data-feather="save" class="me-2"></i>
+                Save All Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- Clock In/Out Workflows -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="clock" class="me-2"></i>
+                Clock In/Out Workflow Configuration
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Clock In Settings</h6>
+                    <form id="clockInForm">
+                        <div class="mb-3">
+                            <label class="form-label">Require Manager Approval</label>
+                            <select class="form-select" name="clock_in_approval">
+                                <option value="none">No Approval Required</option>
+                                <option value="late" selected>Only for Late Clock-ins</option>
+                                <option value="always">Always Required</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Late Threshold (minutes)</label>
+                            <input type="number" class="form-control" name="late_threshold" value="15" min="1" max="120">
+                            <small class="text-muted">Clock-ins after this time require approval</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">GPS Location Verification</label>
+                            <select class="form-select" name="gps_verification">
+                                <option value="required" selected>Required</option>
+                                <option value="optional">Optional</option>
+                                <option value="disabled">Disabled</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="photo_required" checked>
+                            <label class="form-check-label">
+                                Require photo verification for clock-in
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6>Clock Out Settings</h6>
+                    <form id="clockOutForm">
+                        <div class="mb-3">
+                            <label class="form-label">Auto Clock-Out After</label>
+                            <select class="form-select" name="auto_clock_out">
+                                <option value="never">Never</option>
+                                <option value="10" selected>10 hours</option>
+                                <option value="12">12 hours</option>
+                                <option value="16">16 hours</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Overtime Approval Threshold</label>
+                            <input type="number" class="form-control" name="overtime_threshold" value="8" min="6" max="12" step="0.5">
+                            <small class="text-muted">Hours worked before requiring overtime approval</small>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="require_break_time" checked>
+                            <label class="form-check-label">
+                                Require break time tracking
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="end_of_day_summary">
+                            <label class="form-check-label">
+                                Send end-of-day summary to employee
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manager Approval Workflows -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="user-check" class="me-2"></i>
+                Manager Approval Workflows
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Time Entry Approvals</h6>
+                    <form id="timeApprovalForm">
+                        <div class="mb-3">
+                            <label class="form-label">Approval Required For</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="late_arrivals" checked>
+                                <label class="form-check-label">Late Arrivals</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="early_departures" checked>
+                                <label class="form-check-label">Early Departures</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="overtime_hours" checked>
+                                <label class="form-check-label">Overtime Hours</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="missed_clock_out" checked>
+                                <label class="form-check-label">Missed Clock-outs</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Auto-Approval After</label>
+                            <select class="form-select" name="auto_approval">
+                                <option value="never">Never</option>
+                                <option value="24">24 hours</option>
+                                <option value="48" selected>48 hours</option>
+                                <option value="72">72 hours</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-md-4">
+                    <h6>Exception Handling</h6>
+                    <form id="exceptionForm">
+                        <div class="mb-3">
+                            <label class="form-label">Missing Clock-in Action</label>
+                            <select class="form-select" name="missing_clock_in">
+                                <option value="flag" selected>Flag for Review</option>
+                                <option value="auto_start">Auto Start Shift</option>
+                                <option value="notify_manager">Notify Manager Only</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Missing Clock-out Action</label>
+                            <select class="form-select" name="missing_clock_out">
+                                <option value="flag" selected>Flag for Manual Entry</option>
+                                <option value="auto_end">Auto End at Scheduled Time</option>
+                                <option value="previous_pattern">Use Previous Day Pattern</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="weekend_alerts" checked>
+                            <label class="form-check-label">
+                                Alert for weekend/holiday work
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-md-4">
+                    <h6>Escalation Rules</h6>
+                    <form id="escalationForm">
+                        <div class="mb-3">
+                            <label class="form-label">Escalate to Senior Manager After</label>
+                            <select class="form-select" name="escalation_time">
+                                <option value="never">Never</option>
+                                <option value="24">24 hours</option>
+                                <option value="48">48 hours</option>
+                                <option value="72" selected>72 hours</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Critical Issues Escalate To</label>
+                            <select class="form-select" name="critical_escalation">
+                                <option value="direct_manager" selected>Direct Manager</option>
+                                <option value="department_head">Department Head</option>
+                                <option value="hr_admin">HR Administrator</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="email_escalation" checked>
+                            <label class="form-check-label">
+                                Send email notifications for escalations
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Workflows -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="bell" class="me-2"></i>
+                Notification Workflow Configuration
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Employee Notifications</h6>
+                    <form id="employeeNotifications">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="clock_in_reminder" checked>
+                            <label class="form-check-label">
+                                Clock-in reminder (15 min after start time)
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="break_reminder" checked>
+                            <label class="form-check-label">
+                                Break time reminders
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="clock_out_reminder" checked>
+                            <label class="form-check-label">
+                                Clock-out reminder (end of shift)
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="overtime_warning" checked>
+                            <label class="form-check-label">
+                                Overtime threshold warning
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="timecard_approval">
+                            <label class="form-check-label">
+                                Timecard approval status updates
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6>Manager Notifications</h6>
+                    <form id="managerNotifications">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="pending_approvals" checked>
+                            <label class="form-check-label">
+                                Daily pending approval summary
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="exception_alerts" checked>
+                            <label class="form-check-label">
+                                Real-time exception alerts
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="overtime_alerts" checked>
+                            <label class="form-check-label">
+                                Overtime threshold alerts
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="attendance_reports">
+                            <label class="form-check-label">
+                                Weekly attendance reports
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="team_dashboard" checked>
+                            <label class="form-check-label">
+                                Team dashboard updates
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule & Shift Workflows -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="calendar" class="me-2"></i>
+                Schedule & Shift Workflow Configuration
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Schedule Management</h6>
+                    <form id="scheduleForm">
+                        <div class="mb-3">
+                            <label class="form-label">Schedule Publication Lead Time</label>
+                            <select class="form-select" name="schedule_lead_time">
+                                <option value="3">3 days</option>
+                                <option value="7" selected>1 week</option>
+                                <option value="14">2 weeks</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Shift Change Approval</label>
+                            <select class="form-select" name="shift_change_approval">
+                                <option value="manager" selected>Manager Only</option>
+                                <option value="mutual">Mutual + Manager</option>
+                                <option value="hr">HR Approval Required</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="auto_schedule_conflict" checked>
+                            <label class="form-check-label">
+                                Auto-detect schedule conflicts
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6>Shift Coverage</h6>
+                    <form id="coverageForm">
+                        <div class="mb-3">
+                            <label class="form-label">Minimum Coverage Alert</label>
+                            <input type="number" class="form-control" name="min_coverage" value="75" min="50" max="100">
+                            <small class="text-muted">Alert when coverage falls below %</small>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="call_in_automation" checked>
+                            <label class="form-check-label">
+                                Auto-suggest call-ins for low coverage
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="overtime_offer">
+                            <label class="form-check-label">
+                                Auto-offer overtime for coverage gaps
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Status -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="activity" class="me-2"></i>
+                Current Workflow Status
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="display-6 text-success">{{ pending_approvals or 0 }}</div>
+                        <small>Pending Approvals</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="display-6 text-warning">{{ exceptions_today or 0 }}</div>
+                        <small>Exceptions Today</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="display-6 text-info">{{ active_workflows or 8 }}</div>
+                        <small>Active Workflows</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="display-6 text-primary">{{ automation_rate or 92 }}%</div>
+                        <small>Automation Rate</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveAllWorkflows() {
+    const forms = ['clockInForm', 'clockOutForm', 'timeApprovalForm', 'exceptionForm', 
+                   'escalationForm', 'employeeNotifications', 'managerNotifications', 
+                   'scheduleForm', 'coverageForm'];
+    
+    let allData = {};
+    
+    forms.forEach(formId => {
+        const form = document.getElementById(formId);
+        const formData = new FormData(form);
+        allData[formId] = Object.fromEntries(formData);
+    });
+    
+    fetch('/automation/save-workflow-config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(allData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Workflow configuration saved successfully!');
+        } else {
+            showAlert('danger', 'Error saving configuration: ' + data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('danger', 'Error saving configuration: ' + error.message);
+    });
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+
+{% endblock %}

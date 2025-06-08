@@ -1193,3 +1193,33 @@ class PayCode(db.Model):
     
     def __repr__(self):
         return f'<PayCode {self.code} - {self.description}>'
+
+
+class WorkflowConfig(db.Model):
+    """
+    Workflow Configuration Storage
+    Stores workflow settings and automation rules for the system
+    """
+    __tablename__ = 'workflow_configs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    config_name = db.Column(db.String(100), nullable=False)  # clockInForm, timeApprovalForm, etc.
+    config_data = db.Column(db.Text, nullable=False)  # JSON string of configuration
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('workflow_configs', lazy=True))
+    
+    def __repr__(self):
+        return f'<WorkflowConfig {self.config_name} by {self.user.username}>'
+    
+    def get_config_data(self):
+        """Parse and return configuration data as dictionary"""
+        import json
+        try:
+            return json.loads(self.config_data)
+        except:
+            return {}
