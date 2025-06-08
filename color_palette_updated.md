@@ -1,13 +1,13 @@
 # WFM System - Updated Color Palette
 
 ## Primary Brand Colors
-- **Primary:** `#3A9CA8` (Teal-blue)
-- **Primary Dark:** `#2F7D87` (Darker teal)
-- **Primary Gradient:** `linear-gradient(135deg, #3A9CA8 0%, #2F7D87 100%)`
+- **Primary:** `#db6e0a` (Orange)
+- **Primary Dark:** `#b8590a` (Darker orange)
+- **Primary Gradient:** `linear-gradient(135deg, #db6e0a 0%, #b8590a 100%)`
 
 ## Accent Colors
 - **Success:** `#10b981` to `#059669` (Green gradient)
-- **Warning:** `#3A9CA8` to `#2F7D87` (Primary gradient)
+- **Warning:** `#f59e0b` to `#d97706` (Orange gradient)
 - **Danger:** `#ef4444` to `#dc2626` (Red gradient)
 - **Info:** `#db6e0a` to `#b8590a` (Orange gradient)
 - **Secondary:** `#db6e0a` (Orange accent)

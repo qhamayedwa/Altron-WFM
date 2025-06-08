@@ -29,7 +29,7 @@
     
     /* Updated Accent Colors */
     --accent-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    --accent-warning: linear-gradient(135deg, #3A9CA8 0%, #2F7D87 100%);
+    --accent-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     --accent-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     --accent-info: linear-gradient(135deg, #db6e0a 0%, #b8590a 100%);
     --accent-secondary: #db6e0a;
