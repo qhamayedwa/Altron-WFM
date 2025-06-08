@@ -733,7 +733,7 @@ def reports():
         # Apply department filtering for managers
         is_super_user = current_user.has_role('Super User')
         is_manager = current_user.has_role('Manager')
-        user_department_id = getattr(current_user, 'department_id', None)
+        managed_dept_ids = get_managed_departments(current_user.id) if is_manager else []
         
         # Build base query with date filters
         base_query = TimeEntry.query.filter(
@@ -745,8 +745,8 @@ def reports():
         )
         
         # Apply department filtering for managers
-        if is_manager and user_department_id and not is_super_user:
-            entries_query = base_query.join(User, TimeEntry.user_id == User.id).filter(User.department_id == user_department_id).all()
+        if is_manager and managed_dept_ids and not is_super_user:
+            entries_query = base_query.join(User, TimeEntry.user_id == User.id).filter(User.department_id.in_(managed_dept_ids)).all()
         else:
             entries_query = base_query.all()
         
@@ -758,8 +758,8 @@ def reports():
                 continue
             
             # Additional security check for managers
-            if is_manager and user_department_id and not is_super_user:
-                if user.department_id != user_department_id:
+            if is_manager and managed_dept_ids and not is_super_user:
+                if user.department_id not in managed_dept_ids:
                     continue
                 
             username = user.username
