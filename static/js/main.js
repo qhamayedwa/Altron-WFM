@@ -222,7 +222,7 @@ class LiveClockTimer {
 
     async checkClockStatus() {
         try {
-            const response = await fetch('/api/v1/time/current-status');
+            const response = await fetch('/time/status');
             const data = await response.json();
             
             if (data.success && data.data.is_clocked_in && data.data.clock_in_time) {
@@ -302,7 +302,7 @@ async function clockIn() {
             button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Clocking In...';
         }
 
-        const response = await fetch('/api/v1/time/clock-in', {
+        const response = await fetch('/time/clock-in', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -313,7 +313,7 @@ async function clockIn() {
 
         if (data.success) {
             // Update UI to show clocked in state
-            updateClockButtonUI(true, data.data.clock_in_time);
+            updateClockButtonUI(true, data.clock_in_time);
             
             // Initialize live timer
             if (window.liveTimer) {
@@ -349,7 +349,7 @@ async function clockOut() {
             button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Clocking Out...';
         }
 
-        const response = await fetch('/api/v1/time/clock-out', {
+        const response = await fetch('/time/clock-out', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

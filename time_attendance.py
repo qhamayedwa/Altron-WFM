@@ -185,6 +185,44 @@ def end_break():
             'message': f'Error ending break: {str(e)}'
         }), 500
 
+@time_attendance_bp.route('/status', methods=['GET'])
+@login_required
+def get_status():
+    """Get current clock-in status for the user"""
+    try:
+        # Find current open time entry
+        open_entry = TimeEntry.query.filter_by(
+            user_id=current_user.id,
+            status='Open'
+        ).first()
+        
+        status_data = {
+            'is_clocked_in': open_entry is not None,
+            'clock_in_time': None,
+            'current_duration': 0
+        }
+        
+        if open_entry:
+            status_data.update({
+                'clock_in_time': open_entry.clock_in_time.isoformat(),
+                'entry_id': open_entry.id
+            })
+            
+            # Calculate current duration
+            duration = get_current_time() - open_entry.clock_in_time
+            status_data['current_duration'] = duration.total_seconds() / 3600
+        
+        return jsonify({
+            'success': True,
+            'data': status_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error getting status: {str(e)}'
+        }), 500
+
 @time_attendance_bp.route('/my-timecard')
 @login_required
 def my_timecard():
