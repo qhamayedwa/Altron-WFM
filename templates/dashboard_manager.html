@@ -101,7 +101,7 @@
                             <i data-feather="calendar" class="me-2"></i>
                             Manage Schedules
                         </a>
-                        <a href="{{ url_for('reports.team_reports') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-outline-secondary">
                             <i data-feather="bar-chart" class="me-2"></i>
                             Team Reports
                         </a>
@@ -295,7 +295,7 @@
                         </div>
                     </div>
                     <div class="d-grid">
-                        <a href="{{ url_for('scheduling.dashboard') }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('ai_scheduling.ai_dashboard') }}" class="btn btn-outline-primary">
                             <i data-feather="calendar" class="me-2"></i>
                             Manage Schedules
                         </a>
@@ -355,7 +355,7 @@
                     <div class="row">
                         <div class="col-6">
                             <div class="mb-3">
-                                <div class="h4 text-success">R{{ (payroll_stats.total_payroll / 4) | round | number_format or 0 }}</div>
+                                <div class="h4 text-success">R{{ "%.0f" | format((payroll_stats.total_payroll / 4) | round) or 0 }}</div>
                                 <small class="text-muted">Weekly Budget</small>
                             </div>
                             <div class="mb-3">
