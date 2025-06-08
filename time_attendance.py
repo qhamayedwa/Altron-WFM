@@ -56,24 +56,34 @@ def clock_in():
         db.session.add(time_entry)
         db.session.commit()
         
+        print(f"Time entry created successfully: {time_entry.id}")
+        
         if request.is_json:
-            return jsonify({
+            response_data = {
                 'success': True,
                 'message': 'Successfully clocked in',
                 'time_entry_id': time_entry.id,
                 'clock_in_time': time_entry.clock_in_time.isoformat()
-            })
+            }
+            print(f"Returning JSON response: {response_data}")
+            return jsonify(response_data)
         else:
             flash('Successfully clocked in!', 'success')
             return redirect(url_for('main.index'))
         
     except Exception as e:
+        print(f"Exception in clock-in: {str(e)}")
+        print(f"Exception type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         db.session.rollback()
         if request.is_json:
-            return jsonify({
+            error_response = {
                 'success': False,
                 'message': f'Error clocking in: {str(e)}'
-            }), 500
+            }
+            print(f"Returning error JSON: {error_response}")
+            return jsonify(error_response), 500
         else:
             flash(f'Error clocking in: {str(e)}', 'danger')
             return redirect(url_for('main.index'))
