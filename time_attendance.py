@@ -312,10 +312,22 @@ def team_calendar():
         week_dates.append(current_date)
         current_date += timedelta(days=1)
     
-    # Get all active users
+    # Get all active users with department filtering
     users_query = User.query.filter_by(is_active=True)
     if department_filter:
-        users_query = users_query.filter_by(department=department_filter)
+        # Handle both hierarchical departments and legacy department fields
+        if '(' in department_filter and ')' in department_filter:
+            # Extract department name from "Department Name (Site Name)" format
+            dept_name = department_filter.split(' (')[0]
+            users_query = users_query.filter(
+                or_(
+                    User.department == department_filter,
+                    User.department == dept_name
+                )
+            )
+        else:
+            # Direct department name match
+            users_query = users_query.filter_by(department=department_filter)
     users = users_query.order_by(User.username).all()
     
     # Get time entries for the week
@@ -355,12 +367,27 @@ def team_calendar():
                     if calendar_data[entry.user_id]['weekly_total'] > 40:
                         calendar_data[entry.user_id]['overtime_hours'] = calendar_data[entry.user_id]['weekly_total'] - 40
     
-    # Get available departments for filter
-    departments = db.session.query(User.department).filter(
+    # Get available departments for filter - using hierarchical Department model
+    from models import Department
+    departments = Department.query.filter(Department.is_active == True).all()
+    department_list = [(dept.name, f"{dept.name} ({dept.site.name})") for dept in departments]
+    
+    # Also include legacy departments for backwards compatibility
+    legacy_departments = db.session.query(User.department).filter(
         User.department.isnot(None),
         User.is_active == True
     ).distinct().all()
-    departments = [dept[0] for dept in departments if dept[0]]
+    legacy_dept_names = [dept[0] for dept in legacy_departments if dept[0]]
+    
+    # Combine both lists
+    all_departments = []
+    for dept_name, dept_display in department_list:
+        all_departments.append(dept_display)
+    for legacy_dept in legacy_dept_names:
+        if legacy_dept not in [d[0] for d in department_list]:
+            all_departments.append(legacy_dept)
+    
+    departments = sorted(all_departments)
     
     # Calculate navigation dates
     prev_week = week_start - timedelta(days=7)
