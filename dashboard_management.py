@@ -201,20 +201,28 @@ def manager_dashboard():
             visible_sections.append(section_id)
     
     # Get manager-specific data
+    team_stats = {
+        'team_size': 0,
+        'present_today': 0,
+        'pending_approvals': 0
+    }
+    
     if current_user.department_id:
         team_members = User.query.filter_by(
             department_id=current_user.department_id,
             is_active=True
         ).all()
         
-        dashboard_data['team_stats'] = {
+        team_stats = {
             'team_size': len(team_members),
-            'present_today': len([m for m in team_members if m.is_clocked_in()]),
+            'present_today': len([m for m in team_members if hasattr(m, 'is_clocked_in') and m.is_clocked_in()]),
             'pending_approvals': TimeEntry.query.join(User).filter(
                 User.department_id == current_user.department_id,
                 TimeEntry.clock_out_time.is_(None)
             ).count()
         }
+    
+    dashboard_data['team_stats'] = team_stats
     
     return render_template('dashboard_manager.html', 
                          visible_sections=visible_sections,
@@ -251,7 +259,7 @@ def employee_dashboard():
     # Calculate hours worked today
     today_entries = TimeEntry.query.filter(
         and_(
-            TimeEntry.employee_id == current_user.id,
+            TimeEntry.user_id == current_user.id,
             func.date(TimeEntry.clock_in_time) == today
         )
     ).all()
