@@ -77,7 +77,13 @@
                                 <br><small class="text-muted">{{ entry.employee.full_name }}</small>
                             </td>
                             <td>
-                                <span class="badge bg-info">{{ entry.employee.department or 'Unassigned' }}</span>
+                                {% if entry.employee.employee_department %}
+                                    <span class="badge bg-info">{{ entry.employee.employee_department.name }}</span>
+                                {% elif entry.employee.department %}
+                                    <span class="badge bg-info">{{ entry.employee.department }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Unassigned</span>
+                                {% endif %}
                             </td>
                             <td>{{ entry.work_date.strftime('%b %d, %Y') }}</td>
                             <td>{{ entry.clock_in_time.strftime('%I:%M %p') }}</td>

@@ -377,7 +377,10 @@ def team_timecard():
     end_date = request.args.get('end_date')
     
     # Build query with joins to include user and department information
-    query = TimeEntry.query.join(User, TimeEntry.user_id == User.id)
+    from sqlalchemy.orm import joinedload
+    query = TimeEntry.query.join(User, TimeEntry.user_id == User.id).options(
+        joinedload(TimeEntry.employee).joinedload(User.employee_department)
+    )
     
     # Filter by user if specified
     if user_id:
