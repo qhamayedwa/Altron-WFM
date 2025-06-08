@@ -311,8 +311,14 @@ def index():
 @main_bp.route('/reports')
 @login_required
 def reports():
-    """Reports dashboard"""
+    """Reports dashboard with proper employee data restrictions"""
     try:
+        # Check user role for data access control
+        is_manager_or_admin = (hasattr(current_user, 'has_role') and 
+                              (current_user.has_role('Manager') or 
+                               current_user.has_role('Admin') or 
+                               current_user.has_role('Super User')))
+        
         # Time range from request
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
@@ -326,59 +332,84 @@ def reports():
             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
-        # Total hours worked in period - calculate from entries
-        period_entries = TimeEntry.query.filter(
-            and_(
-                TimeEntry.clock_in_time >= start_date,
-                TimeEntry.clock_in_time <= end_date + timedelta(days=1)
-            )
-        ).all()
+        # Apply user-specific filters for data access
+        base_time_filter = and_(
+            TimeEntry.clock_in_time >= start_date,
+            TimeEntry.clock_in_time <= end_date + timedelta(days=1)
+        )
         
-        # Simplified calculations
-        total_hours = len(period_entries) * 8  # Assume 8 hours per entry
-        overtime_hours = max(0, total_hours - (len(period_entries) * 8))  # Simple overtime calculation
-        
-        # Employee attendance summary - manual calculation with explicit join
-        users_with_entries = db.session.query(User).join(
-            TimeEntry, User.id == TimeEntry.user_id
-        ).filter(
-            and_(
-                TimeEntry.clock_in_time >= start_date,
-                TimeEntry.clock_in_time <= end_date + timedelta(days=1)
+        if not is_manager_or_admin:
+            # Restrict employees to only their own data
+            base_time_filter = and_(
+                base_time_filter,
+                TimeEntry.user_id == current_user.id
             )
-        ).distinct().all()
+        
+        # Total hours worked in period - filtered by user access
+        period_entries = TimeEntry.query.filter(base_time_filter).all()
+        
+        # Calculate total hours from actual time entries
+        total_hours = 0
+        for entry in period_entries:
+            if entry.total_hours:
+                total_hours += entry.total_hours
+            elif entry.clock_in_time and entry.clock_out_time:
+                # Calculate hours if not stored
+                duration = entry.clock_out_time - entry.clock_in_time
+                total_hours += duration.total_seconds() / 3600
+        
+        overtime_hours = max(0, total_hours - (len(period_entries) * 8))
+        
+        # Employee attendance summary - restricted by user role
+        if is_manager_or_admin:
+            # Managers see all employees
+            users_with_entries = db.session.query(User).join(
+                TimeEntry, User.id == TimeEntry.user_id
+            ).filter(base_time_filter).distinct().all()
+        else:
+            # Employees see only themselves
+            users_with_entries = [current_user] if period_entries else []
         
         attendance_summary = []
         for user in users_with_entries:
-            user_entries = TimeEntry.query.filter(
-                and_(
-                    TimeEntry.user_id == user.id,
-                    TimeEntry.clock_in_time >= start_date,
-                    TimeEntry.clock_in_time <= end_date + timedelta(days=1)
-                )
-            ).all()
+            user_filter = and_(
+                TimeEntry.user_id == user.id,
+                TimeEntry.clock_in_time >= start_date,
+                TimeEntry.clock_in_time <= end_date + timedelta(days=1)
+            )
+            
+            user_entries = TimeEntry.query.filter(user_filter).all()
             
             days_worked = len(user_entries)
-            user_total_hours = days_worked * 8  # Simplified: 8 hours per entry
+            user_total_hours = sum(entry.total_hours or 0 for entry in user_entries)
             avg_hours = user_total_hours / days_worked if days_worked > 0 else 0
             
-            # Create object-like dictionary for template access
+            # Create summary with proper user identification
+            user_name = f"{user.first_name} {user.last_name}".strip() if hasattr(user, 'first_name') and user.first_name else user.username
+            
             user_summary = {
                 'username': user.username,
+                'name': user_name,
                 'email': user.email,
                 'total_days': days_worked,
-                'total_hours': user_total_hours,
-                'avg_hours': avg_hours
+                'total_hours': round(user_total_hours, 2),
+                'avg_hours': round(avg_hours, 2)
             }
             attendance_summary.append(user_summary)
         
-        # Leave applications in period
-        leave_applications = LeaveApplication.query.filter(
-            and_(
-                LeaveApplication.start_date >= start_date,
-                LeaveApplication.start_date <= end_date
+        # Leave applications in period - filtered by user access
+        leave_filter = and_(
+            LeaveApplication.start_date >= start_date,
+            LeaveApplication.start_date <= end_date
+        )
+        
+        if not is_manager_or_admin:
+            leave_filter = and_(
+                leave_filter,
+                LeaveApplication.user_id == current_user.id
             )
-        ).count()
+        
+        leave_applications = LeaveApplication.query.filter(leave_filter).count()
         
         # Add pay period summary data
         pay_period_summary = []
@@ -411,8 +442,14 @@ def reports():
 @main_bp.route('/export-csv')
 @login_required
 def export_csv():
-    """Export attendance report to CSV"""
+    """Export attendance report to CSV with proper employee data restrictions"""
     try:
+        # Check user role for data access control
+        is_manager_or_admin = (hasattr(current_user, 'has_role') and 
+                              (current_user.has_role('Manager') or 
+                               current_user.has_role('Admin') or 
+                               current_user.has_role('Super User')))
+        
         # Get the same data as reports page
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
@@ -425,15 +462,27 @@ def export_csv():
             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
 
-        # Get attendance data
-        users_with_entries = db.session.query(User).join(
-            TimeEntry, User.id == TimeEntry.user_id
-        ).filter(
-            and_(
-                TimeEntry.clock_in_time >= start_date,
-                TimeEntry.clock_in_time <= end_date + timedelta(days=1)
+        # Apply user-specific filters for data access
+        base_time_filter = and_(
+            TimeEntry.clock_in_time >= start_date,
+            TimeEntry.clock_in_time <= end_date + timedelta(days=1)
+        )
+        
+        if not is_manager_or_admin:
+            # Restrict employees to only their own data
+            base_time_filter = and_(
+                base_time_filter,
+                TimeEntry.user_id == current_user.id
             )
-        ).distinct().all()
+
+        # Get attendance data based on user role
+        if is_manager_or_admin:
+            users_with_entries = db.session.query(User).join(
+                TimeEntry, User.id == TimeEntry.user_id
+            ).filter(base_time_filter).distinct().all()
+        else:
+            # Employees can only export their own data
+            users_with_entries = [current_user]
 
         # Create CSV content
         output = io.StringIO()
@@ -452,17 +501,22 @@ def export_csv():
                 )
             ).all()
             
-            days_worked = len(user_entries)
-            total_hours = days_worked * 8  # Simplified calculation
-            avg_hours = total_hours / days_worked if days_worked > 0 else 0
-            
-            writer.writerow([user.username, user.email, days_worked, total_hours, round(avg_hours, 2)])
+            if user_entries:  # Only include users with entries
+                days_worked = len(user_entries)
+                total_hours = sum(entry.total_hours or 0 for entry in user_entries)
+                avg_hours = total_hours / days_worked if days_worked > 0 else 0
+                
+                user_name = f"{user.first_name} {user.last_name}".strip() if hasattr(user, 'first_name') and user.first_name else user.username
+                writer.writerow([user_name, user.email, days_worked, round(total_hours, 2), round(avg_hours, 2)])
 
         # Create response
         output.seek(0)
         response = make_response(output.getvalue())
         response.headers['Content-Type'] = 'text/csv'
-        response.headers['Content-Disposition'] = f'attachment; filename=attendance_report_{start_date}_{end_date}.csv'
+        
+        # Add role context to filename
+        role_context = "manager" if is_manager_or_admin else "employee"
+        response.headers['Content-Disposition'] = f'attachment; filename={role_context}_attendance_report_{start_date}_{end_date}.csv'
         
         return response
         
@@ -552,22 +606,64 @@ def quick_actions():
 @main_bp.route('/time-entries')
 @login_required
 def time_entries():
-    """Time entries management page"""
-    entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.clock_in_time.desc()).limit(50).all()
-    return render_template('time_entries.html', entries=entries)
+    """Time entries management page with proper employee data restrictions"""
+    # Check user role for data access control
+    is_manager_or_admin = (hasattr(current_user, 'has_role') and 
+                          (current_user.has_role('Manager') or 
+                           current_user.has_role('Admin') or 
+                           current_user.has_role('Super User')))
+    
+    if is_manager_or_admin:
+        # Managers see all time entries
+        entries = TimeEntry.query.order_by(TimeEntry.clock_in_time.desc()).limit(100).all()
+    else:
+        # Employees see only their own time entries
+        entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.clock_in_time.desc()).limit(50).all()
+    
+    return render_template('time_entries.html', entries=entries, is_manager_view=is_manager_or_admin)
 
 @main_bp.route('/schedules')
 @login_required
 def schedules():
-    """Employee schedules page"""
+    """Employee schedules page with proper employee data restrictions"""
     from datetime import date
     today = date.today()
-    schedules = Schedule.query.filter(Schedule.start_time >= today).order_by(Schedule.start_time).limit(30).all()
-    return render_template('schedules.html', schedules=schedules)
+    
+    # Check user role for data access control
+    is_manager_or_admin = (hasattr(current_user, 'has_role') and 
+                          (current_user.has_role('Manager') or 
+                           current_user.has_role('Admin') or 
+                           current_user.has_role('Super User')))
+    
+    if is_manager_or_admin:
+        # Managers see all schedules
+        schedules = Schedule.query.filter(Schedule.start_time >= today).order_by(Schedule.start_time).limit(50).all()
+    else:
+        # Employees see only their own schedules
+        schedules = Schedule.query.filter(
+            and_(
+                Schedule.user_id == current_user.id,
+                Schedule.start_time >= today
+            )
+        ).order_by(Schedule.start_time).limit(30).all()
+    
+    return render_template('schedules.html', schedules=schedules, is_manager_view=is_manager_or_admin)
 
 @main_bp.route('/leave-management')
 @login_required
 def leave_management():
-    """Leave management page"""
-    applications = LeaveApplication.query.filter_by(user_id=current_user.id).order_by(LeaveApplication.created_at.desc()).all()
-    return render_template('leave_management.html', applications=applications)
+    """Leave management page with proper employee data restrictions"""
+    # Check user role for data access control
+    is_manager_or_admin = (hasattr(current_user, 'has_role') and 
+                          (current_user.has_role('Manager') or 
+                           current_user.has_role('Admin') or 
+                           current_user.has_role('Super User')))
+    
+    if is_manager_or_admin:
+        # Managers see all leave applications
+        applications = LeaveApplication.query.order_by(LeaveApplication.created_at.desc()).limit(100).all()
+    else:
+        # Employees see only their own leave applications
+        applications = LeaveApplication.query.filter_by(user_id=current_user.id).order_by(LeaveApplication.created_at.desc()).all()
+    
+    return render_template('leave_management.html', applications=applications, is_manager_view=is_manager_or_admin)

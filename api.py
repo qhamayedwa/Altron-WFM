@@ -604,7 +604,7 @@ def api_database_status():
 @api_bp.route('/recent-time-entries', methods=['GET'])
 @login_required
 def api_recent_time_entries():
-    """Get recent time entries for dashboard updates"""
+    """Get recent time entries for dashboard updates with proper employee data restrictions"""
     try:
         # Determine scope based on user role
         is_manager_or_admin = (
@@ -621,7 +621,7 @@ def api_recent_time_entries():
                 TimeEntry.clock_in_time >= week_ago
             ).order_by(TimeEntry.clock_in_time.desc()).limit(10).all()
         else:
-            # Regular users see only their entries
+            # Employees restricted to only their own entries
             recent_entries = TimeEntry.query.filter(
                 and_(
                     TimeEntry.user_id == current_user.id,
