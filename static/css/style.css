@@ -23,9 +23,9 @@
 
 :root {
     /* Updated Brand Colors */
-    --primary-gradient: linear-gradient(135deg, #3A9CA8 0%, #2F7D87 100%);
-    --primary-dark: #2F7D87;
-    --primary-light: #3A9CA8;
+    --primary-gradient: linear-gradient(135deg, #db6e0a 0%, #b8590a 100%);
+    --primary-dark: #b8590a;
+    --primary-light: #db6e0a;
     
     /* Updated Accent Colors */
     --accent-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -76,13 +76,13 @@
     --spacing-2xl: 3rem;
     
     /* Legacy Bootstrap variables for compatibility */
-    --app-primary: var(--primary-light);
+    --app-primary: #db6e0a;
     --app-secondary: var(--neutral-500);
     --app-success: #10b981;
     --app-info: #db6e0a;
     --app-warning: #f59e0b;
     --app-danger: #ef4444;
-    --bs-primary: #3A9CA8;
+    --bs-primary: #db6e0a;
     --bs-secondary: var(--neutral-500);
     --bs-success: #10b981;
     --bs-info: #1E3A8A;
@@ -99,28 +99,28 @@
 .btn-primary:active,
 .btn-primary.active,
 .btn-primary:not(:disabled):not(.disabled):active {
-    background-color: #3A9CA8 !important;
-    border-color: #3A9CA8 !important;
+    background-color: #db6e0a !important;
+    border-color: #db6e0a !important;
     background-image: var(--primary-gradient) !important;
 }
 
 .btn-primary:hover {
-    background-color: #2F7D87 !important;
-    border-color: #2F7D87 !important;
+    background-color: #b8590a !important;
+    border-color: #b8590a !important;
 }
 
 .bg-primary,
 .badge.bg-primary,
 .alert-primary {
-    background-color: #3A9CA8 !important;
+    background-color: #db6e0a !important;
 }
 
 .text-primary {
-    color: #3A9CA8 !important;
+    color: #db6e0a !important;
 }
 
 .border-primary {
-    border-color: #3A9CA8 !important;
+    border-color: #db6e0a !important;
 }
 
 .card-header {
@@ -130,13 +130,13 @@
 
 .navbar-brand,
 .navbar-nav .nav-link {
-    color: #3A9CA8 !important;
+    color: white !important;
 }
 
 .pagination .page-item.active .page-link,
 .pagination .page-link:hover {
-    background-color: #3A9CA8 !important;
-    border-color: #3A9CA8 !important;
+    background-color: #db6e0a !important;
+    border-color: #db6e0a !important;
 }
 
 .text-info {
