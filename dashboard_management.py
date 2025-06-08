@@ -559,6 +559,10 @@ def get_dashboard_data():
         print(f"Exception in get_dashboard_data: {e}")
         import traceback
         traceback.print_exc()
+        # Log more details for debugging
+        print(f"Current user: {current_user.id if current_user else 'None'}")
+        print(f"Is manager: {is_manager if 'is_manager' in locals() else 'Undefined'}")
+        print(f"Managed dept IDs: {managed_dept_ids if 'managed_dept_ids' in locals() else 'Undefined'}")
         # Return minimal safe data if database query fails
         return {
             'system_stats': {'uptime': 99.9, 'active_users': 0, 'pending_tasks': 0, 'data_integrity': 100},
