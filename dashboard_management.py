@@ -157,11 +157,11 @@ def dashboard():
     user_role = get_user_role()
     
     if user_role == 'super_admin':
-        return redirect(url_for('dashboard.super_admin_dashboard'))
+        return redirect(url_for('dashboard_mgmt.super_admin_dashboard'))
     elif user_role == 'manager':
-        return redirect(url_for('dashboard.manager_dashboard'))
+        return redirect(url_for('dashboard_mgmt.manager_dashboard'))
     else:
-        return redirect(url_for('dashboard.employee_dashboard'))
+        return redirect(url_for('dashboard_mgmt.employee_dashboard'))
 
 @dashboard_bp.route('/super-admin')
 @login_required
