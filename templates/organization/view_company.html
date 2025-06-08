@@ -242,7 +242,7 @@
                         </tr>
                         <tr>
                             <td><strong>Created:</strong></td>
-                            <td>{{ company.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ company.created_at.strftime('%Y-%m-%d') if company.created_at else 'Not available' }}</td>
                         </tr>
                     </table>
                 </div>
