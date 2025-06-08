@@ -342,8 +342,15 @@ def generate_schedule():
     """Generate AI-optimized schedule"""
     if request.method == 'POST':
         try:
-            start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
-            end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date()
+            start_date_str = request.form.get('start_date')
+            end_date_str = request.form.get('end_date')
+            
+            if not start_date_str or not end_date_str:
+                flash('Start date and end date are required', 'error')
+                return redirect(url_for('ai_scheduling.generate_schedule'))
+            
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
             department_id = request.form.get('department_id') or None
             
             # Generate optimized schedule
@@ -365,15 +372,35 @@ def generate_schedule():
         except Exception as e:
             flash(f'Error: {str(e)}', 'error')
     
-    # Get departments for dropdown
-    departments = db.session.query(User.department).filter(
-        User.department.isnot(None)
-    ).distinct().all()
-    
-    from datetime import datetime, timedelta
+    # Get departments for dropdown - check multiple sources
+    try:
+        # First try to get departments from users
+        user_departments = db.session.query(User.department).filter(
+            User.department.isnot(None),
+            User.department != ''
+        ).distinct().all()
+        
+        # Also try to get from hierarchical department structure if it exists
+        try:
+            from models import HierarchicalDepartment
+            hierarchical_departments = db.session.query(HierarchicalDepartment.department_name).filter(
+                HierarchicalDepartment.department_name.isnot(None)
+            ).distinct().all()
+            departments_list = list(set([d[0] for d in user_departments if d[0]] + 
+                                      [d[0] for d in hierarchical_departments if d[0]]))
+        except ImportError:
+            # Fallback to user departments only
+            departments_list = [d[0] for d in user_departments if d[0]]
+        
+        # Sort departments alphabetically
+        departments_list.sort()
+        
+    except Exception as e:
+        flash(f'Warning: Could not load departments: {str(e)}', 'warning')
+        departments_list = []
     
     return render_template('ai_scheduling/generate.html', 
-                         departments=[d[0] for d in departments],
+                         departments=departments_list,
                          datetime=datetime,
                          timedelta=timedelta)
 
