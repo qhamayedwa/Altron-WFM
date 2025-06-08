@@ -235,6 +235,12 @@
                                     <i data-feather="activity" class="me-2"></i>
                                     Organization Dashboard
                                 </a></li>
+                                {% if current_user.has_role('Manager') %}
+                                <li><a class="dropdown-item" href="{{ url_for('organization.my_department') }}">
+                                    <i data-feather="users" class="me-2"></i>
+                                    My Department Team
+                                </a></li>
+                                {% endif %}
                                 <li><a class="dropdown-item" href="{{ url_for('organization.companies') }}">
                                     <i data-feather="building" class="me-2"></i>
                                     Company Management
