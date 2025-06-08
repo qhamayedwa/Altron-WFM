@@ -90,12 +90,14 @@ def get_dashboard_data():
         }
         
         # Workflow Statistics
+        pending_approvals = db.session.execute(text(
+            "SELECT COUNT(*) FROM time_entries WHERE clock_out_time IS NULL"
+        )).scalar() or 0
+        
         workflow_stats = {
             'active_workflows': 8,
             'automation_rate': 92,
-            'pending_approvals': TimeEntry.query.filter(
-                TimeEntry.clock_out_time.is_(None)
-            ).count(),
+            'pending_approvals': pending_approvals,
             'completed_today': 15
         }
         
@@ -126,14 +128,20 @@ def get_dashboard_data():
         }
         
         # Leave Management Statistics
+        pending_applications = db.session.execute(text(
+            "SELECT COUNT(*) FROM leave_applications WHERE status = 'Pending'"
+        )).scalar() or 0
+        
+        approved_month = db.session.execute(text("""
+            SELECT COUNT(*) FROM leave_applications 
+            WHERE status = 'Approved' 
+            AND EXTRACT(MONTH FROM created_at) = :month
+            AND EXTRACT(YEAR FROM created_at) = :year
+        """), {'month': current_month, 'year': current_year}).scalar() or 0
+        
         leave_stats = {
-            'pending_applications': LeaveApplication.query.filter_by(status='Pending').count(),
-            'approved_month': LeaveApplication.query.filter(
-                and_(
-                    LeaveApplication.status == 'Approved',
-                    func.extract('month', LeaveApplication.created_at) == datetime.now().month
-                )
-            ).count(),
+            'pending_applications': pending_applications,
+            'approved_month': approved_month,
             'balance_issues': 0
         }
         
@@ -143,14 +151,14 @@ def get_dashboard_data():
         # Get today's scheduled shifts
         shifts_today = db.session.execute(text("""
             SELECT COUNT(*) FROM schedules 
-            WHERE DATE(shift_start_time) = :today
+            WHERE DATE(start_time) = :today
         """), {'today': today}).scalar() or 0
         
         # Get upcoming shifts (next 7 days)
         next_week = today + timedelta(days=7)
         upcoming_shifts = db.session.execute(text("""
             SELECT COUNT(*) FROM schedules 
-            WHERE DATE(shift_start_time) BETWEEN :today AND :next_week
+            WHERE DATE(start_time) BETWEEN :today AND :next_week
         """), {'today': today, 'next_week': next_week}).scalar() or 0
         
         # Calculate coverage rate based on scheduled vs actual attendance
