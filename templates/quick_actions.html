@@ -93,13 +93,13 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
-                        <i data-feather="dollar-sign" class="me-2"></i>Payroll & Finance
+                        <span class="me-2 fw-bold text-success">R</span>Payroll & Finance
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="{{ url_for('payroll.payroll_processing') }}" class="btn btn-success">
-                            <i data-feather="dollar-sign" class="me-2"></i>Payroll Processing
+                            <span class="me-2 fw-bold text-success">R</span>Payroll Processing
                         </a>
                         <a href="{{ url_for('payroll.time_summary_report') }}" class="btn btn-outline-success">
                             <i data-feather="clock" class="me-2"></i>Time Summary
@@ -128,7 +128,7 @@
                     <div class="d-grid gap-2">
                         {% if current_user.has_role('Super User') %}
                         <a href="{{ url_for('pay_rules.manage_pay_rules') }}" class="btn btn-warning">
-                            <i data-feather="dollar-sign" class="me-2"></i>Pay Rules
+                            <span class="me-2 fw-bold text-success">R</span>Pay Rules
                         </a>
                         <a href="{{ url_for('pay_codes.manage_pay_codes') }}" class="btn btn-warning">
                             <i data-feather="tag" class="me-2"></i>Pay Codes
@@ -182,7 +182,7 @@
                             {% if current_user.has_role('Super User') %}
                             <div class="list-group list-group-flush">
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i data-feather="dollar-sign" class="me-2"></i>Pay Rules</span>
+                                    <span><span class="me-2 fw-bold text-success">R</span>Pay Rules</span>
                                     <span class="badge bg-warning rounded-pill">Admin</span>
                                 </div>
                                 <div class="list-group-item d-flex justify-content-between align-items-center">

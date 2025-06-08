@@ -176,7 +176,7 @@
                                 </a>
                                 {% if current_user.has_role('Super User') %}
                                 <a href="{{ url_for('payroll.payroll_processing') }}" class="btn btn-success btn-sm">
-                                    <i data-feather="dollar-sign" class="me-2"></i>Payroll
+                                    <span class="me-2 fw-bold text-success">R</span>Payroll
                                 </a>
                                 {% endif %}
                             </div>
