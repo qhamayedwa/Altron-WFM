@@ -39,6 +39,9 @@ def clock_in():
                 }), 400
             else:
                 flash('You already have an open time entry. Please clock out first.', 'warning')
+                # Check if request came from timecard page
+                if request.referrer and 'timecard' in request.referrer:
+                    return redirect(url_for('time_attendance.my_timecard'))
                 return redirect(url_for('main.index'))
         
         # Get GPS coordinates if provided  
@@ -67,6 +70,9 @@ def clock_in():
             })
         else:
             flash('Successfully clocked in!', 'success')
+            # Check if request came from timecard page
+            if request.referrer and 'timecard' in request.referrer:
+                return redirect(url_for('time_attendance.my_timecard'))
             return redirect(url_for('main.index'))
         
     except Exception as e:
@@ -78,6 +84,9 @@ def clock_in():
             }), 500
         else:
             flash(f'Error clocking in: {str(e)}', 'danger')
+            # Check if request came from timecard page
+            if request.referrer and 'timecard' in request.referrer:
+                return redirect(url_for('time_attendance.my_timecard'))
             return redirect(url_for('main.index'))
 
 @time_attendance_bp.route('/clock-out', methods=['POST'])
@@ -106,6 +115,9 @@ def clock_out():
                 }), 400
             else:
                 flash('No open time entry found. Please clock in first.', 'warning')
+                # Check if request came from timecard page
+                if request.referrer and 'timecard' in request.referrer:
+                    return redirect(url_for('time_attendance.my_timecard'))
                 return redirect(url_for('main.index'))
         
         # Get GPS coordinates if provided
@@ -137,6 +149,9 @@ def clock_out():
             })
         else:
             flash(f'Successfully clocked out! Total time: {total_hours:.2f} hours', 'success')
+            # Check if request came from timecard page
+            if request.referrer and 'timecard' in request.referrer:
+                return redirect(url_for('time_attendance.my_timecard'))
             return redirect(url_for('main.index'))
         
     except Exception as e:
@@ -148,6 +163,9 @@ def clock_out():
             }), 500
         else:
             flash(f'Error clocking out: {str(e)}', 'danger')
+            # Check if request came from timecard page
+            if request.referrer and 'timecard' in request.referrer:
+                return redirect(url_for('time_attendance.my_timecard'))
             return redirect(url_for('main.index'))
 
 @time_attendance_bp.route('/start-break', methods=['POST'])
