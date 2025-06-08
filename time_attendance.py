@@ -30,17 +30,6 @@ def clock_in():
         print(f"Error getting JSON: {json_error}")
         json_data = {}
     
-    # Simple test response first
-    if True:  # Always return success for now to test
-        response_data = {
-            'success': True,
-            'message': 'Test response - clock in endpoint reached',
-            'debug': True
-        }
-        print(f"=== RETURNING SUCCESS RESPONSE ===")
-        print(f"Response data: {response_data}")
-        return jsonify(response_data)
-    
     try:
         # Check if user already has an open time entry
         open_entry = TimeEntry.query.filter_by(

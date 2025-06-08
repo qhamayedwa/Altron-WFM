@@ -295,7 +295,7 @@ class LiveClockTimer {
 
 // Time Tracking Functions
 window.performClockIn = async function() {
-    console.log('Performing clock in');
+    console.log('Performing clock in - updated function v2');
     const button = document.getElementById('clockInBtn');
     if (button) {
         button.disabled = true;
