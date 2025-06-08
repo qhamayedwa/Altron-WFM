@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
 from flask_login import login_required, current_user
 from app import db
-from models import User, TimeEntry, Schedule, LeaveApplication, PayRule, PayCode
+from models import User, TimeEntry, Schedule, LeaveApplication, PayRule, PayCode, LeaveBalance
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
 import logging
@@ -266,6 +266,39 @@ def index():
         if hasattr(current_user, 'has_role') and (current_user.has_role('Manager') or current_user.has_role('Super User')):
             pending_approvals = LeaveApplication.query.filter_by(status='Pending').count()
         
+        # Calculate today's stats for the user
+        today_total_hours = db.session.query(
+            func.sum(func.extract('epoch', TimeEntry.clock_out_time - TimeEntry.clock_in_time) / 3600)
+        ).filter(
+            and_(
+                TimeEntry.user_id == current_user.id,
+                func.date(TimeEntry.clock_in_time) == today,
+                TimeEntry.clock_out_time.isnot(None)
+            )
+        ).scalar() or 0
+        
+        today_stats = {
+            'total_hours': today_total_hours
+        }
+        
+        # Calculate week stats for the user
+        week_total_hours = db.session.query(
+            func.sum(func.extract('epoch', TimeEntry.clock_out_time - TimeEntry.clock_in_time) / 3600)
+        ).filter(
+            and_(
+                TimeEntry.user_id == current_user.id,
+                TimeEntry.clock_in_time >= week_start,
+                TimeEntry.clock_out_time.isnot(None)
+            )
+        ).scalar() or 0
+        
+        week_stats = {
+            'total_hours': week_total_hours
+        }
+        
+        # Get leave balance for the user
+        leave_balance = LeaveBalance.query.filter_by(user_id=current_user.id).first()
+        
         # Generate analytics data for charts
         analytics_data = generate_dashboard_analytics(is_manager_or_admin, current_user.id if not is_manager_or_admin else None)
         
@@ -281,7 +314,10 @@ def index():
                              weekly_hours=weekly_hours,
                              current_status=current_status,
                              pending_approvals=pending_approvals,
-                             analytics_data=analytics_data)
+                             analytics_data=analytics_data,
+                             today_stats=today_stats,
+                             week_stats=week_stats,
+                             leave_balance=leave_balance)
     except Exception as e:
         logging.error(f"Error in dashboard route: {e}")
         flash("An error occurred while loading the dashboard.", "error")
@@ -306,7 +342,10 @@ def index():
                              weekly_hours=0,
                              current_status={'is_clocked_in': False, 'clock_in_time': None},
                              pending_approvals=0,
-                             analytics_data=default_analytics)
+                             analytics_data=default_analytics,
+                             today_stats={'total_hours': 0},
+                             week_stats={'total_hours': 0},
+                             leave_balance=None)
 
 @main_bp.route('/reports')
 @login_required
