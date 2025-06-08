@@ -53,6 +53,11 @@
                         <a href="{{ url_for('main.schedules') }}" class="btn btn-primary">
                             <i data-feather="calendar" class="me-2"></i>View Schedules
                         </a>
+                        {% if current_user.has_role('Manager') or current_user.has_role('Super User') %}
+                        <a href="{{ url_for('scheduling.manage_schedules') }}" class="btn btn-success">
+                            <i data-feather="edit-3" class="me-2"></i>Manage Schedules
+                        </a>
+                        {% endif %}
                         <a href="{{ url_for('main.reports') }}" class="btn btn-outline-primary">
                             <i data-feather="trending-up" class="me-2"></i>Schedule Reports
                         </a>
