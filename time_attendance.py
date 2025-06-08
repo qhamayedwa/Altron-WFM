@@ -287,12 +287,31 @@ def my_timecard():
     total_hours = sum(entry.total_hours for entry in time_entries.items)
     total_overtime = sum(entry.overtime_hours for entry in time_entries.items)
     
+    # Get current clock status
+    open_entry = TimeEntry.query.filter_by(
+        user_id=current_user.id,
+        status='Open'
+    ).first()
+    
+    current_status = None
+    if open_entry:
+        current_status = {
+            'status': 'clocked_in',
+            'clock_in_time': open_entry.clock_in_time,
+            'on_break': open_entry.break_start_time and not open_entry.break_end_time
+        }
+    else:
+        current_status = {
+            'status': 'clocked_out'
+        }
+    
     return render_template('time_attendance/my_timecard.html',
                          time_entries=time_entries,
                          total_hours=total_hours,
                          total_overtime=total_overtime,
                          start_date=start_date,
-                         end_date=end_date)
+                         end_date=end_date,
+                         current_status=current_status)
 
 @time_attendance_bp.route('/status')
 @login_required

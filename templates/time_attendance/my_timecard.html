@@ -10,18 +10,42 @@
             My Timecard
         </h2>
         <div class="d-flex gap-2">
-            <button id="clock-in-btn" class="btn btn-success" onclick="clockIn()">
-                <i data-feather="play" class="me-2"></i>
-                Clock In
-            </button>
-            <button id="clock-out-btn" class="btn btn-danger" onclick="clockOut()" style="display: none;">
-                <i data-feather="square" class="me-2"></i>
-                Clock Out
-            </button>
-            <button id="break-btn" class="btn btn-warning" onclick="toggleBreak()" style="display: none;">
-                <i data-feather="pause" class="me-2"></i>
-                Start Break
-            </button>
+            {% if current_status and current_status.status == 'clocked_in' %}
+                <!-- Clock Out Form -->
+                <form method="POST" action="{{ url_for('time_attendance.clock_out') }}" class="d-inline">
+                    <button type="submit" id="clockOutBtn" class="btn btn-danger">
+                        <i data-feather="square" class="me-2"></i>
+                        Clock Out
+                        <small class="d-block">End your workday</small>
+                    </button>
+                </form>
+                
+                <!-- Break Toggle Form -->
+                {% if current_status.on_break %}
+                    <form method="POST" action="{{ url_for('time_attendance.end_break') }}" class="d-inline">
+                        <button type="submit" class="btn btn-success">
+                            <i data-feather="play" class="me-2"></i>
+                            End Break
+                        </button>
+                    </form>
+                {% else %}
+                    <form method="POST" action="{{ url_for('time_attendance.start_break') }}" class="d-inline">
+                        <button type="submit" class="btn btn-warning">
+                            <i data-feather="pause" class="me-2"></i>
+                            Start Break
+                        </button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <!-- Clock In Form -->
+                <form method="POST" action="{{ url_for('time_attendance.clock_in') }}" class="d-inline">
+                    <button type="submit" id="clockInBtn" class="btn btn-success">
+                        <i data-feather="clock" class="me-2"></i>
+                        Clock In
+                        <small class="d-block">Start your workday</small>
+                    </button>
+                </form>
+            {% endif %}
         </div>
     </div>
 
@@ -30,7 +54,25 @@
         <div class="card-body">
             <h5 class="card-title">Current Status</h5>
             <div id="status-display">
-                <p class="text-muted">Loading status...</p>
+                {% if current_status and current_status.status == 'clocked_in' %}
+                    <div class="alert alert-success">
+                        <i data-feather="clock" class="me-2"></i>
+                        <strong>Currently Clocked In</strong>
+                        {% if current_status.clock_in_time %}
+                            <br><small>Since: {{ current_status.clock_in_time.strftime('%I:%M %p') }}</small>
+                        {% endif %}
+                        {% if current_status.on_break %}
+                            <br><span class="badge bg-warning">On Break</span>
+                        {% endif %}
+                        <div id="live-timer" class="mt-2 h4 text-primary">00:00:00</div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i data-feather="clock" class="me-2"></i>
+                        <strong>Currently Clocked Out</strong>
+                        <br><small>Click "Clock In" to start your workday</small>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -183,172 +225,14 @@
 
 {% block scripts %}
 <script>
-    let currentStatus = null;
-    let statusInterval = null;
-
-    // Load current status on page load
+    // Initialize Feather icons and live timer on page load
     document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
-        loadCurrentStatus();
-        statusInterval = setInterval(loadCurrentStatus, 30000); // Update every 30 seconds
+        
+        // Initialize live timer if clocked in
+        if (window.liveTimer) {
+            window.liveTimer.init();
+        }
     });
-
-    async function loadCurrentStatus() {
-        try {
-            const response = await fetch('/time/status');
-            const data = await response.json();
-            
-            currentStatus = data;
-            updateStatusDisplay(data);
-            updateButtons(data);
-        } catch (error) {
-            console.error('Error loading status:', error);
-        }
-    }
-
-    function updateStatusDisplay(status) {
-        const display = document.getElementById('status-display');
-        
-        if (status.status === 'clocked_out') {
-            display.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-secondary me-2">Clocked Out</span>
-                    <span class="text-muted">Ready to clock in</span>
-                </div>
-            `;
-        } else {
-            const clockInTime = new Date(status.clock_in_time).toLocaleTimeString();
-            display.innerHTML = `
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="badge bg-success me-2">Clocked In</span>
-                        <span>Since ${clockInTime}</span>
-                        ${status.on_break ? '<span class="badge bg-warning ms-2">On Break</span>' : ''}
-                    </div>
-                    <div class="text-end">
-                        <small class="text-muted">Time Elapsed:</small>
-                        <div id="elapsed-time" class="fw-bold"></div>
-                    </div>
-                </div>
-            `;
-            
-            // Start elapsed time counter
-            startElapsedTimeCounter(status.clock_in_time);
-        }
-    }
-
-    function updateButtons(status) {
-        const clockInBtn = document.getElementById('clock-in-btn');
-        const clockOutBtn = document.getElementById('clock-out-btn');
-        const breakBtn = document.getElementById('break-btn');
-        
-        if (status.status === 'clocked_out') {
-            clockInBtn.style.display = 'block';
-            clockOutBtn.style.display = 'none';
-            breakBtn.style.display = 'none';
-        } else {
-            clockInBtn.style.display = 'none';
-            clockOutBtn.style.display = 'block';
-            breakBtn.style.display = 'block';
-            
-            if (status.on_break) {
-                breakBtn.innerHTML = '<i data-feather="play" class="me-2"></i>End Break';
-                breakBtn.className = 'btn btn-success';
-            } else {
-                breakBtn.innerHTML = '<i data-feather="pause" class="me-2"></i>Start Break';
-                breakBtn.className = 'btn btn-warning';
-            }
-        }
-        
-        feather.replace();
-    }
-
-    function startElapsedTimeCounter(clockInTime) {
-        const startTime = new Date(clockInTime);
-        
-        setInterval(function() {
-            const now = new Date();
-            const elapsed = now - startTime;
-            const hours = Math.floor(elapsed / (1000 * 60 * 60));
-            const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
-            
-            const elapsedElement = document.getElementById('elapsed-time');
-            if (elapsedElement) {
-                elapsedElement.textContent = `${hours}h ${minutes}m`;
-            }
-        }, 1000);
-    }
-
-    async function clockIn() {
-        try {
-            const response = await fetch('/time/clock-in', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                flashMessages.show(data.message, 'success');
-                loadCurrentStatus();
-            } else {
-                flashMessages.show(data.message, 'danger');
-            }
-        } catch (error) {
-            flashMessages.show('Error clocking in', 'danger');
-        }
-    }
-
-    async function clockOut() {
-        try {
-            const response = await fetch('/time/clock-out', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                flashMessages.show(data.message, 'success');
-                loadCurrentStatus();
-                setTimeout(() => location.reload(), 2000); // Reload to show updated timecard
-            } else {
-                flashMessages.show(data.message, 'danger');
-            }
-        } catch (error) {
-            flashMessages.show('Error clocking out', 'danger');
-        }
-    }
-
-    async function toggleBreak() {
-        const endpoint = currentStatus.on_break ? '/time/end-break' : '/time/start-break';
-        
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                flashMessages.show(data.message, 'success');
-                loadCurrentStatus();
-            } else {
-                flashMessages.show(data.message, 'danger');
-            }
-        } catch (error) {
-            flashMessages.show('Error managing break', 'danger');
-        }
-    }
 </script>
 {% endblock %}
