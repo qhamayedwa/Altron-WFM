@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 from app import db
-from models import User, Role
+from models import User, Role, user_roles
 from forms import RegistrationForm
 
 # Create authentication blueprint
@@ -143,15 +143,27 @@ def register():
 def user_management():
     """User management page (Super User only)"""
     page = request.args.get('page', 1, type=int)
-    per_page = 10
+    per_page = 15
+    role_filter = request.args.get('role')
     
-    users = User.query.order_by(User.created_at.desc()).paginate(
+    # Build query with role filtering
+    query = User.query
+    
+    if role_filter:
+        query = query.filter(User.roles.any(Role.name == role_filter))
+    
+    users = query.order_by(User.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
+    # Get all available roles for the filter dropdown
+    all_roles = Role.query.order_by(Role.name).all()
+    
     return render_template('auth/user_management.html', 
                          title='User Management', 
-                         users=users)
+                         users=users,
+                         all_roles=all_roles,
+                         current_role_filter=role_filter)
 
 @auth_bp.route('/user/<int:user_id>/edit', methods=['GET', 'POST'])
 @super_user_required

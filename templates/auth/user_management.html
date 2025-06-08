@@ -15,6 +15,35 @@
         </a>
     </div>
 
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="role" class="form-label">Filter by Role</label>
+                    <select name="role" id="role" class="form-select">
+                        <option value="">All Roles</option>
+                        {% for role in all_roles %}
+                        <option value="{{ role.name }}" {% if role.name == current_role_filter %}selected{% endif %}>
+                            {{ role.name }} ({{ role.description }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-8 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i data-feather="filter" class="me-1"></i>
+                        Apply Filter
+                    </button>
+                    <a href="{{ url_for('auth.user_management') }}" class="btn btn-outline-secondary">
+                        <i data-feather="x" class="me-1"></i>
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-body">
             {% if users.items %}
@@ -26,6 +55,7 @@
                             <th>Email</th>
                             <th>Name</th>
                             <th>Roles</th>
+                            <th>Organization</th>
                             <th>Status</th>
                             <th>Created</th>
                             <th>Actions</th>
@@ -46,6 +76,21 @@
                                 {% for role in user.roles %}
                                 <span class="badge bg-secondary me-1">{{ role.name }}</span>
                                 {% endfor %}
+                            </td>
+                            <td>
+                                {% if user.department %}
+                                <div class="small">
+                                    <strong>{{ user.department.name }}</strong>
+                                    {% if user.department.description %}
+                                    <br><span class="text-muted">{{ user.department.description }}</span>
+                                    {% endif %}
+                                    {% if user.employee_id %}
+                                    <br><span class="badge bg-light text-dark">ID: {{ user.employee_id }}</span>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Not Assigned</span>
+                                {% endif %}
                             </td>
                             <td>
                                 {% if user.is_active %}
