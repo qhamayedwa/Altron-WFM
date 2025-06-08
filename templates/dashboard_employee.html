@@ -352,13 +352,44 @@ function updateClockStatus() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Update UI based on clock status
-                console.log('Clock status updated:', data.is_clocked_in);
+                console.log('Clock status updated:', data.data.is_clocked_in);
+                updateClockButtonUI(data.data.is_clocked_in, data.data.clock_in_time);
             }
         })
         .catch(error => {
             console.log('Error updating clock status:', error);
         });
+}
+
+function updateClockButtonUI(isClockedIn, clockInTime) {
+    const clockButton = document.getElementById('quickClockBtn');
+    if (!clockButton) return;
+    
+    if (isClockedIn) {
+        clockButton.className = 'btn btn-danger w-100';
+        clockButton.onclick = clockOut;
+        
+        const timeDisplay = clockInTime ? new Date(clockInTime).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }) : 'Unknown';
+        
+        clockButton.innerHTML = `
+            <i data-feather="clock" class="me-2"></i>Clock Out
+            <small class="d-block">Started: ${timeDisplay}</small>
+        `;
+    } else {
+        clockButton.className = 'btn btn-success w-100';
+        clockButton.onclick = clockIn;
+        clockButton.innerHTML = `
+            <i data-feather="clock" class="me-2"></i>Clock In
+            <small class="d-block">Start your workday</small>
+        `;
+    }
+    
+    // Refresh feather icons
+    feather.replace();
 }
 
 function quickClockAction() {
@@ -385,7 +416,7 @@ function clockIn() {
                 longitude: position.coords.longitude
             };
             
-            fetch('/api/clock-in', {
+            fetch('/time/clock-in', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -396,9 +427,9 @@ function clockIn() {
             .then(data => {
                 if (data.success) {
                     showAlert('success', 'Successfully clocked in!');
-                    location.reload();
+                    updateClockStatus();
                 } else {
-                    showAlert('danger', 'Error clocking in: ' + data.message);
+                    showAlert('danger', 'Error clocking in: ' + (data.message || data.error?.message || 'Unknown error'));
                 }
             })
             .catch(error => {
@@ -408,7 +439,7 @@ function clockIn() {
     } else {
         showAlert('warning', 'Geolocation not supported. Clocking in without location.');
         // Clock in without location
-        fetch('/api/clock-in', {
+        fetch('/time/clock-in', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -419,16 +450,16 @@ function clockIn() {
         .then(data => {
             if (data.success) {
                 showAlert('success', 'Successfully clocked in!');
-                location.reload();
+                updateClockStatus();
             } else {
-                showAlert('danger', 'Error clocking in: ' + data.message);
+                showAlert('danger', 'Error clocking in: ' + (data.message || data.error?.message || 'Unknown error'));
             }
         });
     }
 }
 
 function clockOut() {
-    fetch('/api/clock-out', {
+    fetch('/time/clock-out', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -439,9 +470,9 @@ function clockOut() {
     .then(data => {
         if (data.success) {
             showAlert('success', 'Successfully clocked out!');
-            location.reload();
+            updateClockStatus();
         } else {
-            showAlert('danger', 'Error clocking out: ' + data.message);
+            showAlert('danger', 'Error clocking out: ' + (data.message || data.error?.message || 'Unknown error'));
         }
     })
     .catch(error => {
