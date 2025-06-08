@@ -50,21 +50,27 @@
                             </p>
                             
                             <div class="row text-center mb-3">
-                                <div class="col-4">
+                                <div class="col-3">
                                     <div class="stat-item">
-                                        <h6 class="text-primary">{{ company.regions.count() }}</h6>
+                                        <h6 class="text-primary">{{ company_stats[company.id].regions }}</h6>
                                         <small class="text-muted">Regions</small>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-3">
                                     <div class="stat-item">
-                                        <h6 class="text-success">0</h6>
+                                        <h6 class="text-success">{{ company_stats[company.id].sites }}</h6>
                                         <small class="text-muted">Sites</small>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-3">
                                     <div class="stat-item">
-                                        <h6 class="text-info">0</h6>
+                                        <h6 class="text-warning">{{ company_stats[company.id].departments }}</h6>
+                                        <small class="text-muted">Departments</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="stat-item">
+                                        <h6 class="text-info">{{ company_stats[company.id].employees }}</h6>
                                         <small class="text-muted">Employees</small>
                                     </div>
                                 </div>
