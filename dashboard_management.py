@@ -19,11 +19,15 @@ def get_dashboard_data():
         # System Statistics - Apply role-based filtering
         from sqlalchemy import text
         
-        # Determine user's access scope
+        # Determine user's access scope with debug logging
         is_super_user = current_user.has_role('Super User')
-        is_manager = current_user.has_role('Manager') and not is_super_user
-        user_department_id = getattr(current_user, 'department_id', None) if is_manager else None
+        is_manager = current_user.has_role('Manager')
+        user_department_id = getattr(current_user, 'department_id', None)
         
+        # Debug logging
+        print(f"DEBUG: User {current_user.username}, is_super_user: {is_super_user}, is_manager: {is_manager}, dept_id: {user_department_id}")
+        
+        # Apply role-based data filtering
         if is_super_user:
             # Super Users see all data
             total_users = db.session.execute(text("SELECT COUNT(*) FROM users")).scalar() or 0
