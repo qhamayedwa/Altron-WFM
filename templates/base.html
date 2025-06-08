@@ -257,7 +257,7 @@
                         </li>
                         
                         <!-- System Super Admin Section -->
-                        {% if current_user.is_system_super_admin() %}
+                        {% if current_user.has_role('system_super_admin') %}
                         <li class="dropdown-submenu">
                             <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown">
                                 <i data-feather="globe" class="me-2"></i>
