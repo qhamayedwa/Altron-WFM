@@ -141,7 +141,9 @@ def generate_dashboard_analytics(is_manager_or_admin, user_id=None):
 @main_bp.route('/')
 @login_required
 def index():
-    """Main dashboard for Time & Attendance system"""
+    """Main dashboard - redirects to role-based dashboard"""
+    # Redirect to the new role-based dashboard system
+    return redirect(url_for('dashboard_mgmt.dashboard'))
     try:
         # Check if user has manager/admin roles for organization-wide data
         is_manager_or_admin = (hasattr(current_user, 'has_role') and 

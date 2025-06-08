@@ -81,6 +81,7 @@ def create_app(config_class=Config):
     from organization_management import org_bp
     from employee_import import import_bp
     from debug_roles import debug_bp
+    from dashboard_management import dashboard_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(time_attendance_bp)
@@ -95,6 +96,7 @@ def create_app(config_class=Config):
     app.register_blueprint(org_bp)
     app.register_blueprint(import_bp)
     app.register_blueprint(debug_bp)
+
     
     # Register additional API routes without version prefix for frontend compatibility
     from api import api_bp as api_v1_bp

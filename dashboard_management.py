@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
 import json
 
-dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/dashboard')
+dashboard_bp = Blueprint('dashboard_mgmt', __name__, url_prefix='/dashboard')
 
 def get_dashboard_data():
     """Collect comprehensive dashboard data for all roles"""
