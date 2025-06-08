@@ -336,6 +336,7 @@ class User(UserMixin, db.Model):
     mobile_number = db.Column(db.String(20), nullable=True)
     emergency_contact_name = db.Column(db.String(100), nullable=True)
     emergency_contact_phone = db.Column(db.String(20), nullable=True)
+    emergency_contact_relationship = db.Column(db.String(50), nullable=True)
     
     # Address
     address_line1 = db.Column(db.String(100), nullable=True)
@@ -348,6 +349,11 @@ class User(UserMixin, db.Model):
     job_grade = db.Column(db.String(10), nullable=True)
     salary = db.Column(db.Float, nullable=True)
     hourly_rate = db.Column(db.Float, nullable=True)
+    
+    # Professional information
+    education_level = db.Column(db.String(50), nullable=True)
+    skills = db.Column(db.Text, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
     
     # Relationships
     tenant = db.relationship('Tenant', backref='users')

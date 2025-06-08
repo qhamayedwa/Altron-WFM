@@ -243,8 +243,8 @@ def edit_user(user_id):
         user.is_active = form.is_active.data
         
         # Update contact information
-        user.phone = form.phone.data
-        user.mobile = form.mobile.data
+        user.phone_number = form.phone.data
+        user.mobile_number = form.mobile.data
         
         # Update address information
         user.address_line1 = form.address_line1.data
@@ -263,7 +263,7 @@ def edit_user(user_id):
         user.position = form.position.data
         user.employment_type = form.employment_type.data
         user.hire_date = form.hire_date.data
-        user.manager_id = form.manager_id.data if form.manager_id.data else None
+        user.line_manager_id = form.manager_id.data if form.manager_id.data else None
         user.hourly_rate = form.hourly_rate.data
         
         # Update professional information
