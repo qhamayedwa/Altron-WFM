@@ -608,7 +608,7 @@ def workflow_config():
                 'pending_approvals': pending_approvals,
                 'exceptions_today': exceptions_today,
                 'active_workflows': 8,  # Number of workflow types
-                'automation_rate': 92   # Calculated automation percentage
+                'automation_rate': round((auto_processed / total_processed * 100) if total_processed > 0 else 0, 1)
             }
             
             return render_template('automation/workflow_config.html', **stats)

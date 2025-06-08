@@ -28,11 +28,37 @@ def get_dashboard_data():
         total_time_entries = db.session.execute(text("SELECT COUNT(*) FROM time_entries")).scalar() or 0
         leave_applications = db.session.execute(text("SELECT COUNT(*) FROM leave_applications")).scalar() or 0
         
+        # Calculate actual system statistics
+        # Get active sessions/recent logins (last 24 hours) 
+        active_users_24h = db.session.execute(text("""
+            SELECT COUNT(DISTINCT id) FROM users 
+            WHERE last_login >= NOW() - INTERVAL '24 hours' AND is_active = true
+        """)).scalar() or 0
+        
+        # Count actual pending tasks from workflows and approvals
+        pending_leave_approvals = db.session.execute(text(
+            "SELECT COUNT(*) FROM leave_applications WHERE status = 'Pending'"
+        )).scalar() or 0
+        
+        pending_overtime_approvals = db.session.execute(text(
+            "SELECT COUNT(*) FROM time_entries WHERE is_overtime_approved = false AND overtime_hours > 0"
+        )).scalar() or 0
+        
+        total_pending_tasks = pending_leave_approvals + pending_overtime_approvals
+        
+        # Calculate data integrity based on complete vs incomplete records
+        total_entries = db.session.execute(text("SELECT COUNT(*) FROM time_entries")).scalar() or 1
+        complete_entries = db.session.execute(text(
+            "SELECT COUNT(*) FROM time_entries WHERE clock_out_time IS NOT NULL"
+        )).scalar() or 0
+        
+        data_integrity_percentage = (complete_entries / total_entries * 100) if total_entries > 0 else 100
+        
         system_stats = {
-            'uptime': 99.9,
-            'active_users': total_users,
-            'pending_tasks': 3,
-            'data_integrity': 100
+            'uptime': 99.9,  # Keep this as system uptime would need infrastructure monitoring
+            'active_users': active_users_24h,
+            'pending_tasks': total_pending_tasks,
+            'data_integrity': round(data_integrity_percentage, 1)
         }
         
         org_stats = {
@@ -94,11 +120,31 @@ def get_dashboard_data():
             "SELECT COUNT(*) FROM time_entries WHERE clock_out_time IS NULL"
         )).scalar() or 0
         
+        # Calculate actual workflow automation metrics
+        total_leave_applications = db.session.execute(text("SELECT COUNT(*) FROM leave_applications")).scalar() or 1
+        auto_approved_leaves = db.session.execute(text(
+            "SELECT COUNT(*) FROM leave_applications WHERE status = 'Approved' AND approved_at IS NOT NULL"
+        )).scalar() or 0
+        
+        total_time_calculations = db.session.execute(text("SELECT COUNT(*) FROM time_entries")).scalar() or 1
+        auto_calculated_times = db.session.execute(text(
+            "SELECT COUNT(*) FROM time_entries WHERE total_hours IS NOT NULL"
+        )).scalar() or 0
+        
+        # Calculate automation rate based on processed vs manual entries
+        automation_rate = ((auto_approved_leaves + auto_calculated_times) / (total_leave_applications + total_time_calculations) * 100) if (total_leave_applications + total_time_calculations) > 0 else 0
+        
+        # Count today's completed workflows
+        today_completed = db.session.execute(text("""
+            SELECT COUNT(*) FROM leave_applications 
+            WHERE DATE(approved_at) = CURRENT_DATE
+        """)).scalar() or 0
+        
         workflow_stats = {
-            'active_workflows': 8,
-            'automation_rate': 92,
+            'active_workflows': 8,  # Would need workflow tracking system
+            'automation_rate': round(automation_rate, 1),
             'pending_approvals': pending_approvals,
-            'completed_today': 15
+            'completed_today': today_completed
         }
         
         # Payroll Statistics - Calculate from actual time data
@@ -114,8 +160,14 @@ def get_dashboard_data():
             AND clock_in_time IS NOT NULL AND clock_out_time IS NOT NULL
         """), {'month': current_month, 'year': current_year}).scalar() or 0
         
-        # Estimate payroll based on actual hours (assuming R150/hour average rate)
-        estimated_payroll = monthly_hours * 150
+        # Calculate payroll based on actual employee hourly rates
+        # Get average hourly rate from employee data or use default calculation
+        avg_hourly_rate = db.session.execute(text("""
+            SELECT COALESCE(AVG(hourly_rate), 150) FROM users 
+            WHERE hourly_rate IS NOT NULL AND is_active = true
+        """)).scalar() or 150
+        
+        estimated_payroll = monthly_hours * avg_hourly_rate
         
         # Calculate overtime percentage
         overtime_percentage = (actual_overtime / monthly_hours * 100) if monthly_hours > 0 else 0
@@ -139,10 +191,17 @@ def get_dashboard_data():
             AND EXTRACT(YEAR FROM created_at) = :year
         """), {'month': current_month, 'year': current_year}).scalar() or 0
         
+        # Calculate actual leave balance issues
+        # Count employees with negative or expiring leave balances
+        balance_issues = db.session.execute(text("""
+            SELECT COUNT(DISTINCT user_id) FROM leave_balances 
+            WHERE balance < 0 OR (balance > 0 AND expiry_date < CURRENT_DATE + INTERVAL '30 days')
+        """)).scalar() or 0
+        
         leave_stats = {
             'pending_applications': pending_applications,
             'approved_month': approved_month,
-            'balance_issues': 0
+            'balance_issues': balance_issues
         }
         
         # Schedule Statistics - Calculate from actual schedule data
@@ -164,10 +223,26 @@ def get_dashboard_data():
         # Calculate coverage rate based on scheduled vs actual attendance
         coverage_rate = min(100, (today_entries / max(1, shifts_today)) * 100) if shifts_today > 0 else 100
         
+        # Calculate actual scheduling conflicts
+        # Check for overlapping schedules for the same employee
+        conflicts = db.session.execute(text("""
+            WITH overlapping_schedules AS (
+                SELECT DISTINCT s1.user_id
+                FROM schedules s1
+                JOIN schedules s2 ON s1.user_id = s2.user_id 
+                AND s1.id != s2.id
+                AND s1.start_time < s2.end_time 
+                AND s1.end_time > s2.start_time
+                WHERE s1.status = 'Active' AND s2.status = 'Active'
+                AND DATE(s1.start_time) >= CURRENT_DATE - INTERVAL '7 days'
+            )
+            SELECT COUNT(*) FROM overlapping_schedules
+        """)).scalar() or 0
+        
         schedule_stats = {
             'shifts_today': shifts_today,
             'coverage_rate': round(coverage_rate, 1),
-            'conflicts': 0,  # Would need complex scheduling conflict logic
+            'conflicts': conflicts,
             'upcoming_shifts': upcoming_shifts
         }
         
