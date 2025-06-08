@@ -23,12 +23,17 @@ def clock_in():
     print(f"Request content type: {request.content_type}")
     print(f"Request headers: {dict(request.headers)}")
     print(f"Request form data: {request.form}")
-    try:
-        json_data = request.get_json()
-        print(f"Request JSON data: {json_data}")
-    except Exception as json_error:
-        print(f"Error getting JSON: {json_error}")
-        json_data = {}
+    # Handle both JSON and form requests properly
+    json_data = {}
+    if request.is_json and request.content_length and request.content_length > 0:
+        try:
+            json_data = request.get_json() or {}
+            print(f"Request JSON data: {json_data}")
+        except Exception as json_error:
+            print(f"Error getting JSON: {json_error}")
+            json_data = {}
+    else:
+        print("Request is form-based or empty JSON")
     
     try:
         # Check if user already has an open time entry

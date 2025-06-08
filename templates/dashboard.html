@@ -136,8 +136,8 @@
                                 </button>
                             </form>
                             {% else %}
-                            <form method="POST" action="/time/clock-in" style="display: inline;">
-                                <button type="submit" class="btn btn-success w-100 mb-2" id="clockInBtn">
+                            <form method="POST" action="/time/clock-in" style="display: inline;" onsubmit="return true;">
+                                <button type="submit" class="btn btn-success w-100 mb-2" name="clock_in" value="1">
                                     <i data-feather="clock" class="me-2"></i>Clock In
                                     <small class="d-block">Start your workday</small>
                                 </button>

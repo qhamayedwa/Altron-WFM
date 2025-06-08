@@ -598,15 +598,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
     popoverTriggerList.map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
     
-    // Test button functionality
+    // Remove any JavaScript interference with form submission
     const clockInBtn = document.getElementById('clockInBtn');
     if (clockInBtn) {
-        console.log('Clock in button found, adding event listener');
-        clockInBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Clock in button clicked via event listener');
-            window.clockIn();
-        });
+        console.log('Clock in button found - allowing form submission');
+        // Remove any existing event listeners that might interfere
+        clockInBtn.removeEventListener('click', window.clockIn);
     }
     
     console.log('Initialization complete');
