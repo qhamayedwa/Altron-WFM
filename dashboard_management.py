@@ -43,7 +43,7 @@ def get_dashboard_data():
             leave_applications = db.session.execute(text("SELECT COUNT(*) FROM leave_applications")).scalar() or 0
         elif is_manager and managed_dept_ids:
             # Managers see only their managed departments' data
-            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
+            dept_ids_str
             total_users = db.session.execute(text(
                 f"SELECT COUNT(*) FROM users WHERE department_id IN ({dept_ids_str})"
             )).scalar() or 0
@@ -89,7 +89,7 @@ def get_dashboard_data():
             )).scalar() or 0
         elif is_manager and managed_dept_ids:
             # Managers see only their managed departments' active users
-            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
+            dept_ids_str
             active_users_24h = db.session.execute(text(f"""
                 SELECT COUNT(DISTINCT id) FROM users 
                 WHERE last_login >= NOW() - INTERVAL '24 hours' 
@@ -120,7 +120,7 @@ def get_dashboard_data():
                 AND EXTRACT(EPOCH FROM (clock_out_time - clock_in_time))/3600 > 8
             """)).scalar() or 0
         elif is_manager and managed_dept_ids:
-            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
+            dept_ids_str
             pending_overtime_approvals = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
@@ -149,7 +149,7 @@ def get_dashboard_data():
                 "SELECT COUNT(*) FROM time_entries WHERE clock_out_time IS NOT NULL"
             )).scalar() or 0
         elif is_manager and managed_dept_ids:
-            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
+            dept_ids_str
             total_entries = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
@@ -188,7 +188,7 @@ def get_dashboard_data():
                 WHERE clock_in_time >= CURRENT_DATE - INTERVAL '7 days'
             """)).scalar() or 0
         elif is_manager and managed_dept_ids:
-            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
+            dept_ids_str
             active_employees = db.session.execute(text(f"""
                 SELECT COUNT(DISTINCT te.user_id) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
@@ -259,7 +259,7 @@ def get_dashboard_data():
             )).scalar() or 0
         elif is_manager and managed_dept_ids:
             # Manager sees only their managed departments' data
-            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
+            dept_ids_str
             today_entries = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
@@ -360,7 +360,7 @@ def get_dashboard_data():
                 WHERE hourly_rate IS NOT NULL AND is_active = true
             """)).scalar() or 150
         elif is_manager and managed_dept_ids:
-            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
+            dept_ids_str
             monthly_hours = db.session.execute(text(f"""
                 SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_time))/3600), 0) 
                 FROM time_entries te 
@@ -417,11 +417,12 @@ def get_dashboard_data():
                 WHERE balance < 0
             """)).scalar() or 0
         elif is_manager and managed_dept_ids:
-            pending_applications = db.session.execute(text("""
+            dept_ids_str
+            pending_applications = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM leave_applications la 
                 JOIN users u ON la.user_id = u.id 
-                WHERE la.status = 'Pending' AND u.department_id = :dept_id
-            """), {'dept_id': managed_dept_ids}).scalar() or 0
+                WHERE la.status = 'Pending' AND u.department_id IN ({dept_ids_str})
+            """)).scalar() or 0
             
             approved_month = db.session.execute(text("""
                 SELECT COUNT(*) FROM leave_applications la 
@@ -430,13 +431,13 @@ def get_dashboard_data():
                 AND EXTRACT(MONTH FROM la.created_at) = :month
                 AND EXTRACT(YEAR FROM la.created_at) = :year
                 AND u.department_id = :dept_id
-            """), {'month': current_month, 'year': current_year, 'dept_id': managed_dept_ids}).scalar() or 0
+            """), {'month': current_month, 'year': current_year}).scalar() or 0
             
-            balance_issues = db.session.execute(text("""
+            balance_issues = db.session.execute(text(f"""
                 SELECT COUNT(DISTINCT lb.user_id) FROM leave_balances lb 
                 JOIN users u ON lb.user_id = u.id 
-                WHERE lb.balance < 0 AND u.department_id = :dept_id
-            """), {'dept_id': managed_dept_ids}).scalar() or 0
+                WHERE lb.balance < 0 AND u.department_id IN ({dept_ids_str})
+            """)).scalar() or 0
         else:
             pending_applications = db.session.execute(text(
                 "SELECT COUNT(*) FROM leave_applications WHERE status = 'Pending' AND user_id = :user_id"
@@ -480,13 +481,13 @@ def get_dashboard_data():
                 SELECT COUNT(*) FROM schedules s 
                 JOIN users u ON s.user_id = u.id 
                 WHERE u.department_id = :dept_id
-            """), {'dept_id': managed_dept_ids}).scalar() or 0
+            """), {'managed_dept_ids[0] if managed_dept_ids else 0}).scalar() or 0
             
             shifts_today = db.session.execute(text("""
                 SELECT COUNT(*) FROM schedules s 
                 JOIN users u ON s.user_id = u.id 
                 WHERE DATE(s.start_time) = :today AND u.department_id = :dept_id
-            """), {'today': today, 'dept_id': managed_dept_ids}).scalar() or 0
+            """), {'today': today, 'managed_dept_ids[0] if managed_dept_ids else 0}).scalar() or 0
             
             next_week = today + timedelta(days=7)
             upcoming_shifts = db.session.execute(text("""
@@ -494,7 +495,7 @@ def get_dashboard_data():
                 JOIN users u ON s.user_id = u.id 
                 WHERE DATE(s.start_time) BETWEEN :today AND :next_week
                 AND u.department_id = :dept_id
-            """), {'today': today, 'next_week': next_week, 'dept_id': managed_dept_ids}).scalar() or 0
+            """), {'today': today, 'next_week': next_week, 'managed_dept_ids[0] if managed_dept_ids else 0}).scalar() or 0
         else:
             total_schedules = db.session.execute(text(
                 "SELECT COUNT(*) FROM schedules WHERE user_id = :user_id"
@@ -656,7 +657,7 @@ def manager_dashboard():
         # Manager sees only their department's team
         team_size = db.session.execute(text(
             "SELECT COUNT(*) FROM users WHERE department_id = :dept_id AND is_active = true"
-        ), {'dept_id': managed_dept_ids}).scalar() or 0
+        ), {'managed_dept_ids[0] if managed_dept_ids else 0}).scalar() or 0
         
         # Present today - users who clocked in today in manager's department
         today = datetime.now().date()
@@ -665,14 +666,14 @@ def manager_dashboard():
             JOIN users u ON te.user_id = u.id 
             WHERE u.department_id = :dept_id 
             AND DATE(te.clock_in_time) = :today
-        """), {'dept_id': managed_dept_ids, 'today': today}).scalar() or 0
+        """), {'managed_dept_ids[0] if managed_dept_ids else 0, 'today': today}).scalar() or 0
         
         # Pending approvals - open entries for manager's department
         pending_approvals = db.session.execute(text("""
             SELECT COUNT(*) FROM time_entries te 
             JOIN users u ON te.user_id = u.id 
             WHERE u.department_id = :dept_id AND te.clock_out_time IS NULL
-        """), {'dept_id': managed_dept_ids}).scalar() or 0
+        """), {'managed_dept_ids[0] if managed_dept_ids else 0}).scalar() or 0
     else:
         # Super user or non-manager sees full system data
         team_size = db.session.execute(text("SELECT COUNT(*) FROM users WHERE is_active = true")).scalar() or 0
