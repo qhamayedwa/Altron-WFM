@@ -154,11 +154,20 @@ def manage_schedules():
         start_date = (today - timedelta(days=today.weekday())).strftime('%Y-%m-%d')
         end_date = (today + timedelta(days=6-today.weekday())).strftime('%Y-%m-%d')
     
+    # Apply department filtering for managers
+    is_super_user = current_user.has_role('Super User')
+    is_manager = current_user.has_role('Manager')
+    user_department_id = getattr(current_user, 'department_id', None)
+    
     query = Schedule.query
+    
+    # Apply department filtering to schedules for managers
+    if is_manager and user_department_id and not is_super_user:
+        query = query.join(User).filter(User.department_id == user_department_id)
     
     # Filter by user if specified
     if user_id:
-        query = query.filter_by(user_id=user_id)
+        query = query.filter(Schedule.user_id == user_id)
     
     # Filter by shift type if specified
     if shift_type_id:
@@ -174,8 +183,16 @@ def manage_schedules():
         page=page, per_page=per_page, error_out=False
     )
     
-    # Get all users and shift types for filter dropdowns
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
+    # Apply department filtering to users list for managers
+    if is_super_user:
+        # Super Users see all active users
+        users = User.query.filter_by(is_active=True).order_by(User.username).all()
+    elif is_manager and user_department_id:
+        # Managers see only users in their department
+        users = User.query.filter_by(is_active=True, department_id=user_department_id).order_by(User.username).all()
+    else:
+        # Regular employees see only themselves
+        users = [current_user] if current_user.is_active else []
     shift_types = ShiftType.query.filter_by(is_active=True).order_by(ShiftType.name).all()
     
     return render_template('scheduling/manage_schedules.html',
@@ -248,8 +265,21 @@ def create_schedule():
             db.session.rollback()
             flash(f'Error creating schedule: {str(e)}', 'danger')
     
-    # Get data for form dropdowns
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
+    # Apply department filtering for users list
+    is_super_user = current_user.has_role('Super User')
+    is_manager = current_user.has_role('Manager')
+    user_department_id = getattr(current_user, 'department_id', None)
+    
+    if is_super_user:
+        # Super Users see all active users
+        users = User.query.filter_by(is_active=True).order_by(User.username).all()
+    elif is_manager and user_department_id:
+        # Managers see only users in their department
+        users = User.query.filter_by(is_active=True, department_id=user_department_id).order_by(User.username).all()
+    else:
+        # Regular employees see only themselves
+        users = [current_user] if current_user.is_active else []
+        
     shift_types = ShiftType.query.filter_by(is_active=True).order_by(ShiftType.name).all()
     
     return render_template('scheduling/create_schedule.html', 

@@ -461,18 +461,24 @@ def quick_actions():
 @login_required
 def time_entries():
     """Time entries management page with proper employee data restrictions"""
-    # Check user role for data access control
-    is_manager_or_admin = (hasattr(current_user, 'has_role') and 
-                          (current_user.has_role('Manager') or 
-                           current_user.has_role('Admin') or 
-                           current_user.has_role('Super User')))
+    # Apply proper department filtering for security
+    is_super_user = current_user.has_role('Super User')
+    is_manager = current_user.has_role('Manager')
+    user_department_id = getattr(current_user, 'department_id', None)
     
-    if is_manager_or_admin:
-        # Managers see all time entries
+    if is_super_user:
+        # Super Users see all time entries
         entries = TimeEntry.query.order_by(TimeEntry.clock_in_time.desc()).limit(100).all()
+    elif is_manager and user_department_id:
+        # Managers see only time entries for employees in their department
+        entries = TimeEntry.query.join(User).filter(
+            User.department_id == user_department_id
+        ).order_by(TimeEntry.clock_in_time.desc()).limit(100).all()
     else:
         # Employees see only their own time entries
         entries = TimeEntry.query.filter_by(user_id=current_user.id).order_by(TimeEntry.clock_in_time.desc()).limit(50).all()
+    
+    is_manager_or_admin = is_super_user or is_manager
     
     return render_template('time_entries.html', entries=entries, is_manager_view=is_manager_or_admin)
 
@@ -483,15 +489,22 @@ def schedules():
     from datetime import date
     today = date.today()
     
-    # Check user role for data access control
-    is_manager_or_admin = (hasattr(current_user, 'has_role') and 
-                          (current_user.has_role('Manager') or 
-                           current_user.has_role('Admin') or 
-                           current_user.has_role('Super User')))
+    # Apply proper department filtering for security
+    is_super_user = current_user.has_role('Super User')
+    is_manager = current_user.has_role('Manager')
+    user_department_id = getattr(current_user, 'department_id', None)
     
-    if is_manager_or_admin:
-        # Managers see all schedules
+    if is_super_user:
+        # Super Users see all schedules
         schedules = Schedule.query.filter(Schedule.start_time >= today).order_by(Schedule.start_time).limit(50).all()
+    elif is_manager and user_department_id:
+        # Managers see only schedules for employees in their department
+        schedules = Schedule.query.join(User).filter(
+            and_(
+                User.department_id == user_department_id,
+                Schedule.start_time >= today
+            )
+        ).order_by(Schedule.start_time).limit(50).all()
     else:
         # Employees see only their own schedules
         schedules = Schedule.query.filter(
@@ -501,23 +514,31 @@ def schedules():
             )
         ).order_by(Schedule.start_time).limit(30).all()
     
+    is_manager_or_admin = is_super_user or is_manager
+    
     return render_template('schedules.html', schedules=schedules, is_manager_view=is_manager_or_admin)
 
 @main_bp.route('/leave-management')
 @login_required
 def leave_management():
     """Leave management page with proper employee data restrictions"""
-    # Check user role for data access control
-    is_manager_or_admin = (hasattr(current_user, 'has_role') and 
-                          (current_user.has_role('Manager') or 
-                           current_user.has_role('Admin') or 
-                           current_user.has_role('Super User')))
+    # Apply proper department filtering for security
+    is_super_user = current_user.has_role('Super User')
+    is_manager = current_user.has_role('Manager')
+    user_department_id = getattr(current_user, 'department_id', None)
     
-    if is_manager_or_admin:
-        # Managers see all leave applications
+    if is_super_user:
+        # Super Users see all leave applications
         applications = LeaveApplication.query.order_by(LeaveApplication.created_at.desc()).limit(100).all()
+    elif is_manager and user_department_id:
+        # Managers see only leave applications for employees in their department
+        applications = LeaveApplication.query.join(User).filter(
+            User.department_id == user_department_id
+        ).order_by(LeaveApplication.created_at.desc()).limit(100).all()
     else:
         # Employees see only their own leave applications
         applications = LeaveApplication.query.filter_by(user_id=current_user.id).order_by(LeaveApplication.created_at.desc()).all()
+    
+    is_manager_or_admin = is_super_user or is_manager
     
     return render_template('leave_management.html', applications=applications, is_manager_view=is_manager_or_admin)
