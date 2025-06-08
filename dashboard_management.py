@@ -93,13 +93,13 @@ def get_dashboard_data():
         elif is_manager and managed_dept_ids:
             dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
             # Managers see only their managed departments' active users
-            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
             active_users_24h = db.session.execute(text(f"""
                 SELECT COUNT(DISTINCT id) FROM users 
                 WHERE last_login >= NOW() - INTERVAL '24 hours' 
                 AND is_active = true 
                 AND department_id IN ({dept_ids_str})
             """)).scalar() or 0
+            print(f"DEBUG: active_users_24h calculation: {active_users_24h}")
             
             # Count pending leave approvals for their managed departments only
             pending_leave_approvals = db.session.execute(text(f"""
