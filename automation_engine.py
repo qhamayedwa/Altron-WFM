@@ -484,7 +484,7 @@ def workflow_dashboard():
 def manual_accrual():
     """Manual trigger for leave accrual (Super User only)"""
     from flask_login import login_required
-    from auth import super_user_required
+    from auth_simple import super_user_required
     
     @login_required
     @super_user_required
@@ -505,7 +505,7 @@ def manual_accrual():
 def manual_notifications():
     """Manual trigger for notifications (Super User only)"""
     from flask_login import login_required
-    from auth import super_user_required
+    from auth_simple import super_user_required
     
     @login_required
     @super_user_required
@@ -526,7 +526,7 @@ def manual_notifications():
 def manual_payroll():
     """Manual trigger for payroll calculations (Super User only)"""
     from flask_login import login_required
-    from auth import super_user_required
+    from auth_simple import super_user_required
     
     @login_required
     @super_user_required
