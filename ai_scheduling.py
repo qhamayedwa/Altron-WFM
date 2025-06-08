@@ -372,32 +372,28 @@ def generate_schedule():
         except Exception as e:
             flash(f'Error: {str(e)}', 'error')
     
-    # Get departments for dropdown - check multiple sources
+    # Get departments for dropdown from the proper departments table
     try:
-        # First try to get departments from users
-        user_departments = db.session.query(User.department).filter(
-            User.department.isnot(None),
-            User.department != ''
-        ).distinct().all()
+        from models import Department
+        departments = db.session.query(Department.name, Department.id).filter(
+            Department.is_active == True
+        ).order_by(Department.name).all()
         
-        # Also try to get from hierarchical department structure if it exists
-        try:
-            from models import HierarchicalDepartment
-            hierarchical_departments = db.session.query(HierarchicalDepartment.department_name).filter(
-                HierarchicalDepartment.department_name.isnot(None)
-            ).distinct().all()
-            departments_list = list(set([d[0] for d in user_departments if d[0]] + 
-                                      [d[0] for d in hierarchical_departments if d[0]]))
-        except ImportError:
-            # Fallback to user departments only
-            departments_list = [d[0] for d in user_departments if d[0]]
-        
-        # Sort departments alphabetically
-        departments_list.sort()
+        departments_list = [{'id': dept.id, 'name': dept.name} for dept in departments]
         
     except Exception as e:
-        flash(f'Warning: Could not load departments: {str(e)}', 'warning')
-        departments_list = []
+        # Fallback to user departments if Department model not available
+        try:
+            user_departments = db.session.query(User.department).filter(
+                User.department.isnot(None),
+                User.department != '',
+                User.department.notin_(['0', 'o'])  # Filter out bad data
+            ).distinct().all()
+            departments_list = [{'id': None, 'name': d[0]} for d in user_departments if d[0]]
+            departments_list.sort(key=lambda x: x['name'])
+        except Exception:
+            flash(f'Warning: Could not load departments: {str(e)}', 'warning')
+            departments_list = []
     
     return render_template('ai_scheduling/generate.html', 
                          departments=departments_list,

@@ -47,7 +47,7 @@
                             <select class="form-select" id="department_id" name="department_id">
                                 <option value="">All Departments</option>
                                 {% for dept in departments %}
-                                <option value="{{ dept }}">{{ dept }}</option>
+                                <option value="{{ dept.id if dept.id else dept.name }}">{{ dept.name }}</option>
                                 {% endfor %}
                             </select>
                             <div class="form-text">Leave blank to generate schedules for all employees</div>
