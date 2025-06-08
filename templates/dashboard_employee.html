@@ -95,7 +95,7 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button id="quickClockBtn" class="btn btn-success" onclick="clockIn()">
+                        <button id="quickClockBtn" class="btn btn-success">
                             <i data-feather="clock" class="me-2"></i>Clock In
                             <small class="d-block">Start your workday</small>
                         </button>
@@ -312,6 +312,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     initializePersonalAttendanceChart();
     updateClockStatus();
+    
+    // Initialize quick clock button based on current status
+    const quickClockBtn = document.getElementById('quickClockBtn');
+    if (quickClockBtn) {
+        // Set initial state based on personal_stats
+        {% if personal_stats.is_clocked_in %}
+            updateClockButtonUI(true, '{{ personal_stats.clock_in_time.isoformat() if personal_stats.clock_in_time else "" }}');
+        {% else %}
+            updateClockButtonUI(false, null);
+        {% endif %}
+    }
     
     // Auto-refresh every 2 minutes
     setInterval(updateClockStatus, 120000);
