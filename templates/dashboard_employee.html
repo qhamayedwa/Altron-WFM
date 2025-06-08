@@ -84,13 +84,9 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button class="btn btn-success" onclick="clockIn()">
-                            <i data-feather="play" class="me-2"></i>
-                            Clock In
-                        </button>
-                        <button class="btn btn-danger" onclick="clockOut()">
-                            <i data-feather="pause" class="me-2"></i>
-                            Clock Out
+                        <button id="quickClockBtn" class="btn btn-success" onclick="clockIn()">
+                            <i data-feather="clock" class="me-2"></i>Clock In
+                            <small class="d-block">Start your workday</small>
                         </button>
                         <hr>
                         <a href="{{ url_for('leave_management.apply_leave') }}" class="btn btn-outline-warning">
