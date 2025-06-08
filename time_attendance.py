@@ -20,6 +20,7 @@ def clock_in():
     print(f"Request method: {request.method}")
     print(f"Request is_json: {request.is_json}")
     print(f"Request form data: {request.form}")
+    print(f"Request JSON data: {request.get_json()}")
     try:
         # Check if user already has an open time entry
         open_entry = TimeEntry.query.filter_by(
@@ -38,9 +39,10 @@ def clock_in():
                 return redirect(url_for('main.index'))
         
         # Get GPS coordinates if provided
-        latitude = request.json.get('latitude') if request.is_json else None
-        longitude = request.json.get('longitude') if request.is_json else None
-        notes = request.json.get('notes', '') if request.is_json else ''
+        json_data = request.get_json() or {}
+        latitude = json_data.get('latitude') if request.is_json else None
+        longitude = json_data.get('longitude') if request.is_json else None
+        notes = json_data.get('notes', '') if request.is_json else ''
         
         # Create new time entry
         time_entry = TimeEntry()
@@ -98,9 +100,10 @@ def clock_out():
                 return redirect(url_for('main.index'))
         
         # Get GPS coordinates if provided
-        latitude = request.json.get('latitude') if request.is_json else None
-        longitude = request.json.get('longitude') if request.is_json else None
-        notes = request.json.get('notes', '') if request.is_json else ''
+        json_data = request.get_json() or {}
+        latitude = json_data.get('latitude') if request.is_json else None
+        longitude = json_data.get('longitude') if request.is_json else None
+        notes = json_data.get('notes', '') if request.is_json else ''
         
         # Update time entry
         open_entry.clock_out_time = get_current_time()
