@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}AI Scheduling History - WFM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">AI Scheduling Optimization History</h1>
+            <p class="text-muted">Review past AI-generated schedules and their performance metrics</p>
+        </div>
+        <div>
+            <a href="{{ url_for('ai_scheduling.ai_dashboard') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="feather-sm me-2"></i>Back to AI Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Options -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Filter History</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" 
+                           value="{{ request.args.get('date_from', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" 
+                           value="{{ request.args.get('date_to', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="department" class="form-label">Department</label>
+                    <select class="form-select" id="department" name="department">
+                        <option value="">All Departments</option>
+                        <!-- Add department options here -->
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filter</button>
+                    <a href="{{ url_for('ai_scheduling.optimization_history') }}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scheduling History -->
+    {% if schedules %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i data-feather="cpu" class="me-2"></i>AI-Generated Schedules
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Generated Date</th>
+                            <th>Schedule Period</th>
+                            <th>Department</th>
+                            <th>Employees</th>
+                            <th>Total Shifts</th>
+                            <th>AI Score</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                        <tr>
+                            <td>{{ schedule.created_at.strftime('%Y-%m-%d %H:%M') if schedule.created_at else 'N/A' }}</td>
+                            <td>
+                                {% if schedule.start_time and schedule.end_time %}
+                                {{ schedule.start_time.strftime('%Y-%m-%d') }} - {{ schedule.end_time.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <td>{{ schedule.department or 'All Departments' }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ schedule.user_id or 'Multiple' }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">1</span>
+                            </td>
+                            <td>
+                                {% if schedule.ai_confidence_score %}
+                                <div class="progress" style="width: 100px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ schedule.ai_confidence_score }}%;" 
+                                         aria-valuenow="{{ schedule.ai_confidence_score }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        {{ schedule.ai_confidence_score }}%
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if schedule.status == 'active' %}
+                                <span class="badge bg-success">Active</span>
+                                {% elif schedule.status == 'completed' %}
+                                <span class="badge bg-secondary">Completed</span>
+                                {% elif schedule.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                                {% else %}
+                                <span class="badge bg-warning">{{ schedule.status or 'Pending' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            onclick="viewScheduleDetails({{ schedule.id }})">
+                                        <i data-feather="eye" class="feather-sm"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info" 
+                                            onclick="downloadSchedule({{ schedule.id }})">
+                                        <i data-feather="download" class="feather-sm"></i>
+                                    </button>
+                                    {% if schedule.status in ['pending', 'active'] %}
+                                    <button type="button" class="btn btn-outline-secondary" 
+                                            onclick="editSchedule({{ schedule.id }})">
+                                        <i data-feather="edit" class="feather-sm"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i data-feather="calendar" class="feather-xl text-muted mb-3"></i>
+            <h5 class="text-muted">No AI-Generated Schedules Found</h5>
+            <p class="text-muted mb-4">Start by generating your first AI-optimized schedule.</p>
+            <a href="{{ url_for('ai_scheduling.generate_schedule') }}" class="btn btn-primary">
+                <i data-feather="zap" class="feather-sm me-2"></i>Generate AI Schedule
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Performance Summary -->
+    {% if schedules %}
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h4 text-primary">{{ schedules|length }}</div>
+                    <div class="text-muted">Total AI Schedules</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h4 text-success">{{ schedules|selectattr('status', 'equalto', 'active')|list|length }}</div>
+                    <div class="text-muted">Active Schedules</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h4 text-info">
+                        {% set avg_score = schedules|selectattr('ai_confidence_score')|map(attribute='ai_confidence_score')|list %}
+                        {% if avg_score %}
+                        {{ (avg_score|sum / avg_score|length)|round(1) }}%
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </div>
+                    <div class="text-muted">Average AI Score</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Schedule Details Modal -->
+<div class="modal fade" id="scheduleDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Schedule Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="scheduleDetailsContent">
+                <!-- Content loaded via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Feather icons
+feather.replace();
+
+function viewScheduleDetails(scheduleId) {
+    // Show schedule details in modal
+    const modal = new bootstrap.Modal(document.getElementById('scheduleDetailsModal'));
+    document.getElementById('scheduleDetailsContent').innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div><div>Loading...</div></div>';
+    modal.show();
+    
+    // Load schedule details (this would be an AJAX call in a real implementation)
+    setTimeout(() => {
+        document.getElementById('scheduleDetailsContent').innerHTML = `
+            <div class="alert alert-info">
+                <strong>Schedule #${scheduleId}</strong><br>
+                Detailed schedule information would be displayed here.
+            </div>
+        `;
+    }, 1000);
+}
+
+function downloadSchedule(scheduleId) {
+    // Download schedule as CSV/PDF
+    alert('Download functionality for schedule #' + scheduleId + ' would be implemented here.');
+}
+
+function editSchedule(scheduleId) {
+    // Redirect to edit page
+    window.location.href = '/ai-scheduling/edit/' + scheduleId;
+}
+</script>
+{% endblock %}
