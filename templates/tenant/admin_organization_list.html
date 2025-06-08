@@ -136,7 +136,7 @@
                                     <span class="badge bg-danger">Inactive</span>
                                 {% endif %}
                             </td>
-                            <td>{{ tenant.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ tenant.created_at.strftime('%Y-%m-%d') if tenant.created_at else 'N/A' }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('tenant.admin_edit_tenant', tenant_id=tenant.id) }}" 
