@@ -202,22 +202,51 @@ def team_applications():
     status_filter = request.args.get('status', 'Pending')
     user_filter = request.args.get('user_id', type=int)
     
+    # Import get_managed_departments function
+    from dashboard_management import get_managed_departments
+    
+    # Apply role-based filtering for department access
+    is_super_user = current_user.has_role('Super User')
+    is_manager = current_user.has_role('Manager')
+    managed_dept_ids = get_managed_departments(current_user.id) if is_manager else []
+    
     query = LeaveApplication.query
+    
+    # Apply department filtering based on user role
+    if is_super_user:
+        # Super Users see all applications
+        pass
+    elif is_manager and managed_dept_ids:
+        # Managers see only applications from employees in departments they manage
+        query = query.join(User, LeaveApplication.user_id == User.id).filter(
+            User.department_id.in_(managed_dept_ids)
+        )
+    else:
+        # Employees should not access this page, but if they do, show nothing
+        query = query.filter(LeaveApplication.id == -1)  # No results
     
     # Filter by status
     if status_filter:
-        query = query.filter_by(status=status_filter)
+        query = query.filter(LeaveApplication.status == status_filter)
     
     # Filter by user
     if user_filter:
-        query = query.filter_by(user_id=user_filter)
+        query = query.filter(LeaveApplication.user_id == user_filter)
     
     applications = query.order_by(LeaveApplication.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
-    # Get all users for filter dropdown
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
+    # Get users for filter dropdown - also filtered by department access
+    if is_super_user:
+        users = User.query.filter_by(is_active=True).order_by(User.username).all()
+    elif is_manager and managed_dept_ids:
+        users = User.query.filter(
+            User.is_active == True,
+            User.department_id.in_(managed_dept_ids)
+        ).order_by(User.username).all()
+    else:
+        users = []
     
     return render_template('leave_management/team_applications.html',
                          applications=applications,
@@ -230,8 +259,23 @@ def team_applications():
 def approve_application(application_id):
     """Approve a leave application"""
     try:
+        # Import get_managed_departments function
+        from dashboard_management import get_managed_departments
+        
         application = LeaveApplication.query.get_or_404(application_id)
         manager_comments = request.form.get('manager_comments', '')
+        
+        # Verify manager has access to this employee's application
+        is_super_user = current_user.has_role('Super User')
+        is_manager = current_user.has_role('Manager')
+        
+        if not is_super_user:
+            if is_manager:
+                managed_dept_ids = get_managed_departments(current_user.id)
+                if not managed_dept_ids or application.user.department_id not in managed_dept_ids:
+                    return jsonify({'success': False, 'message': 'Access denied: Cannot approve applications for employees outside your managed departments'})
+            else:
+                return jsonify({'success': False, 'message': 'Access denied: Insufficient permissions'})
         
         if application.status != 'Pending':
             return jsonify({'success': False, 'message': 'Application is not pending approval'})
@@ -268,8 +312,23 @@ def approve_application(application_id):
 def reject_application(application_id):
     """Reject a leave application"""
     try:
+        # Import get_managed_departments function
+        from dashboard_management import get_managed_departments
+        
         application = LeaveApplication.query.get_or_404(application_id)
         manager_comments = request.form.get('manager_comments', '')
+        
+        # Verify manager has access to this employee's application
+        is_super_user = current_user.has_role('Super User')
+        is_manager = current_user.has_role('Manager')
+        
+        if not is_super_user:
+            if is_manager:
+                managed_dept_ids = get_managed_departments(current_user.id)
+                if not managed_dept_ids or application.user.department_id not in managed_dept_ids:
+                    return jsonify({'success': False, 'message': 'Access denied: Cannot reject applications for employees outside your managed departments'})
+            else:
+                return jsonify({'success': False, 'message': 'Access denied: Insufficient permissions'})
         
         if application.status != 'Pending':
             return jsonify({'success': False, 'message': 'Application is not pending approval'})
