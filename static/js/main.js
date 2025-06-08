@@ -20,7 +20,7 @@ class DatabaseStatus {
         try {
             this.setStatus('loading', 'Checking...');
             
-            const response = await fetch('/db-status');
+            const response = await fetch('/api/v1/db-status');
             const data = await response.json();
             
             if (response.ok && data.status === 'connected') {
