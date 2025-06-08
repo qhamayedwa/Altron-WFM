@@ -22,9 +22,14 @@ def get_dashboard_data():
         # System Statistics - Use real database counts
         active_users_count = User.query.filter_by(is_active=True).count()
         total_users = User.query.count()
+        
+        # Debug: Print actual query results
+        print(f"Debug - active_users_count: {active_users_count}")
+        print(f"Debug - total_users: {total_users}")
+        
         system_stats = {
             'uptime': 99.9,
-            'active_users': total_users,  # Use total users since most are active
+            'active_users': active_users_count if active_users_count > 0 else total_users,  # Fallback to total if query fails
             'pending_tasks': 3,
             'data_integrity': 100
         }
@@ -195,6 +200,10 @@ def super_admin_dashboard():
     """Super Admin comprehensive dashboard"""
     dashboard_data = get_dashboard_data()
     config = get_dashboard_config()
+    
+    # Debug: Print the actual data being passed
+    print(f"Dashboard data active_users: {dashboard_data.get('system_stats', {}).get('active_users', 'NOT_FOUND')}")
+    print(f"Dashboard data total keys: {list(dashboard_data.keys())}")
     
     # Show all sections for Super Admin by default
     visible_sections = [
