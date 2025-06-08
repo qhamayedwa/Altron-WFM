@@ -466,7 +466,7 @@ function clockIn() {
 }
 
 function clockOut() {
-    fetch('/time/clock-out', {
+    fetch('/api/v1/time/clock-out', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
