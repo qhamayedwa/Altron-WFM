@@ -3,8 +3,15 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from flask_login import login_required, current_user
 from sqlalchemy import and_, or_, func
 from app import db
-from models import Schedule, ShiftType, User
+from models import Schedule, ShiftType, User, Department
 from auth_simple import role_required, super_user_required
+
+def get_managed_departments(user_id):
+    """Get list of department IDs that a manager oversees"""
+    managed_depts = db.session.query(Department.id).filter(
+        or_(Department.manager_id == user_id, Department.deputy_manager_id == user_id)
+    ).all()
+    return [dept.id for dept in managed_depts]
 
 # Create scheduling blueprint
 scheduling_bp = Blueprint('scheduling', __name__, url_prefix='/schedule')
@@ -157,13 +164,13 @@ def manage_schedules():
     # Apply department filtering for managers
     is_super_user = current_user.has_role('Super User')
     is_manager = current_user.has_role('Manager')
-    user_department_id = getattr(current_user, 'department_id', None)
+    managed_dept_ids = get_managed_departments(current_user.id) if is_manager else []
     
     query = Schedule.query
     
     # Apply department filtering to schedules for managers
-    if is_manager and user_department_id and not is_super_user:
-        query = query.join(User, Schedule.user_id == User.id).filter(User.department_id == user_department_id)
+    if is_manager and managed_dept_ids and not is_super_user:
+        query = query.join(User, Schedule.user_id == User.id).filter(User.department_id.in_(managed_dept_ids))
     
     # Filter by user if specified
     if user_id:
@@ -187,9 +194,11 @@ def manage_schedules():
     if is_super_user:
         # Super Users see all active users
         users = User.query.filter_by(is_active=True).order_by(User.username).all()
-    elif is_manager and user_department_id:
-        # Managers see only users in their department
-        users = User.query.filter_by(is_active=True, department_id=user_department_id).order_by(User.username).all()
+    elif is_manager and managed_dept_ids:
+        # Managers see only users in departments they manage
+        users = User.query.filter(
+            and_(User.is_active == True, User.department_id.in_(managed_dept_ids))
+        ).order_by(User.username).all()
     else:
         # Regular employees see only themselves
         users = [current_user] if current_user.is_active else []

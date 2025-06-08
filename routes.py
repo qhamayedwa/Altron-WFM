@@ -499,16 +499,16 @@ def schedules():
     # Apply proper department filtering for security
     is_super_user = current_user.has_role('Super User')
     is_manager = current_user.has_role('Manager')
-    user_department_id = getattr(current_user, 'department_id', None)
+    managed_dept_ids = get_managed_departments(current_user.id) if is_manager else []
     
     if is_super_user:
         # Super Users see all schedules
         schedules = Schedule.query.filter(Schedule.start_time >= today).order_by(Schedule.start_time).limit(50).all()
-    elif is_manager and user_department_id:
-        # Managers see only schedules for employees in their department
+    elif is_manager and managed_dept_ids:
+        # Managers see only schedules for employees in departments they manage
         schedules = Schedule.query.join(User, Schedule.user_id == User.id).filter(
             and_(
-                User.department_id == user_department_id,
+                User.department_id.in_(managed_dept_ids),
                 Schedule.start_time >= today
             )
         ).order_by(Schedule.start_time).limit(50).all()
@@ -532,15 +532,15 @@ def leave_management():
     # Apply proper department filtering for security
     is_super_user = current_user.has_role('Super User')
     is_manager = current_user.has_role('Manager')
-    user_department_id = getattr(current_user, 'department_id', None)
+    managed_dept_ids = get_managed_departments(current_user.id) if is_manager else []
     
     if is_super_user:
         # Super Users see all leave applications
         applications = LeaveApplication.query.order_by(LeaveApplication.created_at.desc()).limit(100).all()
-    elif is_manager and user_department_id:
-        # Managers see only leave applications for employees in their department
+    elif is_manager and managed_dept_ids:
+        # Managers see only leave applications for employees in departments they manage
         applications = LeaveApplication.query.join(User, LeaveApplication.user_id == User.id).filter(
-            User.department_id == user_department_id
+            User.department_id.in_(managed_dept_ids)
         ).order_by(LeaveApplication.created_at.desc()).limit(100).all()
     else:
         # Employees see only their own leave applications

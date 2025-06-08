@@ -3,9 +3,16 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from flask_login import login_required, current_user
 from sqlalchemy import and_, or_, func, case
 from app import db
-from models import TimeEntry, User
+from models import TimeEntry, User, Department
 from auth_simple import role_required, super_user_required
 from timezone_utils import get_current_time, localize_datetime
+
+def get_managed_departments(user_id):
+    """Get list of department IDs that a manager oversees"""
+    managed_depts = db.session.query(Department.id).filter(
+        or_(Department.manager_id == user_id, Department.deputy_manager_id == user_id)
+    ).all()
+    return [dept.id for dept in managed_depts]
 
 # Create time attendance blueprint
 time_attendance_bp = Blueprint('time_attendance', __name__, url_prefix='/time')
