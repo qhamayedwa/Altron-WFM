@@ -171,11 +171,16 @@ def super_admin_dashboard():
     dashboard_data = get_dashboard_data()
     config = get_dashboard_config()
     
-    # Filter sections based on configuration
-    visible_sections = []
-    for section_id, roles in config.items():
-        if roles.get('super_admin', True):
-            visible_sections.append(section_id)
+    # Show all sections for Super Admin by default
+    visible_sections = [
+        'system-health-section',
+        'organization-overview-section', 
+        'attendance-analytics-section',
+        'workflow-automation-section',
+        'leave-scheduling-section',
+        'ai-insights-section',
+        'alerts-notifications-section'
+    ]
     
     return render_template('dashboard_super_admin.html', 
                          visible_sections=visible_sections,
