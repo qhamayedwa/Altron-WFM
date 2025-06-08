@@ -11,6 +11,13 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_, text
 import json
 
+def get_managed_departments(user_id):
+    """Get list of department IDs that a manager oversees"""
+    managed_depts = db.session.query(Department.id).filter(
+        or_(Department.manager_id == user_id, Department.deputy_manager_id == user_id)
+    ).all()
+    return [dept.id for dept in managed_depts]
+
 dashboard_bp = Blueprint('dashboard_mgmt', __name__, url_prefix='/dashboard')
 
 def get_dashboard_data():
@@ -19,12 +26,10 @@ def get_dashboard_data():
         # System Statistics - Apply role-based filtering
         from sqlalchemy import text
         
-        # Determine user's access scope with debug logging
+        # Determine user's access scope with managed departments
         is_super_user = current_user.has_role('Super User')
         is_manager = current_user.has_role('Manager')
-        user_department_id = getattr(current_user, 'department_id', None)
-        
-        # Debug logging removed after verification
+        managed_dept_ids = get_managed_departments(current_user.id) if is_manager else []
         
         # Apply role-based data filtering
         if is_super_user:
@@ -36,25 +41,26 @@ def get_dashboard_data():
             sites_count = db.session.execute(text("SELECT COUNT(*) FROM sites")).scalar() or 0
             total_time_entries = db.session.execute(text("SELECT COUNT(*) FROM time_entries")).scalar() or 0
             leave_applications = db.session.execute(text("SELECT COUNT(*) FROM leave_applications")).scalar() or 0
-        elif is_manager and user_department_id:
-            # Managers see only their department's data
+        elif is_manager and managed_dept_ids:
+            # Managers see only their managed departments' data
+            dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
             total_users = db.session.execute(text(
-                "SELECT COUNT(*) FROM users WHERE department_id = :dept_id"
-            ), {'dept_id': user_department_id}).scalar() or 0
+                f"SELECT COUNT(*) FROM users WHERE department_id IN ({dept_ids_str})"
+            )).scalar() or 0
             companies_count = 1  # Manager sees only their company context
-            departments_count = 1  # Manager sees only their department
+            departments_count = len(managed_dept_ids)  # Manager sees their managed departments
             regions_count = 1  # Manager sees only their region context
             sites_count = 1  # Manager sees only their site context
-            total_time_entries = db.session.execute(text("""
+            total_time_entries = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
-                WHERE u.department_id = :dept_id
-            """), {'dept_id': user_department_id}).scalar() or 0
-            leave_applications = db.session.execute(text("""
+                WHERE u.department_id IN ({dept_ids_str})
+            """)).scalar() or 0
+            leave_applications = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM leave_applications la 
                 JOIN users u ON la.user_id = u.id 
-                WHERE u.department_id = :dept_id
-            """), {'dept_id': user_department_id}).scalar() or 0
+                WHERE u.department_id IN ({dept_ids_str})
+            """)).scalar() or 0
         else:
             # Employees or managers without departments see minimal data
             total_users = 1  # Only themselves
