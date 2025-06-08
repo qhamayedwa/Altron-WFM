@@ -66,6 +66,18 @@ def create_app(config_class=Config):
     
     app.jinja_env.filters['hours_minutes'] = hours_minutes_filter
     
+    # Register department filter for templates
+    def get_department_name(user):
+        """Get department name from user, handling both legacy and hierarchical departments"""
+        if hasattr(user, 'employee_department') and user.employee_department:
+            return user.employee_department.name
+        elif user.department:
+            return user.department
+        else:
+            return 'Unassigned'
+    
+    app.jinja_env.filters['department_name'] = get_department_name
+    
     # Register blueprints/routes
     from routes import main_bp
     from auth_simple import auth_bp
