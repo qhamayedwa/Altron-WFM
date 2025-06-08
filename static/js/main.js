@@ -294,6 +294,45 @@ class LiveClockTimer {
 }
 
 // Time Tracking Functions
+window.performClockIn = async function() {
+    console.log('Performing clock in');
+    const button = document.getElementById('clockInBtn');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Clocking In...';
+    }
+    
+    try {
+        const response = await fetch('/time/clock-in', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Refresh the page to show updated status
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i data-feather="clock" class="me-2"></i>Clock In<small class="d-block">Start your workday</small>';
+            }
+        }
+    } catch (error) {
+        console.error('Clock in error:', error);
+        alert('Failed to clock in. Please try again.');
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '<i data-feather="clock" class="me-2"></i>Clock In<small class="d-block">Start your workday</small>';
+        }
+    }
+};
+
 window.clockIn = async function() {
     console.log('Clock in function called');
     try {

@@ -16,6 +16,10 @@ time_attendance_bp = Blueprint('time_attendance', __name__, url_prefix='/time')
 @login_required
 def clock_in():
     """Employee clock-in endpoint"""
+    print(f"Clock-in endpoint called by user {current_user.username}")
+    print(f"Request method: {request.method}")
+    print(f"Request is_json: {request.is_json}")
+    print(f"Request form data: {request.form}")
     try:
         # Check if user already has an open time entry
         open_entry = TimeEntry.query.filter_by(
