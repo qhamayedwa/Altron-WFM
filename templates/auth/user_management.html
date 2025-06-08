@@ -37,7 +37,7 @@
                             <td>
                                 <strong>{{ user.username }}</strong>
                                 {% if user.last_login %}
-                                <br><small class="text-muted">Last login: {{ user.last_login.strftime('%b %d, %Y') }}</small>
+                                <br><small class="text-muted">Last login: {{ user.last_login.strftime('%b %d, %Y') if user.last_login else 'Never' }}</small>
                                 {% endif %}
                             </td>
                             <td>{{ user.email }}</td>
@@ -54,7 +54,7 @@
                                 <span class="badge bg-danger">Inactive</span>
                                 {% endif %}
                             </td>
-                            <td>{{ user.created_at.strftime('%b %d, %Y') }}</td>
+                            <td>{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'Not available' }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <a href="{{ url_for('auth.edit_user', user_id=user.id) }}" 

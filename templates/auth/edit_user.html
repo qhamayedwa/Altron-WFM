@@ -185,7 +185,7 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 mb-0 text-primary">{{ user.created_at.strftime('%b %d, %Y') }}</div>
+                                <div class="h4 mb-0 text-primary">{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'Not available' }}</div>
                                 <small class="text-muted">Account Created</small>
                             </div>
                         </div>
@@ -194,7 +194,7 @@
                             <div class="text-center">
                                 <div class="h4 mb-0 text-info">
                                     {% if user.last_login %}
-                                        {{ user.last_login.strftime('%b %d, %Y') }}
+                                        {{ user.last_login.strftime('%b %d, %Y') if user.last_login else 'Never' }}
                                     {% else %}
                                         Never
                                     {% endif %}
