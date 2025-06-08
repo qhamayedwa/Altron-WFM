@@ -92,7 +92,7 @@ class EditUserForm(FlaskForm):
     
     # Employment Information
     employee_id = StringField('Employee ID', validators=[Length(max=20)])
-    department = SelectField('Department', coerce=int, validators=[])
+    department = SelectField('Department', coerce=lambda x: int(x) if x else None, validators=[])
     position = StringField('Position/Job Title', validators=[Length(max=64)])
     employment_type = SelectField('Employment Type', choices=[
         ('', 'Select Employment Type'),
@@ -103,7 +103,7 @@ class EditUserForm(FlaskForm):
         ('intern', 'Intern')
     ])
     hire_date = DateField('Hire Date')
-    manager_id = SelectField('Direct Manager', coerce=int, validators=[])
+    manager_id = SelectField('Direct Manager', coerce=lambda x: int(x) if x else None, validators=[])
     hourly_rate = FloatField('Hourly Rate (ZAR)', validators=[NumberRange(min=0, max=10000)])
     
     # Professional Information
@@ -138,11 +138,11 @@ class EditUserForm(FlaskForm):
         self.roles.choices = [(role.id, role.name) for role in Role.query.all()]
         
         # Get departments for selection
-        departments = Department.query.filter(Department.is_active.is_(True)).all()
+        departments = Department.query.filter(Department.is_active == True).all()
         self.department.choices = [('', 'Select Department')] + [(dept.id, dept.name) for dept in departments]
         
         # Get users for manager selection
-        active_users = User.query.filter(User.is_active.is_(True)).all()
+        active_users = User.query.filter(User.is_active == True).all()
         self.manager_id.choices = [('', 'No Manager')] + [(user.id, f"{user.first_name or ''} {user.last_name or ''}".strip() or user.username) for user in active_users]
     
     def validate_username(self, username):
