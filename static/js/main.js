@@ -74,14 +74,15 @@ class LiveClockTimer {
     }
 
     init() {
-        this.timerElement = document.getElementById('liveDuration');
+        // Check for timer elements on different pages
+        this.timerElement = document.getElementById('liveDuration') || document.getElementById('live-timer');
         if (this.timerElement) {
             this.checkClockStatus();
         }
     }
 
     checkClockStatus() {
-        // Get clock in time from the data-iso-time attribute
+        // Try dashboard format first
         const clockInTimeElement = document.getElementById('clockInTime');
         if (clockInTimeElement) {
             const isoTime = clockInTimeElement.getAttribute('data-iso-time');
@@ -89,8 +90,23 @@ class LiveClockTimer {
                 try {
                     this.clockInTime = new Date(isoTime);
                     this.startTimer();
+                    return;
                 } catch (error) {
                     console.log('Could not parse clock in time:', isoTime);
+                }
+            }
+        }
+        
+        // Try timecard format - look for hidden clock-in time data
+        const statusDisplay = document.getElementById('status-display');
+        if (statusDisplay) {
+            const clockInData = statusDisplay.getAttribute('data-clock-in-time');
+            if (clockInData && clockInData !== '') {
+                try {
+                    this.clockInTime = new Date(clockInData);
+                    this.startTimer();
+                } catch (error) {
+                    console.log('Could not parse timecard clock in time:', clockInData);
                 }
             }
         }

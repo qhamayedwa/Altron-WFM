@@ -53,7 +53,7 @@
     <div class="card mb-4" id="status-card">
         <div class="card-body">
             <h5 class="card-title">Current Status</h5>
-            <div id="status-display">
+            <div id="status-display" {% if current_status and current_status.status == 'clocked_in' and current_status.clock_in_time %}data-clock-in-time="{{ current_status.clock_in_time.isoformat() }}"{% endif %}>
                 {% if current_status and current_status.status == 'clocked_in' %}
                     <div class="alert alert-success">
                         <i data-feather="clock" class="me-2"></i>
