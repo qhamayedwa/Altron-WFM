@@ -123,7 +123,6 @@ def get_dashboard_data():
             """)).scalar() or 0
         elif is_manager and managed_dept_ids:
             dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
-            dept_ids_str
             pending_overtime_approvals = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
@@ -153,7 +152,6 @@ def get_dashboard_data():
             )).scalar() or 0
         elif is_manager and managed_dept_ids:
             dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
-            dept_ids_str
             total_entries = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
@@ -193,7 +191,6 @@ def get_dashboard_data():
             """)).scalar() or 0
         elif is_manager and managed_dept_ids:
             dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
-            dept_ids_str
             active_employees = db.session.execute(text(f"""
                 SELECT COUNT(DISTINCT te.user_id) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
@@ -265,7 +262,6 @@ def get_dashboard_data():
         elif is_manager and managed_dept_ids:
             dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
             # Manager sees only their managed departments' data
-            dept_ids_str
             today_entries = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM time_entries te 
                 JOIN users u ON te.user_id = u.id 
@@ -367,7 +363,6 @@ def get_dashboard_data():
             """)).scalar() or 150
         elif is_manager and managed_dept_ids:
             dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
-            dept_ids_str
             monthly_hours = db.session.execute(text(f"""
                 SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_time))/3600), 0) 
                 FROM time_entries te 
@@ -425,7 +420,6 @@ def get_dashboard_data():
             """)).scalar() or 0
         elif is_manager and managed_dept_ids:
             dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
-            dept_ids_str
             pending_applications = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM leave_applications la 
                 JOIN users u ON la.user_id = u.id 
@@ -486,25 +480,25 @@ def get_dashboard_data():
             """), {'today': today, 'next_week': next_week}).scalar() or 0
         elif is_manager and managed_dept_ids:
             dept_ids_str = ','.join(str(id) for id in managed_dept_ids)
-            total_schedules = db.session.execute(text("""
+            total_schedules = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM schedules s 
                 JOIN users u ON s.user_id = u.id 
-                WHERE u.department_id = :dept_id
-            """), {'dept_id': managed_dept_ids[0] if managed_dept_ids else 0}).scalar() or 0
+                WHERE u.department_id IN ({dept_ids_str})
+            """)).scalar() or 0
             
-            shifts_today = db.session.execute(text("""
+            shifts_today = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM schedules s 
                 JOIN users u ON s.user_id = u.id 
-                WHERE DATE(s.start_time) = :today AND u.department_id = :dept_id
-            """), {'today': today, 'dept_id': managed_dept_ids[0] if managed_dept_ids else 0}).scalar() or 0
+                WHERE DATE(s.start_time) = :today AND u.department_id IN ({dept_ids_str})
+            """), {'today': today}).scalar() or 0
             
             next_week = today + timedelta(days=7)
-            upcoming_shifts = db.session.execute(text("""
+            upcoming_shifts = db.session.execute(text(f"""
                 SELECT COUNT(*) FROM schedules s 
                 JOIN users u ON s.user_id = u.id 
                 WHERE DATE(s.start_time) BETWEEN :today AND :next_week
-                AND u.department_id = :dept_id
-            """), {'today': today, 'next_week': next_week, 'dept_id': managed_dept_ids[0] if managed_dept_ids else 0}).scalar() or 0
+                AND u.department_id IN ({dept_ids_str})
+            """), {'today': today, 'next_week': next_week}).scalar() or 0
         else:
             total_schedules = db.session.execute(text(
                 "SELECT COUNT(*) FROM schedules WHERE user_id = :user_id"
