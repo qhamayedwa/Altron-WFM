@@ -57,16 +57,36 @@ def get_dashboard_data():
             'active_accounts': total_users
         }
         
-        # Time & Attendance Statistics - Use real database data
-        today_entries = max(1, total_time_entries // 30)  # Realistic daily activity
-        overtime_entries = max(0, total_time_entries // 10)  # Estimate overtime
+        # Time & Attendance Statistics - Calculate from actual data
+        from datetime import datetime, timedelta
+        today = datetime.now().date()
+        
+        # Get actual today's entries
+        today_entries = db.session.execute(text(
+            "SELECT COUNT(*) FROM time_entries WHERE DATE(clock_in_time) = :today"
+        ), {'today': today}).scalar() or 0
+        
+        # Calculate actual overtime hours from time entries with both clock in and out
+        actual_overtime = db.session.execute(text("""
+            SELECT COALESCE(SUM(
+                CASE WHEN EXTRACT(EPOCH FROM (clock_out_time - clock_in_time))/3600 > 8 
+                THEN EXTRACT(EPOCH FROM (clock_out_time - clock_in_time))/3600 - 8 
+                ELSE 0 END
+            ), 0) FROM time_entries 
+            WHERE clock_in_time IS NOT NULL AND clock_out_time IS NOT NULL
+        """)).scalar() or 0
+        
+        # Get exceptions (entries without clock out time)
+        exceptions = db.session.execute(text(
+            "SELECT COUNT(*) FROM time_entries WHERE clock_out_time IS NULL"
+        )).scalar() or 0
         
         attendance_stats = {
             'clock_ins_today': today_entries,
             'expected_clock_ins': total_users,
             'total_time_entries': total_time_entries,
-            'overtime_hours': overtime_entries * 2.5,
-            'exceptions': max(0, total_time_entries // 50)  # Small percentage of exceptions
+            'overtime_hours': round(actual_overtime, 1),
+            'exceptions': exceptions
         }
         
         # Workflow Statistics
@@ -79,12 +99,30 @@ def get_dashboard_data():
             'completed_today': 15
         }
         
-        # Payroll Statistics
+        # Payroll Statistics - Calculate from actual time data
+        # Calculate total hours worked this month
+        current_month = datetime.now().month
+        current_year = datetime.now().year
+        
+        monthly_hours = db.session.execute(text("""
+            SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (clock_out_time - clock_in_time))/3600), 0) 
+            FROM time_entries 
+            WHERE EXTRACT(MONTH FROM clock_in_time) = :month 
+            AND EXTRACT(YEAR FROM clock_in_time) = :year
+            AND clock_in_time IS NOT NULL AND clock_out_time IS NOT NULL
+        """), {'month': current_month, 'year': current_year}).scalar() or 0
+        
+        # Estimate payroll based on actual hours (assuming R150/hour average rate)
+        estimated_payroll = monthly_hours * 150
+        
+        # Calculate overtime percentage
+        overtime_percentage = (actual_overtime / monthly_hours * 100) if monthly_hours > 0 else 0
+        
         payroll_stats = {
-            'total_payroll': 125000,
-            'overtime_cost': 8.5,
-            'pending_calculations': 0,
-            'processed_employees': User.query.filter_by(is_active=True).count()
+            'total_payroll': round(estimated_payroll),
+            'overtime_cost': round(overtime_percentage, 1),
+            'pending_calculations': exceptions,  # Use actual incomplete entries
+            'processed_employees': total_users
         }
         
         # Leave Management Statistics
@@ -99,14 +137,30 @@ def get_dashboard_data():
             'balance_issues': 0
         }
         
-        # Schedule Statistics - Use simple counts to avoid date issues
+        # Schedule Statistics - Calculate from actual schedule data
         total_schedules = db.session.execute(text("SELECT COUNT(*) FROM schedules")).scalar() or 0
         
+        # Get today's scheduled shifts
+        shifts_today = db.session.execute(text("""
+            SELECT COUNT(*) FROM schedules 
+            WHERE DATE(shift_start_time) = :today
+        """), {'today': today}).scalar() or 0
+        
+        # Get upcoming shifts (next 7 days)
+        next_week = today + timedelta(days=7)
+        upcoming_shifts = db.session.execute(text("""
+            SELECT COUNT(*) FROM schedules 
+            WHERE DATE(shift_start_time) BETWEEN :today AND :next_week
+        """), {'today': today, 'next_week': next_week}).scalar() or 0
+        
+        # Calculate coverage rate based on scheduled vs actual attendance
+        coverage_rate = min(100, (today_entries / max(1, shifts_today)) * 100) if shifts_today > 0 else 100
+        
         schedule_stats = {
-            'shifts_today': max(1, total_schedules // 30),  # Realistic daily shifts
-            'coverage_rate': 95,
-            'conflicts': 0,
-            'upcoming_shifts': max(5, total_schedules // 10)  # Upcoming shifts estimate
+            'shifts_today': shifts_today,
+            'coverage_rate': round(coverage_rate, 1),
+            'conflicts': 0,  # Would need complex scheduling conflict logic
+            'upcoming_shifts': upcoming_shifts
         }
         
         return {
