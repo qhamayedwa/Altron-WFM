@@ -617,7 +617,7 @@ def manage_leave_balances():
     if leave_type_filter:
         query = query.filter_by(leave_type_id=leave_type_filter)
     
-    balances = query.order_by(LeaveBalance.employee.has(User.username)).paginate(
+    balances = query.join(User).order_by(User.username).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
