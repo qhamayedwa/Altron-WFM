@@ -277,14 +277,37 @@ def create_schedule():
     # Apply department filtering for users list
     is_super_user = current_user.has_role('Super User')
     is_manager = current_user.has_role('Manager')
-    user_department_id = getattr(current_user, 'department_id', None)
     
     if is_super_user:
-        # Super Users see all active users
-        users = User.query.filter_by(is_active=True).order_by(User.username).all()
-    elif is_manager and user_department_id:
-        # Managers see only users in their department
-        users = User.query.filter_by(is_active=True, department_id=user_department_id).order_by(User.username).all()
+        # Super Users see all active users with department information
+        users = db.session.query(User).join(Department, User.department_id == Department.id, isouter=True)\
+            .filter(User.is_active.is_(True))\
+            .add_columns(Department.name.label('department_name'))\
+            .order_by(User.username).all()
+        # Convert to objects with department_name attribute
+        user_list = []
+        for user_data in users:
+            user = user_data[0]
+            user.department_name = user_data[1] if user_data[1] else 'Unassigned'
+            user_list.append(user)
+        users = user_list
+    elif is_manager:
+        # Managers see only users in departments they manage
+        managed_dept_ids = get_managed_departments(current_user.id)
+        if managed_dept_ids:
+            users = db.session.query(User).join(Department, User.department_id == Department.id)\
+                .filter(and_(User.is_active.is_(True), User.department_id.in_(managed_dept_ids)))\
+                .add_columns(Department.name.label('department_name'))\
+                .order_by(User.username).all()
+            # Convert to objects with department_name attribute
+            user_list = []
+            for user_data in users:
+                user = user_data[0]
+                user.department_name = user_data[1]
+                user_list.append(user)
+            users = user_list
+        else:
+            users = []
     else:
         # Regular employees see only themselves
         users = [current_user] if current_user.is_active else []

@@ -15,23 +15,96 @@
         </a>
     </div>
 
-    <div class="row justify-content-center">
+    <div class="row">
+        <!-- Employee Selection Panel -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i data-feather="users" class="me-2"></i>
+                        Department Employees
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                    <!-- Employee Search -->
+                    <div class="mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">
+                                <i data-feather="search" width="14" height="14"></i>
+                            </span>
+                            <input type="text" class="form-control" id="employeeSearch" 
+                                   placeholder="Search employees..." 
+                                   onkeyup="searchEmployees(this.value)">
+                        </div>
+                    </div>
+                    <div class="employee-list">
+                        {% for user in users %}
+                        <div class="employee-card mb-2 p-2 border rounded" 
+                             data-user-id="{{ user.id }}" 
+                             data-user-name="{{ user.full_name or user.username }}"
+                             data-department="{{ user.department_name or 'Unassigned' }}"
+                             onclick="selectEmployee(this)">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-initials me-2">
+                                    {{ (user.first_name or user.username[:1])|upper }}{{ (user.last_name[:1] if user.last_name else '')|upper }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-medium">{{ user.full_name or user.username }}</div>
+                                    <small class="text-muted">{{ user.department_name or 'Unassigned' }}</small>
+                                    <div class="small text-success">
+                                        <i data-feather="check-circle" width="12" height="12"></i>
+                                        Available
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i data-feather="users" width="32" height="32" class="mb-2"></i>
+                        <p class="mb-0">No employees found in your department</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Creation Form -->
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Schedule Details</h5>
+                    <h5 class="mb-0">
+                        <i data-feather="calendar" class="me-2"></i>
+                        Schedule Details
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" id="scheduleForm">
+                        <!-- Selected Employee Display -->
+                        <div id="selectedEmployeeInfo" class="alert alert-info d-none mb-3">
+                            <div class="d-flex align-items-center">
+                                <i data-feather="user" class="me-2"></i>
+                                <div>
+                                    <strong>Selected Employee:</strong>
+                                    <span id="selectedEmployeeName">None</span>
+                                    <br>
+                                    <small>Department: <span id="selectedEmployeeDept">-</span></small>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="user_id" class="form-label">Employee *</label>
                                 <select class="form-select" id="user_id" name="user_id" required>
-                                    <option value="">Select Employee</option>
+                                    <option value="">Select Employee from List</option>
                                     {% for user in users %}
-                                    <option value="{{ user.id }}">{{ user.username }} - {{ user.full_name }}</option>
+                                    <option value="{{ user.id }}">{{ user.full_name or user.username }} - {{ user.department_name or 'Unassigned' }}</option>
                                     {% endfor %}
                                 </select>
+                                <div class="form-text">Click on an employee from the left panel or select from dropdown</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="shift_type_id" class="form-label">Shift Type</label>
@@ -88,9 +161,147 @@
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+/* Employee Selection Panel Styling */
+.employee-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.employee-card:hover {
+    background: #e9ecef;
+    border-color: #007bff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+}
+
+.employee-card.selected {
+    background: #e3f2fd;
+    border-color: #007bff !important;
+    border-width: 2px !important;
+}
+
+.avatar-initials {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.875rem;
+}
+
+.employee-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.employee-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.employee-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.employee-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.employee-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Schedule Form Enhancements */
+.form-floating {
+    position: relative;
+}
+
+.schedule-summary {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-left: 4px solid #007bff;
+}
+
+.time-display {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .employee-list {
+        max-height: 200px;
+    }
+    
+    .avatar-initials {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+}
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
-    feather.replace();
+    let selectedEmployeeId = null;
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+        setDefaultTimes();
+        
+        // Sync dropdown with employee cards
+        document.getElementById('user_id').addEventListener('change', function() {
+            const selectedId = this.value;
+            if (selectedId) {
+                const employeeCard = document.querySelector(`[data-user-id="${selectedId}"]`);
+                if (employeeCard) {
+                    selectEmployeeCard(employeeCard);
+                }
+            }
+        });
+    });
+
+    // Employee selection from cards
+    function selectEmployee(card) {
+        // Remove previous selection
+        document.querySelectorAll('.employee-card').forEach(c => c.classList.remove('selected'));
+        
+        // Select current card
+        card.classList.add('selected');
+        
+        const userId = card.dataset.userId;
+        const userName = card.dataset.userName;
+        const userDept = card.dataset.department;
+        
+        // Update form
+        document.getElementById('user_id').value = userId;
+        selectedEmployeeId = userId;
+        
+        // Show selected employee info
+        const infoPanel = document.getElementById('selectedEmployeeInfo');
+        document.getElementById('selectedEmployeeName').textContent = userName;
+        document.getElementById('selectedEmployeeDept').textContent = userDept;
+        infoPanel.classList.remove('d-none');
+        
+        // Show notification
+        showNotification(`Selected employee: ${userName}`, 'success');
+        
+        feather.replace();
+    }
+
+    function selectEmployeeCard(card) {
+        selectEmployee(card);
+    }
 
     // Set default times when shift type is selected
     document.getElementById('shift_type_id').addEventListener('change', function() {
@@ -114,7 +325,36 @@
             }
             const endDateTime = endDate.toISOString().split('T')[0] + 'T' + endTime;
             document.getElementById('end_datetime').value = endDateTime;
+            
+            updateScheduleSummary();
         }
+    });
+
+    // Update schedule summary when times change
+    function updateScheduleSummary() {
+        const startInput = document.getElementById('start_datetime');
+        const endInput = document.getElementById('end_datetime');
+        
+        if (startInput.value && endInput.value) {
+            const start = new Date(startInput.value);
+            const end = new Date(endInput.value);
+            const duration = (end - start) / (1000 * 60 * 60); // hours
+            
+            // Update summary display if exists
+            const summaryElement = document.getElementById('scheduleSummary');
+            if (summaryElement) {
+                summaryElement.innerHTML = `
+                    <strong>Duration:</strong> ${duration.toFixed(1)} hours<br>
+                    <strong>Date:</strong> ${start.toLocaleDateString()}<br>
+                    <strong>Time:</strong> ${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                `;
+            }
+        }
+    }
+
+    // Add event listeners for time inputs
+    ['start_datetime', 'end_datetime'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateScheduleSummary);
     });
 
     // Form validation
@@ -122,9 +362,15 @@
         const startDateTime = new Date(document.getElementById('start_datetime').value);
         const endDateTime = new Date(document.getElementById('end_datetime').value);
         
+        if (!selectedEmployeeId && !document.getElementById('user_id').value) {
+            e.preventDefault();
+            showNotification('Please select an employee first.', 'warning');
+            return false;
+        }
+        
         if (endDateTime <= startDateTime) {
             e.preventDefault();
-            alert('End time must be after start time.');
+            showNotification('End time must be after start time.', 'danger');
             return false;
         }
         
@@ -135,10 +381,15 @@
                 return false;
             }
         }
+        
+        // Show loading state
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i data-feather="clock" class="me-2"></i>Creating...';
+        submitBtn.disabled = true;
     });
 
     // Set default start time to tomorrow 9 AM
-    document.addEventListener('DOMContentLoaded', function() {
+    function setDefaultTimes() {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(9, 0, 0, 0);
@@ -150,6 +401,44 @@
         tomorrow.setHours(17, 0, 0, 0);
         const defaultEnd = tomorrow.toISOString().slice(0, 16);
         document.getElementById('end_datetime').value = defaultEnd;
-    });
+        
+        updateScheduleSummary();
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '9999';
+        notification.style.minWidth = '300px';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 5000);
+    }
+
+    // Search employees
+    function searchEmployees(query) {
+        const cards = document.querySelectorAll('.employee-card');
+        cards.forEach(card => {
+            const name = card.dataset.userName.toLowerCase();
+            const dept = card.dataset.department.toLowerCase();
+            if (name.includes(query.toLowerCase()) || dept.includes(query.toLowerCase())) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
 </script>
 {% endblock %}
