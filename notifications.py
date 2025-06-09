@@ -207,8 +207,42 @@ class NotificationService:
     
     @staticmethod
     def get_user_notifications(user_id, limit=50, unread_only=False):
-        """Get notifications for a user"""
+        """Get notifications for a user with department filtering for managers"""
+        from models import User, Department
+        
+        user = User.query.get(user_id)
+        if not user:
+            return []
+        
+        # Base query for user's own notifications
         query = Notification.query.filter_by(user_id=user_id)
+        
+        # If user is a manager, also include notifications from their department's employees
+        if user.has_role('Manager'):
+            # Get departments this user manages
+            managed_departments = get_managed_departments(user_id)
+            
+            if managed_departments:
+                # Get all employees in managed departments
+                dept_employees = User.query.filter(
+                    User.department_id.in_([dept.id for dept in managed_departments]),
+                    User.is_active == True
+                ).all()
+                
+                dept_employee_ids = [emp.id for emp in dept_employees]
+                
+                # Include notifications for department employees (specific types only)
+                if dept_employee_ids:
+                    dept_query = Notification.query.filter(
+                        and_(
+                            Notification.user_id.in_(dept_employee_ids),
+                            # Only include specific notification types relevant to managers
+                            Notification.category.in_(['leave', 'timecard', 'attendance', 'urgent_approval'])
+                        )
+                    )
+                    
+                    # Combine both queries
+                    query = query.union(dept_query)
         
         if unread_only:
             query = query.filter_by(is_read=False)
@@ -225,11 +259,46 @@ class NotificationService:
     
     @staticmethod
     def get_unread_count(user_id):
-        """Get count of unread notifications for a user"""
-        return Notification.query.filter_by(
-            user_id=user_id,
-            is_read=False
-        ).filter(
+        """Get count of unread notifications for a user with department filtering for managers"""
+        from models import User
+        
+        user = User.query.get(user_id)
+        if not user:
+            return 0
+        
+        # Base query for user's own notifications
+        query = Notification.query.filter_by(user_id=user_id, is_read=False)
+        
+        # If user is a manager, also count notifications from their department's employees
+        if user.has_role('Manager'):
+            # Get departments this user manages
+            managed_departments = get_managed_departments(user_id)
+            
+            if managed_departments:
+                # Get all employees in managed departments
+                dept_employees = User.query.filter(
+                    User.department_id.in_([dept.id for dept in managed_departments]),
+                    User.is_active == True
+                ).all()
+                
+                dept_employee_ids = [emp.id for emp in dept_employees]
+                
+                # Include unread notifications for department employees (specific types only)
+                if dept_employee_ids:
+                    dept_query = Notification.query.filter(
+                        and_(
+                            Notification.user_id.in_(dept_employee_ids),
+                            Notification.is_read == False,
+                            # Only include specific notification types relevant to managers
+                            Notification.category.in_(['leave', 'timecard', 'attendance', 'urgent_approval'])
+                        )
+                    )
+                    
+                    # Combine both queries
+                    query = query.union(dept_query)
+        
+        # Filter out expired notifications
+        return query.filter(
             or_(
                 Notification.expires_at.is_(None),
                 Notification.expires_at > datetime.utcnow()
@@ -267,39 +336,47 @@ class NotificationService:
 @notifications_bp.route('/')
 @login_required
 def notifications_page():
-    """Main notifications page"""
+    """Main notifications page with department filtering for managers"""
     page = request.args.get('page', 1, type=int)
     per_page = 20
     filter_type = request.args.get('filter', 'all')  # all, unread, by_category
     category = request.args.get('category')
     
-    # Base query
-    query = Notification.query.filter_by(user_id=current_user.id)
+    # Use the department-aware notification service
+    all_notifications = NotificationService.get_user_notifications(
+        current_user.id, 
+        limit=1000  # Get more for proper pagination
+    )
     
-    # Apply filters
+    # Apply additional filters
     if filter_type == 'unread':
-        query = query.filter_by(is_read=False)
+        all_notifications = [n for n in all_notifications if not n.is_read]
     elif category:
-        query = query.filter_by(category=category)
+        all_notifications = [n for n in all_notifications if n.category == category]
     
-    # Filter out expired notifications
-    query = query.filter(
-        or_(
-            Notification.expires_at.is_(None),
-            Notification.expires_at > datetime.utcnow()
-        )
-    )
+    # Manual pagination
+    total = len(all_notifications)
+    start = (page - 1) * per_page
+    end = start + per_page
+    notifications_list = all_notifications[start:end]
     
-    # Paginate
-    notifications = query.order_by(desc(Notification.created_at)).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
+    # Create a simple pagination object
+    class SimplePagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
     
-    # Get notification categories for filter
-    categories = db.session.query(Notification.category).filter_by(
-        user_id=current_user.id
-    ).distinct().all()
-    categories = [cat[0] for cat in categories if cat[0]]
+    notifications = SimplePagination(notifications_list, page, per_page, total)
+    
+    # Get notification categories for filter from all user notifications
+    categories = list(set([n.category for n in all_notifications if n.category]))
     
     return render_template('notifications/index.html',
                          notifications=notifications,
