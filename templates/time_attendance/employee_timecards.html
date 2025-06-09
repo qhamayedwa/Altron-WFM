@@ -256,74 +256,76 @@
                                 </div>
                             </td>
                         </tr>
-
-                        <!-- Time Entry Details Modal -->
-                        {% if record.time_entries %}
-                        <div class="modal fade" id="timeEntryModal{{ record.user.id }}{{ record.date.strftime('%Y%m%d') }}" tabindex="-1">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">
-                                            Time Entries - {{ record.user.username }} - {{ record.date.strftime('%B %d, %Y') }}
-                                        </h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Clock In</th>
-                                                        <th>Clock Out</th>
-                                                        <th>Duration</th>
-                                                        <th>Location</th>
-                                                        <th>Notes</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {% for entry in record.time_entries %}
-                                                    <tr>
-                                                        <td>
-                                                            {{ entry.clock_in.strftime('%H:%M:%S') if entry.clock_in else '-' }}
-                                                        </td>
-                                                        <td>
-                                                            {{ entry.clock_out.strftime('%H:%M:%S') if entry.clock_out else 'Still active' }}
-                                                        </td>
-                                                        <td>
-                                                            {% if entry.clock_in and entry.clock_out %}
-                                                            {{ "%.2f"|format(entry.calculate_hours_worked()) }}h
-                                                            {% else %}
-                                                            -
-                                                            {% endif %}
-                                                        </td>
-                                                        <td>
-                                                            {% if entry.location %}
-                                                            <small class="text-muted">{{ entry.location }}</small>
-                                                            {% else %}
-                                                            -
-                                                            {% endif %}
-                                                        </td>
-                                                        <td>
-                                                            {% if entry.notes %}
-                                                            <small>{{ entry.notes }}</small>
-                                                            {% else %}
-                                                            -
-                                                            {% endif %}
-                                                        </td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
+            <!-- Time Entry Detail Modals -->
+            {% for record in timecard_data.items %}
+            {% if record.time_entries %}
+            <div class="modal fade" id="timeEntryModal{{ record.user.id }}{{ record.date.strftime('%Y%m%d') }}" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                Time Entries - {{ record.user.username }} - {{ record.date.strftime('%B %d, %Y') }}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Clock In</th>
+                                            <th>Clock Out</th>
+                                            <th>Duration</th>
+                                            <th>Location</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in record.time_entries %}
+                                        <tr>
+                                            <td>
+                                                {{ entry.clock_in.strftime('%H:%M:%S') if entry.clock_in else '-' }}
+                                            </td>
+                                            <td>
+                                                {{ entry.clock_out.strftime('%H:%M:%S') if entry.clock_out else 'Still active' }}
+                                            </td>
+                                            <td>
+                                                {% if entry.clock_in and entry.clock_out %}
+                                                {{ "%.2f"|format(entry.calculate_hours_worked()) }}h
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if entry.location %}
+                                                <small class="text-muted">{{ entry.location }}</small>
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if entry.notes %}
+                                                <small>{{ entry.notes }}</small>
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
 
             <!-- Pagination -->
             {% if timecard_data.pages > 1 %}
