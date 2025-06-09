@@ -452,9 +452,28 @@ def create_leave_type():
         try:
             name = request.form.get('name')
             description = request.form.get('description')
-            default_accrual_rate = float(request.form.get('default_accrual_rate', 0)) or None
+            
+            # Handle default_accrual_rate with proper validation
+            accrual_rate_str = request.form.get('default_accrual_rate', '').strip()
+            default_accrual_rate = None
+            if accrual_rate_str:
+                try:
+                    default_accrual_rate = float(accrual_rate_str)
+                except ValueError:
+                    flash('Default accrual rate must be a valid number.', 'danger')
+                    return render_template('leave_management/create_leave_type.html')
+            
             requires_approval = request.form.get('requires_approval') == 'on'
-            max_consecutive_days = int(request.form.get('max_consecutive_days', 0)) or None
+            
+            # Handle max_consecutive_days with proper validation
+            max_days_str = request.form.get('max_consecutive_days', '').strip()
+            max_consecutive_days = None
+            if max_days_str:
+                try:
+                    max_consecutive_days = int(max_days_str)
+                except ValueError:
+                    flash('Maximum consecutive days must be a valid number.', 'danger')
+                    return render_template('leave_management/create_leave_type.html')
             
             if not name:
                 flash('Leave type name is required.', 'danger')
@@ -524,9 +543,29 @@ def edit_leave_type(leave_type_id):
         try:
             name = request.form.get('name')
             description = request.form.get('description')
-            default_accrual_rate = float(request.form.get('default_accrual_rate', 0)) or None
+            
+            # Handle default_accrual_rate with proper validation
+            accrual_rate_str = request.form.get('default_accrual_rate', '').strip()
+            default_accrual_rate = None
+            if accrual_rate_str:
+                try:
+                    default_accrual_rate = float(accrual_rate_str)
+                except ValueError:
+                    flash('Default accrual rate must be a valid number.', 'danger')
+                    return render_template('leave_management/edit_leave_type.html', leave_type=leave_type)
+            
             requires_approval = request.form.get('requires_approval') == 'on'
-            max_consecutive_days = int(request.form.get('max_consecutive_days', 0)) or None
+            
+            # Handle max_consecutive_days with proper validation
+            max_days_str = request.form.get('max_consecutive_days', '').strip()
+            max_consecutive_days = None
+            if max_days_str:
+                try:
+                    max_consecutive_days = int(max_days_str)
+                except ValueError:
+                    flash('Maximum consecutive days must be a valid number.', 'danger')
+                    return render_template('leave_management/edit_leave_type.html', leave_type=leave_type)
+            
             is_active = request.form.get('is_active') == 'on'
             
             if not name:
