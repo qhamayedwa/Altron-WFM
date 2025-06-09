@@ -219,13 +219,14 @@ class NotificationService:
         
         # If user is a manager, also include notifications from their department's employees
         if user.has_role('Manager'):
-            # Get departments this user manages
-            managed_departments = get_managed_departments(user_id)
+            # Get departments this user manages (returns list of department IDs)
+            dept_ids = get_managed_departments(user_id)
             
-            if managed_departments:
+            if dept_ids:
+                
                 # Get all employees in managed departments
                 dept_employees = User.query.filter(
-                    User.department_id.in_([dept.id for dept in managed_departments]),
+                    User.department_id.in_(dept_ids),
                     User.is_active == True
                 ).all()
                 
@@ -234,11 +235,8 @@ class NotificationService:
                 # Include notifications for department employees (specific types only)
                 if dept_employee_ids:
                     dept_query = Notification.query.filter(
-                        and_(
-                            Notification.user_id.in_(dept_employee_ids),
-                            # Only include specific notification types relevant to managers
-                            Notification.category.in_(['leave', 'timecard', 'attendance', 'urgent_approval'])
-                        )
+                        Notification.user_id.in_(dept_employee_ids),
+                        Notification.category.in_(['leave', 'timecard', 'attendance', 'urgent_approval'])
                     )
                     
                     # Combine both queries
@@ -271,13 +269,14 @@ class NotificationService:
         
         # If user is a manager, also count notifications from their department's employees
         if user.has_role('Manager'):
-            # Get departments this user manages
-            managed_departments = get_managed_departments(user_id)
+            # Get departments this user manages (returns list of department IDs)
+            dept_ids = get_managed_departments(user_id)
             
-            if managed_departments:
+            if dept_ids:
+                
                 # Get all employees in managed departments
                 dept_employees = User.query.filter(
-                    User.department_id.in_([dept.id for dept in managed_departments]),
+                    User.department_id.in_(dept_ids),
                     User.is_active == True
                 ).all()
                 
@@ -286,12 +285,9 @@ class NotificationService:
                 # Include unread notifications for department employees (specific types only)
                 if dept_employee_ids:
                     dept_query = Notification.query.filter(
-                        and_(
-                            Notification.user_id.in_(dept_employee_ids),
-                            Notification.is_read == False,
-                            # Only include specific notification types relevant to managers
-                            Notification.category.in_(['leave', 'timecard', 'attendance', 'urgent_approval'])
-                        )
+                        Notification.user_id.in_(dept_employee_ids),
+                        Notification.is_read == False,
+                        Notification.category.in_(['leave', 'timecard', 'attendance', 'urgent_approval'])
                     )
                     
                     # Combine both queries
