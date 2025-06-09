@@ -186,9 +186,16 @@ def manage_schedules():
     if end_date:
         query = query.filter(Schedule.start_time <= datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
     
-    schedules = query.order_by(Schedule.start_time.desc()).paginate(
+    schedules = query.order_by(Schedule.batch_id.desc().nullslast(), Schedule.start_time.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
+    
+    # Get batch statistics for schedules on current page
+    batch_stats = {}
+    for schedule in schedules.items:
+        if schedule.batch_id and schedule.batch_id not in batch_stats:
+            batch_count = Schedule.query.filter_by(batch_id=schedule.batch_id).count()
+            batch_stats[schedule.batch_id] = batch_count
     
     # Apply department filtering to users list for managers
     if is_super_user:
@@ -244,6 +251,10 @@ def create_schedule():
                 flash('End time must be after start time.', 'danger')
                 return redirect(url_for('scheduling.create_schedule'))
             
+            # Generate batch ID for grouped scheduling
+            import uuid
+            batch_id = str(uuid.uuid4()) if len(user_ids) > 1 else None
+            
             # Process batch scheduling for multiple employees
             created_schedules = []
             conflict_employees = []
@@ -275,7 +286,8 @@ def create_schedule():
                     start_time=start_time,
                     end_time=end_time,
                     assigned_by_manager_id=current_user.id,
-                    notes=notes
+                    notes=notes,
+                    batch_id=batch_id
                 )
                 
                 db.session.add(schedule)

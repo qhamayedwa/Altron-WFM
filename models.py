@@ -628,6 +628,7 @@ class Schedule(db.Model):
     notes = db.Column(db.Text, nullable=True)
     pay_rule_link_id = db.Column(db.Integer, nullable=True)  # Placeholder for pay rules
     status = db.Column(db.String(20), default='Scheduled', nullable=False)  # 'Scheduled', 'Confirmed', 'Cancelled'
+    batch_id = db.Column(db.String(36), nullable=True)  # UUID for batch scheduling grouping
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

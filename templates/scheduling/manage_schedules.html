@@ -74,6 +74,7 @@
                             <th>End Time</th>
                             <th>Duration</th>
                             <th>Status</th>
+                            <th>Batch Info</th>
                             <th>Assigned By</th>
                             <th>Actions</th>
                         </tr>
@@ -100,6 +101,17 @@
                                 <span class="badge bg-{{ 'success' if schedule.status == 'Confirmed' else 'primary' if schedule.status == 'Scheduled' else 'warning' }}">
                                     {{ schedule.status }}
                                 </span>
+                            </td>
+                            <td>
+                                {% if schedule.batch_id %}
+                                    <span class="badge bg-info" title="Batch Schedule">
+                                        <i data-feather="users" width="12" height="12"></i>
+                                        Batch
+                                    </span>
+                                    <br><small class="text-muted">{{ schedule.batch_id[:8] }}...</small>
+                                {% else %}
+                                    <span class="badge bg-secondary">Individual</span>
+                                {% endif %}
                             </td>
                             <td>{{ schedule.assigned_by.username }}</td>
                             <td>
