@@ -202,7 +202,14 @@
                                 {{ form.manager_id(class="form-control") }}
                             </div>
                             
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-3 mb-3">
+                                <label for="pay_code" class="form-label">Pay Code</label>
+                                <input type="text" class="form-control" id="pay_code" name="pay_code" 
+                                       value="{{ user.pay_code or '' }}" placeholder="e.g. EMP001">
+                                <small class="form-text text-muted">Payroll system identifier</small>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
                                 {{ form.hourly_rate.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">R</span>

@@ -265,6 +265,7 @@ def edit_user(user_id):
         user.hire_date = form.hire_date.data
         user.line_manager_id = form.manager_id.data if form.manager_id.data else None
         user.hourly_rate = form.hourly_rate.data
+        user.pay_code = request.form.get('pay_code')
         
         # Update professional information
         user.education_level = form.education_level.data
