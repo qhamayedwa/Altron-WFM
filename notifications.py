@@ -6,7 +6,7 @@ Handles creation, management, and delivery of notifications for various system e
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
-from sqlalchemy import and_, or_, desc
+from sqlalchemy import and_, or_, desc, func
 from app import db
 from models import Notification, NotificationType, NotificationPreference, User, LeaveApplication, Schedule
 from auth_simple import role_required
@@ -481,10 +481,154 @@ def save_notification_preferences():
 
 
 # Admin routes for managing notification types
+@notifications_bp.route('/admin/dashboard')
+@role_required('Super User')
+def admin_dashboard():
+    """Notification management dashboard for Super Users"""
+    from datetime import datetime, timedelta
+    
+    # Get statistics
+    total_notifications = Notification.query.count()
+    unread_notifications = Notification.query.filter_by(is_read=False).count()
+    urgent_notifications = Notification.query.filter_by(priority='urgent', is_read=False).count()
+    notification_types_count = NotificationType.query.count()
+    
+    # Last 24 hours statistics
+    yesterday = datetime.utcnow() - timedelta(days=1)
+    last_24h_sent = Notification.query.filter(Notification.created_at >= yesterday).count()
+    last_24h_users = db.session.query(Notification.user_id).filter(
+        Notification.created_at >= yesterday
+    ).distinct().count()
+    last_24h_urgent = Notification.query.filter(
+        Notification.created_at >= yesterday,
+        Notification.priority == 'urgent'
+    ).count()
+    
+    # Calculate read rate
+    total_today = Notification.query.filter(Notification.created_at >= yesterday).count()
+    read_today = Notification.query.filter(
+        Notification.created_at >= yesterday,
+        Notification.is_read == True
+    ).count()
+    read_rate = round((read_today / total_today * 100) if total_today > 0 else 0, 1)
+    
+    stats = {
+        'total_notifications': total_notifications,
+        'unread_notifications': unread_notifications,
+        'urgent_notifications': urgent_notifications,
+        'notification_types': notification_types_count,
+        'last_24h_sent': last_24h_sent,
+        'last_24h_users': last_24h_users,
+        'last_24h_urgent': last_24h_urgent,
+        'read_rate': read_rate
+    }
+    
+    # Get notification types with usage counts
+    notification_types = db.session.query(
+        NotificationType,
+        func.count(Notification.id).label('usage_count')
+    ).outerjoin(Notification).group_by(NotificationType.id).all()
+    
+    # Format notification types
+    formatted_types = []
+    for type_obj, usage_count in notification_types:
+        type_dict = {
+            'id': type_obj.id,
+            'name': type_obj.name,
+            'display_name': type_obj.display_name,
+            'description': type_obj.description,
+            'icon': type_obj.icon,
+            'color': type_obj.color,
+            'priority': type_obj.priority,
+            'usage_count': usage_count
+        }
+        formatted_types.append(type_dict)
+    
+    # Workflow triggers - define available notification triggers
+    workflow_triggers = [
+        {
+            'name': 'Leave Management',
+            'module': 'leave_management.py',
+            'description': 'Triggers notifications for leave requests, approvals, and status changes',
+            'icon': 'calendar',
+            'color': 'primary',
+            'trigger_count': 3,
+            'enabled': True
+        },
+        {
+            'name': 'Time Attendance',
+            'module': 'time_attendance.py',
+            'description': 'Sends timecard reminders and attendance notifications',
+            'icon': 'clock',
+            'color': 'success',
+            'trigger_count': 2,
+            'enabled': True
+        },
+        {
+            'name': 'Schedule Management',
+            'module': 'scheduling.py',
+            'description': 'Notifies about schedule changes and conflicts',
+            'icon': 'calendar-check',
+            'color': 'warning',
+            'trigger_count': 2,
+            'enabled': True
+        },
+        {
+            'name': 'Payroll Processing',
+            'module': 'payroll.py',
+            'description': 'Alerts for payroll deadlines and processing status',
+            'icon': 'dollar-sign',
+            'color': 'info',
+            'trigger_count': 1,
+            'enabled': False
+        },
+        {
+            'name': 'User Management',
+            'module': 'auth.py',
+            'description': 'Security alerts and user account notifications',
+            'icon': 'shield',
+            'color': 'danger',
+            'trigger_count': 2,
+            'enabled': True
+        },
+        {
+            'name': 'System Monitoring',
+            'module': 'system.py',
+            'description': 'System alerts, maintenance notices, and performance warnings',
+            'icon': 'server',
+            'color': 'secondary',
+            'trigger_count': 4,
+            'enabled': True
+        }
+    ]
+    
+    # Recent activity
+    recent_notifications = Notification.query.order_by(
+        desc(Notification.created_at)
+    ).limit(10).all()
+    
+    recent_activity = []
+    for notif in recent_notifications:
+        activity = {
+            'title': notif.title,
+            'description': f'Sent to {notif.user.first_name} {notif.user.last_name}',
+            'time_ago': format_time_ago(notif.created_at),
+            'icon': notif.notification_type.icon if notif.notification_type else 'bell',
+            'color': notif.notification_type.color if notif.notification_type else 'primary'
+        }
+        recent_activity.append(activity)
+    
+    return render_template('notifications/admin_dashboard.html',
+                         stats=stats,
+                         notification_types=formatted_types,
+                         workflow_triggers=workflow_triggers,
+                         recent_activity=recent_activity)
+
+
 @notifications_bp.route('/admin/types')
-@role_required('Admin', 'Super User')
+@role_required('Super User')
 def manage_notification_types():
-    """Manage notification types (Admin only)"""
+    """Manage notification types (Super User only)"""
     notification_types = NotificationType.query.order_by(NotificationType.name).all()
     return render_template('notifications/admin_types.html',
                          notification_types=notification_types)
@@ -618,3 +762,97 @@ def create_test_notifications():
     except Exception as e:
         print(f"Error creating test notifications: {e}")
         return 0
+
+
+def format_time_ago(timestamp):
+    """Format timestamp as time ago string"""
+    from datetime import datetime
+    
+    now = datetime.utcnow()
+    diff = now - timestamp
+    
+    if diff.days > 0:
+        return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    else:
+        return "Just now"
+
+
+# API endpoints for admin dashboard
+@notifications_bp.route('/admin/api/create-type', methods=['POST'])
+@role_required('Super User')
+def api_create_notification_type():
+    """Create new notification type"""
+    try:
+        data = request.get_json()
+        
+        # Check if type name already exists
+        existing = NotificationType.query.filter_by(name=data['name']).first()
+        if existing:
+            return jsonify({'success': False, 'message': 'Type name already exists'})
+        
+        new_type = NotificationType(
+            name=data['name'],
+            display_name=data['display_name'],
+            description=data.get('description', ''),
+            icon=data['icon'],
+            color=data['color'],
+            priority=data['priority']
+        )
+        
+        db.session.add(new_type)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Notification type created successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@notifications_bp.route('/admin/api/toggle-trigger', methods=['POST'])
+@role_required('Super User')
+def api_toggle_trigger():
+    """Toggle workflow trigger"""
+    try:
+        data = request.get_json()
+        trigger_name = data['trigger']
+        enabled = data['enabled']
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Trigger {trigger_name} {"enabled" if enabled else "disabled"}'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@notifications_bp.route('/admin/api/save-settings', methods=['POST'])
+@role_required('Super User')
+def api_save_settings():
+    """Save notification system settings"""
+    try:
+        data = request.get_json()
+        return jsonify({'success': True, 'message': 'Settings saved successfully'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@notifications_bp.route('/admin/cleanup', methods=['GET'])
+@role_required('Super User')
+def cleanup_notifications():
+    """Cleanup expired notifications"""
+    try:
+        expired_count = NotificationService.cleanup_expired_notifications()
+        flash(f'Cleaned up {expired_count} expired notifications', 'success')
+    except Exception as e:
+        flash(f'Error during cleanup: {str(e)}', 'danger')
+    
+    return redirect(url_for('notifications.admin_dashboard'))

@@ -1,0 +1,612 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Management Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i data-feather="bell" class="me-2"></i>
+                    Notification Management Dashboard
+                </h1>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="refreshStats()">
+                        <i data-feather="refresh-cw" class="me-1"></i>
+                        Refresh
+                    </button>
+                    <a href="{{ url_for('notifications.cleanup_notifications') }}" class="btn btn-outline-warning">
+                        <i data-feather="trash-2" class="me-1"></i>
+                        Cleanup Expired
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Notifications
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-notifications">
+                                {{ stats.total_notifications }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i data-feather="bell" class="text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Unread Notifications
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="unread-notifications">
+                                {{ stats.unread_notifications }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i data-feather="mail" class="text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Urgent Notifications
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="urgent-notifications">
+                                {{ stats.urgent_notifications }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i data-feather="alert-triangle" class="text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Active Types
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="notification-types">
+                                {{ stats.notification_types }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i data-feather="tag" class="text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for different sections -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="types-tab" data-bs-toggle="tab" data-bs-target="#types" type="button" role="tab">
+                                <i data-feather="tag" class="me-1"></i>
+                                Notification Types
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="triggers-tab" data-bs-toggle="tab" data-bs-target="#triggers" type="button" role="tab">
+                                <i data-feather="zap" class="me-1"></i>
+                                Workflow Triggers
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="recent-tab" data-bs-toggle="tab" data-bs-target="#recent" type="button" role="tab">
+                                <i data-feather="clock" class="me-1"></i>
+                                Recent Activity
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
+                                <i data-feather="settings" class="me-1"></i>
+                                System Settings
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="adminTabsContent">
+                        <!-- Notification Types Tab -->
+                        <div class="tab-pane fade show active" id="types" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Notification Types Management</h5>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTypeModal">
+                                    <i data-feather="plus" class="me-1"></i>
+                                    Create New Type
+                                </button>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Display Name</th>
+                                            <th>Icon</th>
+                                            <th>Color</th>
+                                            <th>Priority</th>
+                                            <th>Usage Count</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for type in notification_types %}
+                                        <tr>
+                                            <td><code>{{ type.name }}</code></td>
+                                            <td>{{ type.display_name }}</td>
+                                            <td>
+                                                <i data-feather="{{ type.icon }}" class="text-{{ type.color }}"></i>
+                                                <small class="text-muted ms-1">{{ type.icon }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ type.color }}">{{ type.color }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ type.priority }}</span>
+                                            </td>
+                                            <td>{{ type.usage_count or 0 }}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editType({{ type.id }})">
+                                                    <i data-feather="edit" class="me-1"></i>
+                                                    Edit
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Workflow Triggers Tab -->
+                        <div class="tab-pane fade" id="triggers" role="tabpanel">
+                            <h5 class="mb-3">Available Notification Triggers</h5>
+                            <div class="row">
+                                {% for workflow in workflow_triggers %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-start mb-2">
+                                                <i data-feather="{{ workflow.icon }}" class="text-{{ workflow.color }} me-2 mt-1"></i>
+                                                <div>
+                                                    <h6 class="card-title mb-1">{{ workflow.name }}</h6>
+                                                    <small class="text-muted">{{ workflow.module }}</small>
+                                                </div>
+                                            </div>
+                                            <p class="card-text small">{{ workflow.description }}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    <i data-feather="zap" class="me-1" style="width: 12px; height: 12px;"></i>
+                                                    {{ workflow.trigger_count }} triggers
+                                                </small>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="trigger{{ loop.index }}" 
+                                                           {{ 'checked' if workflow.enabled else '' }}
+                                                           onchange="toggleTrigger('{{ workflow.name }}', this.checked)">
+                                                    <label class="form-check-label" for="trigger{{ loop.index }}">
+                                                        <small>{{ 'Enabled' if workflow.enabled else 'Disabled' }}</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity Tab -->
+                        <div class="tab-pane fade" id="recent" role="tabpanel">
+                            <h5 class="mb-3">Recent Notification Activity</h5>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="timeline">
+                                        {% for activity in recent_activity %}
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker bg-{{ activity.color }}">
+                                                <i data-feather="{{ activity.icon }}" style="width: 12px; height: 12px;"></i>
+                                            </div>
+                                            <div class="timeline-content">
+                                                <h6 class="timeline-title">{{ activity.title }}</h6>
+                                                <p class="timeline-description">{{ activity.description }}</p>
+                                                <small class="text-muted">
+                                                    <i data-feather="clock" class="me-1" style="width: 12px; height: 12px;"></i>
+                                                    {{ activity.time_ago }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Statistics (Last 24h)</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Notifications Sent</span>
+                                                    <strong>{{ stats.last_24h_sent }}</strong>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Users Notified</span>
+                                                    <strong>{{ stats.last_24h_users }}</strong>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Urgent Alerts</span>
+                                                    <strong>{{ stats.last_24h_urgent }}</strong>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Read Rate</span>
+                                                    <strong>{{ stats.read_rate }}%</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Settings Tab -->
+                        <div class="tab-pane fade" id="settings" role="tabpanel">
+                            <h5 class="mb-3">Notification System Settings</h5>
+                            <form id="settingsForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">General Settings</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Auto-cleanup expired notifications</label>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="autoCleanup" checked>
+                                                        <label class="form-check-label" for="autoCleanup">
+                                                            Enable automatic cleanup
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="defaultExpiry" class="form-label">Default Expiry (hours)</label>
+                                                    <input type="number" class="form-control" id="defaultExpiry" value="168" min="1" max="8760">
+                                                    <div class="form-text">Default expiration time for notifications (1-8760 hours)</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="maxNotifications" class="form-label">Max Notifications per User</label>
+                                                    <input type="number" class="form-control" id="maxNotifications" value="100" min="10" max="1000">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Priority Settings</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Urgent Notification Handling</label>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="urgentHandling" id="urgent1" value="immediate" checked>
+                                                        <label class="form-check-label" for="urgent1">
+                                                            Immediate delivery
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="urgentHandling" id="urgent2" value="batch">
+                                                        <label class="form-check-label" for="urgent2">
+                                                            Batch with other notifications
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="batchInterval" class="form-label">Batch Interval (minutes)</label>
+                                                    <input type="number" class="form-control" id="batchInterval" value="5" min="1" max="60">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i data-feather="save" class="me-1"></i>
+                                        Save Settings
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary ms-2" onclick="resetSettings()">
+                                        <i data-feather="refresh-ccw" class="me-1"></i>
+                                        Reset to Defaults
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Notification Type Modal -->
+<div class="modal fade" id="createTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createTypeForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Notification Type</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="typeName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="typeName" required>
+                        <div class="form-text">Internal name (lowercase, underscores allowed)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="typeDisplayName" class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="typeDisplayName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="typeDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="typeDescription" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="typeIcon" class="form-label">Icon</label>
+                                <select class="form-select" id="typeIcon">
+                                    <option value="bell">bell</option>
+                                    <option value="mail">mail</option>
+                                    <option value="alert-triangle">alert-triangle</option>
+                                    <option value="info">info</option>
+                                    <option value="check-circle">check-circle</option>
+                                    <option value="x-circle">x-circle</option>
+                                    <option value="calendar">calendar</option>
+                                    <option value="clock">clock</option>
+                                    <option value="user">user</option>
+                                    <option value="users">users</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="typeColor" class="form-label">Color</label>
+                                <select class="form-select" id="typeColor">
+                                    <option value="primary">primary</option>
+                                    <option value="success">success</option>
+                                    <option value="warning">warning</option>
+                                    <option value="danger">danger</option>
+                                    <option value="info">info</option>
+                                    <option value="secondary">secondary</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="typePriority" class="form-label">Default Priority</label>
+                        <select class="form-select" id="typePriority">
+                            <option value="low">low</option>
+                            <option value="medium" selected>medium</option>
+                            <option value="high">high</option>
+                            <option value="urgent">urgent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Type</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timeline-content {
+    padding-left: 1rem;
+}
+
+.timeline-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-description {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.card-header-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+}
+
+.card-header-tabs .nav-link.active {
+    background-color: transparent;
+    border-bottom: 2px solid #007bff;
+    color: #007bff;
+}
+</style>
+
+<script>
+function refreshStats() {
+    // Refresh dashboard statistics
+    location.reload();
+}
+
+function editType(typeId) {
+    // Edit notification type
+    alert('Edit type functionality would be implemented here');
+}
+
+function toggleTrigger(triggerName, enabled) {
+    // Toggle workflow trigger
+    fetch('/notifications/admin/toggle-trigger', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            trigger: triggerName,
+            enabled: enabled
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            alert('Error toggling trigger: ' + data.message);
+        }
+    });
+}
+
+function resetSettings() {
+    if (confirm('Reset all settings to defaults?')) {
+        document.getElementById('autoCleanup').checked = true;
+        document.getElementById('defaultExpiry').value = 168;
+        document.getElementById('maxNotifications').value = 100;
+        document.getElementById('batchInterval').value = 5;
+        document.querySelector('input[name="urgentHandling"][value="immediate"]').checked = true;
+    }
+}
+
+// Form submissions
+document.getElementById('createTypeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('typeName').value,
+        display_name: document.getElementById('typeDisplayName').value,
+        description: document.getElementById('typeDescription').value,
+        icon: document.getElementById('typeIcon').value,
+        color: document.getElementById('typeColor').value,
+        priority: document.getElementById('typePriority').value
+    };
+    
+    fetch('/notifications/admin/create-type', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error creating type: ' + data.message);
+        }
+    });
+});
+
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const settings = {
+        auto_cleanup: document.getElementById('autoCleanup').checked,
+        default_expiry: document.getElementById('defaultExpiry').value,
+        max_notifications: document.getElementById('maxNotifications').value,
+        urgent_handling: document.querySelector('input[name="urgentHandling"]:checked').value,
+        batch_interval: document.getElementById('batchInterval').value
+    };
+    
+    fetch('/notifications/admin/save-settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Settings saved successfully!');
+        } else {
+            alert('Error saving settings: ' + data.message);
+        }
+    });
+});
+</script>
+{% endblock %}
