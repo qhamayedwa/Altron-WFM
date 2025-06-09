@@ -444,6 +444,115 @@
     <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
+    <!-- Notification System JavaScript -->
+    <script>
+        // Notification system functionality
+        let notificationDropdown = null;
+        let notificationsList = null;
+        let notificationCount = null;
+        
+        function initializeNotifications() {
+            notificationDropdown = document.getElementById('notificationsDropdown');
+            notificationsList = document.getElementById('notifications-list');
+            notificationCount = document.getElementById('notification-count');
+            
+            if (notificationDropdown) {
+                // Load notifications when dropdown is opened
+                notificationDropdown.addEventListener('shown.bs.dropdown', loadRecentNotifications);
+                
+                // Load notification count on page load
+                updateNotificationCount();
+                
+                // Auto-refresh notifications every 30 seconds
+                setInterval(updateNotificationCount, 30000);
+            }
+        }
+        
+        function loadRecentNotifications() {
+            if (!notificationsList) return;
+            
+            fetch('/notifications/api/recent?limit=5')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderNotifications(data.notifications);
+                    } else {
+                        notificationsList.innerHTML = '<div class="text-center py-3 text-muted">Error loading notifications</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                    notificationsList.innerHTML = '<div class="text-center py-3 text-muted">Error loading notifications</div>';
+                });
+        }
+        
+        function renderNotifications(notifications) {
+            if (!notificationsList) return;
+            
+            if (notifications.length === 0) {
+                notificationsList.innerHTML = '<div class="text-center py-3 text-muted">No new notifications</div>';
+                return;
+            }
+            
+            const notificationsHtml = notifications.map(notification => `
+                <div class="border-bottom px-3 py-2 notification-item ${!notification.is_read ? 'bg-light' : ''}" 
+                     onclick="handleNotificationClick(${notification.id}, '${notification.action_url || ''}')">
+                    <div class="d-flex align-items-start">
+                        <i data-feather="${notification.type.icon}" class="me-2 mt-1 text-${notification.type.color}" style="width: 16px; height: 16px;"></i>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h6 class="mb-1 fw-bold" style="font-size: 0.875rem;">${notification.title}</h6>
+                                ${notification.priority === 'urgent' ? '<span class="badge bg-danger" style="font-size: 0.7rem;">Urgent</span>' : ''}
+                                ${notification.priority === 'high' ? '<span class="badge bg-warning" style="font-size: 0.7rem;">High</span>' : ''}
+                            </div>
+                            <p class="mb-1 text-muted" style="font-size: 0.8rem;">${notification.message}</p>
+                            <small class="text-muted">${notification.time_ago}</small>
+                            ${!notification.is_read ? '<span class="badge bg-primary ms-2" style="font-size: 0.7rem;">New</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            notificationsList.innerHTML = notificationsHtml;
+            
+            // Re-render feather icons
+            feather.replace();
+        }
+        
+        function handleNotificationClick(notificationId, actionUrl) {
+            // Mark as read
+            fetch(`/notifications/api/mark-read/${notificationId}`, { method: 'POST' })
+                .then(() => {
+                    updateNotificationCount();
+                    if (actionUrl && actionUrl !== 'None' && actionUrl !== '') {
+                        window.location.href = actionUrl;
+                    }
+                })
+                .catch(error => console.error('Error marking notification as read:', error));
+        }
+        
+        function updateNotificationCount() {
+            fetch('/notifications/api/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && notificationCount) {
+                        if (data.count > 0) {
+                            notificationCount.textContent = data.count > 99 ? '99+' : data.count;
+                            notificationCount.style.display = 'inline';
+                        } else {
+                            notificationCount.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(error => console.error('Error updating notification count:', error));
+        }
+        
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeNotifications();
+        });
+    </script>
+    
     <!-- Initialize Feather Icons -->
     <script>
         feather.replace()

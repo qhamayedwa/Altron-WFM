@@ -94,6 +94,7 @@ def create_app(config_class=Config):
     from employee_import import import_bp
     from debug_roles import debug_bp
     from dashboard_management import dashboard_bp
+    from notifications import notifications_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(time_attendance_bp)
@@ -108,6 +109,7 @@ def create_app(config_class=Config):
     app.register_blueprint(org_bp)
     app.register_blueprint(import_bp)
     app.register_blueprint(debug_bp)
+    app.register_blueprint(notifications_bp)
 
     
     # Register additional API routes without version prefix for frontend compatibility
@@ -208,6 +210,11 @@ def create_app(config_class=Config):
         try:
             db.create_all()
             logging.info("Database tables created successfully")
+            
+            # Initialize notification system
+            from notifications import init_notification_types
+            init_notification_types()
+            logging.info("Notification system initialized")
         except Exception as e:
             logging.error(f"Error creating database tables: {e}")
     
