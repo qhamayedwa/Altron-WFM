@@ -981,7 +981,7 @@ def employee_timecards():
                 # Get time entries for this date
                 time_entries = TimeEntry.query.filter(
                     TimeEntry.user_id == user.id,
-                    func.date(TimeEntry.clock_in) == current_date
+                    func.date(TimeEntry.clock_in_time) == current_date
                 ).all()
                 
                 # Get leave applications for this date
@@ -999,15 +999,15 @@ def employee_timecards():
                 
                 if time_entries:
                     for entry in time_entries:
-                        if entry.clock_in and entry.clock_out:
-                            hours = entry.calculate_hours_worked()
+                        if entry.clock_in_time and entry.clock_out_time:
+                            hours = entry.total_hours
                             total_hours += hours
                             
                             # Get first clock in and last clock out
-                            if not clock_in_time or entry.clock_in < clock_in_time:
-                                clock_in_time = entry.clock_in
-                            if not clock_out_time or entry.clock_out > clock_out_time:
-                                clock_out_time = entry.clock_out
+                            if not clock_in_time or entry.clock_in_time < clock_in_time:
+                                clock_in_time = entry.clock_in_time
+                            if not clock_out_time or entry.clock_out_time > clock_out_time:
+                                clock_out_time = entry.clock_out_time
                 
                 # Calculate amount earned (if hourly rate available)
                 amount_earned = 0
