@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Pay Code - WFM System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="edit" class="me-2"></i>
+            Edit Pay Code: {{ pay_code.code }}
+        </h2>
+        <a href="{{ url_for('pay_codes.manage_codes') }}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="me-2"></i>
+            Back to Pay Codes
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Pay Code Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="code" class="form-label">Pay Code *</label>
+                                <input type="text" class="form-control" id="code" name="code" 
+                                       value="{{ pay_code.code }}" required maxlength="20"
+                                       style="text-transform: uppercase;">
+                                <small class="form-text text-muted">Unique identifier for this pay code</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Display Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ pay_code.name }}" required maxlength="100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ pay_code.description or '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="hourly_rate" class="form-label">Default Hourly Rate (R)</label>
+                                <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" 
+                                       step="0.01" min="0" value="{{ pay_code.hourly_rate or '' }}">
+                                <small class="form-text text-muted">Leave blank to use employee's rate</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="is_overtime" name="is_overtime"
+                                           {{ 'checked' if pay_code.is_overtime else '' }}>
+                                    <label class="form-check-label" for="is_overtime">
+                                        <strong>Overtime Pay Code</strong>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="overtime_settings" style="display: {{ 'block' if pay_code.is_overtime else 'none' }};">
+                            <label for="overtime_multiplier" class="form-label">Overtime Multiplier</label>
+                            <select class="form-control" id="overtime_multiplier" name="overtime_multiplier">
+                                <option value="1.5" {{ 'selected' if pay_code.overtime_multiplier == 1.5 else '' }}>1.5x (Time and a Half)</option>
+                                <option value="2.0" {{ 'selected' if pay_code.overtime_multiplier == 2.0 else '' }}>2.0x (Double Time)</option>
+                                <option value="2.5" {{ 'selected' if pay_code.overtime_multiplier == 2.5 else '' }}>2.5x (Premium Rate)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active"
+                                       {{ 'checked' if pay_code.is_active else '' }}>
+                                <label class="form-check-label" for="is_active">
+                                    <strong>Active Pay Code</strong>
+                                </label>
+                                <small class="form-text text-muted d-block">Inactive pay codes cannot be assigned to new employees</small>
+                            </div>
+                        </div>
+
+                        {% if pay_code.created_at %}
+                        <div class="alert alert-info">
+                            <i data-feather="info" class="me-2"></i>
+                            <strong>Pay Code Details:</strong><br>
+                            Created: {{ pay_code.created_at.strftime('%B %d, %Y at %I:%M %p') }}<br>
+                            {% if pay_code.updated_at and pay_code.updated_at != pay_code.created_at %}
+                            Last Modified: {{ pay_code.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('pay_codes.manage_codes') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="save" class="me-2"></i>
+                                Update Pay Code
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Show/hide overtime settings
+    document.getElementById('is_overtime').addEventListener('change', function() {
+        const overtimeSettings = document.getElementById('overtime_settings');
+        if (this.checked) {
+            overtimeSettings.style.display = 'block';
+        } else {
+            overtimeSettings.style.display = 'none';
+        }
+    });
+
+    // Auto-uppercase pay code
+    document.getElementById('code').addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+    });
+</script>
+{% endblock %}
