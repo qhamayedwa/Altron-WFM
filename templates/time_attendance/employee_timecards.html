@@ -148,10 +148,18 @@
                                 {% if record.schedule %}
                                 <div class="small">
                                     <span class="badge bg-info">
-                                        {{ record.schedule.shift_type.name if record.schedule.shift_type else 'Custom' }}
+                                        {% if record.schedule.shift_type and record.schedule.shift_type.name %}
+                                            {{ record.schedule.shift_type.name }}
+                                        {% else %}
+                                            Custom
+                                        {% endif %}
                                     </span>
+                                    {% if record.schedule.start_time and record.schedule.end_time %}
                                     <br>{{ record.schedule.start_time.strftime('%H:%M') }} - {{ record.schedule.end_time.strftime('%H:%M') }}
+                                    {% endif %}
+                                    {% if record.schedule.duration_hours %}
                                     <br><small class="text-muted">{{ "%.1f"|format(record.schedule.duration_hours()) }}h scheduled</small>
+                                    {% endif %}
                                 </div>
                                 {% else %}
                                 <span class="text-muted">No schedule</span>
@@ -160,9 +168,15 @@
                             <td>
                                 {% if record.absence %}
                                 <span class="badge bg-warning">
-                                    {{ record.absence.leave_type.name if record.absence.leave_type else 'Leave' }}
+                                    {% if record.absence.leave_type and record.absence.leave_type.name %}
+                                        {{ record.absence.leave_type.name }}
+                                    {% else %}
+                                        Leave
+                                    {% endif %}
                                 </span>
+                                {% if record.absence.status %}
                                 <br><small class="text-muted">{{ record.absence.status }}</small>
+                                {% endif %}
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}
