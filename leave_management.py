@@ -485,6 +485,120 @@ def create_leave_type():
     
     return render_template('leave_management/create_leave_type.html')
 
+@leave_management_bp.route('/admin/leave-types/<int:leave_type_id>')
+@role_required('Admin', 'Super User')
+def view_leave_type(leave_type_id):
+    """View leave type details"""
+    leave_type = LeaveType.query.get_or_404(leave_type_id)
+    
+    # Get usage statistics
+    total_applications = LeaveApplication.query.filter_by(leave_type_id=leave_type_id).count()
+    pending_applications = LeaveApplication.query.filter_by(
+        leave_type_id=leave_type_id, 
+        status='Pending'
+    ).count()
+    approved_applications = LeaveApplication.query.filter_by(
+        leave_type_id=leave_type_id, 
+        status='Approved'
+    ).count()
+    
+    # Get recent applications for this leave type
+    recent_applications = LeaveApplication.query.filter_by(
+        leave_type_id=leave_type_id
+    ).order_by(LeaveApplication.created_at.desc()).limit(10).all()
+    
+    return render_template('leave_management/view_leave_type.html',
+                         leave_type=leave_type,
+                         total_applications=total_applications,
+                         pending_applications=pending_applications,
+                         approved_applications=approved_applications,
+                         recent_applications=recent_applications)
+
+@leave_management_bp.route('/admin/leave-types/<int:leave_type_id>/edit', methods=['GET', 'POST'])
+@role_required('Admin', 'Super User')
+def edit_leave_type(leave_type_id):
+    """Edit leave type"""
+    leave_type = LeaveType.query.get_or_404(leave_type_id)
+    
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            description = request.form.get('description')
+            default_accrual_rate = float(request.form.get('default_accrual_rate', 0)) or None
+            requires_approval = request.form.get('requires_approval') == 'on'
+            max_consecutive_days = int(request.form.get('max_consecutive_days', 0)) or None
+            is_active = request.form.get('is_active') == 'on'
+            
+            if not name:
+                flash('Leave type name is required.', 'danger')
+                return render_template('leave_management/edit_leave_type.html', leave_type=leave_type)
+            
+            # Check if name conflicts with another leave type
+            existing_type = LeaveType.query.filter(
+                LeaveType.name == name,
+                LeaveType.id != leave_type_id
+            ).first()
+            
+            if existing_type:
+                flash('A leave type with this name already exists.', 'danger')
+                return render_template('leave_management/edit_leave_type.html', leave_type=leave_type)
+            
+            # Update leave type
+            leave_type.name = name
+            leave_type.description = description
+            leave_type.default_accrual_rate = default_accrual_rate
+            leave_type.requires_approval = requires_approval
+            leave_type.max_consecutive_days = max_consecutive_days
+            leave_type.is_active = is_active
+            leave_type.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            flash(f'Leave type "{name}" updated successfully!', 'success')
+            return redirect(url_for('leave_management.view_leave_type', leave_type_id=leave_type_id))
+            
+        except ValueError as e:
+            flash('Invalid numeric values provided.', 'danger')
+            return render_template('leave_management/edit_leave_type.html', leave_type=leave_type)
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating leave type: {str(e)}', 'danger')
+            return render_template('leave_management/edit_leave_type.html', leave_type=leave_type)
+    
+    return render_template('leave_management/edit_leave_type.html', leave_type=leave_type)
+
+@leave_management_bp.route('/admin/leave-types/<int:leave_type_id>/toggle-status', methods=['POST'])
+@role_required('Admin', 'Super User')
+def toggle_leave_type_status(leave_type_id):
+    """Toggle leave type active/inactive status"""
+    try:
+        leave_type = LeaveType.query.get_or_404(leave_type_id)
+        
+        # Check if there are pending applications before deactivating
+        if leave_type.is_active:
+            pending_count = LeaveApplication.query.filter_by(
+                leave_type_id=leave_type_id,
+                status='Pending'
+            ).count()
+            
+            if pending_count > 0:
+                flash(f'Cannot deactivate leave type with {pending_count} pending applications. Please process them first.', 'warning')
+                return redirect(url_for('leave_management.view_leave_type', leave_type_id=leave_type_id))
+        
+        leave_type.is_active = not leave_type.is_active
+        leave_type.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        status = 'activated' if leave_type.is_active else 'deactivated'
+        flash(f'Leave type "{leave_type.name}" {status} successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating leave type status: {str(e)}', 'danger')
+    
+    return redirect(url_for('leave_management.view_leave_type', leave_type_id=leave_type_id))
+
 @leave_management_bp.route('/admin/leave-balances')
 @role_required('Admin', 'Super User')
 def manage_leave_balances():

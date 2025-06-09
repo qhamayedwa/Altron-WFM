@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}{{ leave_type.name }} - Leave Type Details{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="tag" class="me-2"></i>
+            {{ leave_type.name }}
+        </h2>
+        <div class="btn-group">
+            <a href="{{ url_for('leave_management.edit_leave_type', leave_type_id=leave_type.id) }}" 
+               class="btn btn-primary">
+                <i data-feather="edit" class="me-2"></i>
+                Edit Leave Type
+            </a>
+            <a href="{{ url_for('leave_management.manage_leave_types') }}" 
+               class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="me-2"></i>
+                Back to Leave Types
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Leave Type Details -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="info" class="me-2"></i>
+                        Leave Type Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <strong>Name:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {{ leave_type.name }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <strong>Description:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {% if leave_type.description %}
+                                {{ leave_type.description }}
+                            {% else %}
+                                <span class="text-muted">No description provided</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <strong>Accrual Rate:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {% if leave_type.default_accrual_rate %}
+                                {{ leave_type.default_accrual_rate }} hours/year
+                            {% else %}
+                                <span class="text-muted">No automatic accrual</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <strong>Requires Approval:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            <span class="badge bg-{{ 'warning' if leave_type.requires_approval else 'success' }}">
+                                {{ 'Yes' if leave_type.requires_approval else 'No' }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <strong>Max Consecutive Days:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {% if leave_type.max_consecutive_days %}
+                                {{ leave_type.max_consecutive_days }} days
+                            {% else %}
+                                <span class="text-muted">No limit</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <strong>Status:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            <span class="badge bg-{{ 'success' if leave_type.is_active else 'secondary' }}">
+                                {{ 'Active' if leave_type.is_active else 'Inactive' }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <strong>Created:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {{ leave_type.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        </div>
+                    </div>
+                    
+                    {% if leave_type.updated_at and leave_type.updated_at != leave_type.created_at %}
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <strong>Last Updated:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {{ leave_type.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Statistics -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i data-feather="bar-chart-2" class="me-2"></i>
+                        Usage Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Total Applications:</span>
+                            <strong>{{ total_applications }}</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Pending:</span>
+                            <span class="badge bg-warning">{{ pending_applications }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Approved:</span>
+                            <span class="badge bg-success">{{ approved_applications }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Rejected:</span>
+                            <span class="badge bg-danger">{{ total_applications - pending_applications - approved_applications }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i data-feather="settings" class="me-2"></i>
+                        Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('leave_management.toggle_leave_type_status', leave_type_id=leave_type.id) }}" 
+                          onsubmit="return confirm('Are you sure you want to {{ 'deactivate' if leave_type.is_active else 'activate' }} this leave type?');">
+                        <button type="submit" class="btn btn-{{ 'warning' if leave_type.is_active else 'success' }} w-100 mb-2">
+                            <i data-feather="{{ 'pause' if leave_type.is_active else 'play' }}" class="me-2"></i>
+                            {{ 'Deactivate' if leave_type.is_active else 'Activate' }}
+                        </button>
+                    </form>
+                    
+                    <a href="{{ url_for('leave_management.edit_leave_type', leave_type_id=leave_type.id) }}" 
+                       class="btn btn-outline-primary w-100">
+                        <i data-feather="edit" class="me-2"></i>
+                        Edit Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Applications -->
+    {% if recent_applications %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="clock" class="me-2"></i>
+                Recent Applications ({{ leave_type.name }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Days</th>
+                            <th>Status</th>
+                            <th>Applied</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in recent_applications %}
+                        <tr>
+                            <td>
+                                <strong>{{ application.user.first_name }} {{ application.user.last_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ application.user.username }}</small>
+                            </td>
+                            <td>{{ application.start_date.strftime('%b %d, %Y') }}</td>
+                            <td>{{ application.end_date.strftime('%b %d, %Y') }}</td>
+                            <td>{{ application.total_days }} days</td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'warning' if application.status == 'Pending' else
+                                    'success' if application.status == 'Approved' else
+                                    'danger'
+                                }}">
+                                    {{ application.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ application.created_at.strftime('%b %d, %Y') }}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+</script>
+{% endblock %}

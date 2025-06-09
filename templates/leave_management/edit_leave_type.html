@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ leave_type.name }} - Leave Type{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="edit" class="me-2"></i>
+            Edit Leave Type: {{ leave_type.name }}
+        </h2>
+        <div class="btn-group">
+            <a href="{{ url_for('leave_management.view_leave_type', leave_type_id=leave_type.id) }}" 
+               class="btn btn-outline-secondary">
+                <i data-feather="eye" class="me-2"></i>
+                View Details
+            </a>
+            <a href="{{ url_for('leave_management.manage_leave_types') }}" 
+               class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="me-2"></i>
+                Back to Leave Types
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="settings" class="me-2"></i>
+                        Leave Type Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">
+                                        <strong>Leave Type Name</strong>
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ leave_type.name }}" required>
+                                    <div class="form-text">
+                                        The display name for this leave type (e.g., Annual Leave, Sick Leave)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">
+                                        <strong>Description</strong>
+                                    </label>
+                                    <textarea class="form-control" id="description" name="description" 
+                                              rows="3" placeholder="Detailed description of this leave type policy">{{ leave_type.description or '' }}</textarea>
+                                    <div class="form-text">
+                                        Optional: Provide policy details, eligibility criteria, or usage guidelines
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_accrual_rate" class="form-label">
+                                        <strong>Default Accrual Rate</strong>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="default_accrual_rate" 
+                                               name="default_accrual_rate" step="0.01" min="0" 
+                                               value="{{ leave_type.default_accrual_rate or '' }}" 
+                                               placeholder="0.00">
+                                        <span class="input-group-text">hours/year</span>
+                                    </div>
+                                    <div class="form-text">
+                                        Annual hours employees automatically earn (leave blank for no accrual)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="max_consecutive_days" class="form-label">
+                                        <strong>Max Consecutive Days</strong>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="max_consecutive_days" 
+                                               name="max_consecutive_days" min="1" 
+                                               value="{{ leave_type.max_consecutive_days or '' }}" 
+                                               placeholder="No limit">
+                                        <span class="input-group-text">days</span>
+                                    </div>
+                                    <div class="form-text">
+                                        Maximum continuous days allowed (leave blank for no limit)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" 
+                                               id="requires_approval" name="requires_approval" 
+                                               {{ 'checked' if leave_type.requires_approval else '' }}>
+                                        <label class="form-check-label" for="requires_approval">
+                                            <strong>Requires Manager Approval</strong>
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        When enabled, applications need manager approval before being granted
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" 
+                                               id="is_active" name="is_active" 
+                                               {{ 'checked' if leave_type.is_active else '' }}>
+                                        <label class="form-check-label" for="is_active">
+                                            <strong>Active Status</strong>
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        Only active leave types are available for new applications
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <small class="text-muted">
+                                    <i data-feather="info" width="16" height="16"></i>
+                                    Created: {{ leave_type.created_at.strftime('%B %d, %Y') }}
+                                    {% if leave_type.updated_at and leave_type.updated_at != leave_type.created_at %}
+                                    | Last Updated: {{ leave_type.updated_at.strftime('%B %d, %Y') }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('leave_management.view_leave_type', leave_type_id=leave_type.id) }}" 
+                                   class="btn btn-outline-secondary me-2">
+                                    <i data-feather="x" class="me-2"></i>
+                                    Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i data-feather="save" class="me-2"></i>
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i data-feather="alert-circle" class="me-2"></i>
+                        Important Notes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <strong>Accrual Rate:</strong> This sets the default for new employees. Individual employee rates can be customized in their leave balance settings.
+                    </div>
+                    
+                    <div class="alert alert-warning mb-3">
+                        <strong>Deactivating Leave Types:</strong> Employees will not be able to apply for deactivated leave types. Existing applications and balances remain unaffected.
+                    </div>
+                    
+                    {% if leave_type.requires_approval %}
+                    <div class="alert alert-secondary mb-0">
+                        <strong>Approval Required:</strong> Applications for this leave type will be routed to the employee's manager for approval before being processed.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+    
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const nameInput = document.getElementById('name');
+        
+        form.addEventListener('submit', function(e) {
+            if (!nameInput.value.trim()) {
+                e.preventDefault();
+                alert('Leave type name is required.');
+                nameInput.focus();
+                return false;
+            }
+        });
+        
+        // Auto-format numeric inputs
+        const accrualInput = document.getElementById('default_accrual_rate');
+        const maxDaysInput = document.getElementById('max_consecutive_days');
+        
+        [accrualInput, maxDaysInput].forEach(input => {
+            if (input) {
+                input.addEventListener('blur', function() {
+                    if (this.value && parseFloat(this.value) < 0) {
+                        this.value = '';
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}
