@@ -420,7 +420,7 @@ def team_timecard():
         
         if managed_dept_ids:
             # Manager can see entries from their managed departments
-            query = query.filter(User.employee_department_id.in_(managed_dept_ids))
+            query = query.filter(User.department_id.in_(managed_dept_ids))
         else:
             # Manager with no departments sees only their own entries
             query = query.filter(TimeEntry.user_id == current_user.id)
