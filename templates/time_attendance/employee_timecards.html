@@ -365,6 +365,163 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Pay Code Summary Section -->
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i data-feather="credit-card" class="me-2"></i>
+                Pay Code Summary
+                {% if selected_user_id %}
+                - {{ users|selectattr('id', 'equalto', selected_user_id|int)|first|attr('full_name') }}
+                {% else %}
+                - All Employees
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Summary Filters -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <form method="GET" class="d-flex align-items-end">
+                        <input type="hidden" name="user_id" value="{{ selected_user_id }}">
+                        <input type="hidden" name="start_date" value="{{ start_date }}">
+                        <input type="hidden" name="end_date" value="{{ end_date }}">
+                        
+                        <div class="me-3">
+                            <label class="form-label small">Group by</label>
+                            <select name="summary_group" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="pay_code" {{ 'selected' if request.args.get('summary_group', 'pay_code') == 'pay_code' }}>Pay Code</option>
+                                <option value="employee" {{ 'selected' if request.args.get('summary_group') == 'employee' }}>Employee</option>
+                                <option value="department" {{ 'selected' if request.args.get('summary_group') == 'department' }}>Department</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        Period: {{ start_date }} to {{ end_date }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Pay Code Summary Table -->
+            {% if pay_code_summary %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            {% if request.args.get('summary_group', 'pay_code') == 'pay_code' %}
+                            <th>Pay Code</th>
+                            <th>Description</th>
+                            <th>Rate (R/hour)</th>
+                            <th>Overtime Multiplier</th>
+                            <th>Total Hours</th>
+                            <th>Regular Amount</th>
+                            <th>Overtime Amount</th>
+                            <th>Total Amount</th>
+                            <th>Employees</th>
+                            {% elif request.args.get('summary_group') == 'employee' %}
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Pay Codes Used</th>
+                            <th>Total Hours</th>
+                            <th>Total Amount</th>
+                            {% elif request.args.get('summary_group') == 'department' %}
+                            <th>Department</th>
+                            <th>Manager</th>
+                            <th>Employees</th>
+                            <th>Total Hours</th>
+                            <th>Total Amount</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for summary in pay_code_summary %}
+                        <tr>
+                            {% if request.args.get('summary_group', 'pay_code') == 'pay_code' %}
+                            <td>
+                                <span class="badge bg-info">{{ summary.code }}</span>
+                            </td>
+                            <td>{{ summary.description }}</td>
+                            <td>R {{ "%.2f"|format(summary.hourly_rate) }}</td>
+                            <td>{{ "%.1fx"|format(summary.overtime_multiplier) }}</td>
+                            <td>{{ "%.2f"|format(summary.total_hours) }}h</td>
+                            <td class="text-success">R {{ "%.2f"|format(summary.regular_amount) }}</td>
+                            <td class="text-warning">R {{ "%.2f"|format(summary.overtime_amount) }}</td>
+                            <td class="fw-bold text-primary">R {{ "%.2f"|format(summary.total_amount) }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ summary.employee_count }}</span>
+                            </td>
+                            {% elif request.args.get('summary_group') == 'employee' %}
+                            <td>
+                                <strong>{{ summary.employee_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ summary.username }}</small>
+                            </td>
+                            <td>{{ summary.department_name }}</td>
+                            <td>
+                                {% for code in summary.pay_codes %}
+                                <span class="badge bg-info me-1">{{ code }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>{{ "%.2f"|format(summary.total_hours) }}h</td>
+                            <td class="fw-bold text-primary">R {{ "%.2f"|format(summary.total_amount) }}</td>
+                            {% elif request.args.get('summary_group') == 'department' %}
+                            <td>
+                                <strong>{{ summary.department_name }}</strong>
+                            </td>
+                            <td>{{ summary.manager_name or 'No Manager' }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ summary.employee_count }}</span>
+                            </td>
+                            <td>{{ "%.2f"|format(summary.total_hours) }}h</td>
+                            <td class="fw-bold text-primary">R {{ "%.2f"|format(summary.total_amount) }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Totals -->
+            <div class="row mt-3">
+                <div class="col-md-8"></div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Period Summary</h6>
+                            {% if summary_totals %}
+                            <div class="d-flex justify-content-between">
+                                <span>Total Hours:</span>
+                                <strong>{{ "%.2f"|format(summary_totals.total_hours) }}h</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Regular Pay:</span>
+                                <span class="text-success">R {{ "%.2f"|format(summary_totals.regular_amount) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Overtime Pay:</span>
+                                <span class="text-warning">R {{ "%.2f"|format(summary_totals.overtime_amount) }}</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <strong>Total Amount:</strong>
+                                <strong class="text-primary">R {{ "%.2f"|format(summary_totals.total_amount) }}</strong>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i data-feather="info" class="text-muted mb-2"></i>
+                <p class="text-muted">No pay code data available for the selected period and filters.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 <script>

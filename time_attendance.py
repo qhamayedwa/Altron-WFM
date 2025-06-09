@@ -1056,13 +1056,159 @@ def employee_timecards():
             all_users = all_users.filter(User.department_id.in_(managed_dept_ids))
         all_users = all_users.order_by(User.username).all()
         
+        # Generate pay code summary data
+        summary_group = request.args.get('summary_group', 'pay_code')
+        pay_code_summary, summary_totals = generate_pay_code_summary(
+            users, start_date_obj, end_date_obj, summary_group, is_super_user, managed_dept_ids
+        )
+        
         return render_template('time_attendance/employee_timecards.html',
                              timecard_data=pagination,
                              users=all_users,
                              selected_user_id=user_id,
                              start_date=start_date,
-                             end_date=end_date)
+                             end_date=end_date,
+                             pay_code_summary=pay_code_summary,
+                             summary_totals=summary_totals)
                              
     except Exception as e:
         flash(f'Error loading employee timecards: {str(e)}', 'danger')
         return redirect(url_for('main.dashboard'))
+
+def generate_pay_code_summary(users_list, start_date, end_date, summary_group, is_super_user, managed_dept_ids):
+    """
+    Generate accumulative pay code summary data with role-based filtering
+    """
+    try:
+        from models import PayCode, TimeEntry, User, Department
+        from sqlalchemy import func, and_
+        from collections import defaultdict
+        
+        # Initialize summary data structures
+        pay_code_data = defaultdict(lambda: {
+            'total_hours': 0,
+            'regular_amount': 0,
+            'overtime_amount': 0,
+            'total_amount': 0,
+            'employee_count': 0,
+            'employees': set()
+        })
+        
+        summary_totals = {
+            'total_hours': 0,
+            'regular_amount': 0,
+            'overtime_amount': 0,
+            'total_amount': 0
+        }
+        
+        # Get all pay codes for the filtered users
+        pay_codes_query = PayCode.query
+        if not is_super_user and managed_dept_ids:
+            # Filter pay codes by managed departments
+            pay_codes_query = pay_codes_query.filter(
+                PayCode.employee_id.in_([user.id for user in users_list])
+            )
+        
+        pay_codes = pay_codes_query.all()
+        
+        # Process each user's time entries within the date range
+        for user in users_list:
+            # Get user's pay code
+            user_pay_code = next((pc for pc in pay_codes if pc.employee_id == user.id), None)
+            if not user_pay_code:
+                continue
+                
+            # Get time entries for this user in the date range
+            time_entries = TimeEntry.query.filter(
+                and_(
+                    TimeEntry.user_id == user.id,
+                    TimeEntry.clock_in_time >= start_date,
+                    TimeEntry.clock_in_time <= end_date,
+                    TimeEntry.clock_out_time.isnot(None)
+                )
+            ).all()
+            
+            # Calculate hours and amounts for this user
+            user_total_hours = 0
+            user_regular_amount = 0
+            user_overtime_amount = 0
+            
+            for entry in time_entries:
+                if entry.total_hours:
+                    hours = entry.total_hours
+                    user_total_hours += hours
+                    
+                    # Calculate regular and overtime pay
+                    regular_hours = min(hours, 8)  # Standard 8-hour workday
+                    overtime_hours = max(0, hours - 8)
+                    
+                    regular_pay = regular_hours * user_pay_code.hourly_rate
+                    overtime_pay = overtime_hours * user_pay_code.hourly_rate * user_pay_code.overtime_multiplier
+                    
+                    user_regular_amount += regular_pay
+                    user_overtime_amount += overtime_pay
+            
+            # Add to summary data based on grouping
+            if summary_group == 'pay_code':
+                key = user_pay_code.code
+                pay_code_data[key]['code'] = user_pay_code.code
+                pay_code_data[key]['description'] = user_pay_code.description
+                pay_code_data[key]['hourly_rate'] = user_pay_code.hourly_rate
+                pay_code_data[key]['overtime_multiplier'] = user_pay_code.overtime_multiplier
+                pay_code_data[key]['total_hours'] += user_total_hours
+                pay_code_data[key]['regular_amount'] += user_regular_amount
+                pay_code_data[key]['overtime_amount'] += user_overtime_amount
+                pay_code_data[key]['total_amount'] += user_regular_amount + user_overtime_amount
+                pay_code_data[key]['employees'].add(user.id)
+                pay_code_data[key]['employee_count'] = len(pay_code_data[key]['employees'])
+                
+            elif summary_group == 'employee':
+                key = user.id
+                pay_code_data[key]['employee_name'] = user.full_name
+                pay_code_data[key]['username'] = user.username
+                pay_code_data[key]['department_name'] = user.get_department_name()
+                pay_code_data[key]['total_hours'] = user_total_hours
+                pay_code_data[key]['total_amount'] = user_regular_amount + user_overtime_amount
+                pay_code_data[key]['pay_codes'] = [user_pay_code.code] if user_pay_code else []
+                
+            elif summary_group == 'department':
+                dept_name = user.get_department_name()
+                key = dept_name
+                pay_code_data[key]['department_name'] = dept_name
+                pay_code_data[key]['manager_name'] = getattr(user.get_department(), 'manager_name', 'No Manager') if user.get_department() else 'No Manager'
+                pay_code_data[key]['total_hours'] += user_total_hours
+                pay_code_data[key]['total_amount'] += user_regular_amount + user_overtime_amount
+                pay_code_data[key]['employees'].add(user.id)
+                pay_code_data[key]['employee_count'] = len(pay_code_data[key]['employees'])
+            
+            # Add to overall totals
+            summary_totals['total_hours'] += user_total_hours
+            summary_totals['regular_amount'] += user_regular_amount
+            summary_totals['overtime_amount'] += user_overtime_amount
+            summary_totals['total_amount'] += user_regular_amount + user_overtime_amount
+        
+        # Convert to list format for template
+        summary_list = []
+        for key, data in pay_code_data.items():
+            # Create summary object with all necessary attributes
+            summary_obj = type('PayCodeSummary', (), data)()
+            summary_list.append(summary_obj)
+        
+        # Sort the summary list
+        if summary_group == 'pay_code':
+            summary_list.sort(key=lambda x: x.code)
+        elif summary_group == 'employee':
+            summary_list.sort(key=lambda x: x.employee_name)
+        elif summary_group == 'department':
+            summary_list.sort(key=lambda x: x.department_name)
+        
+        return summary_list, summary_totals
+        
+    except Exception as e:
+        print(f"Error generating pay code summary: {str(e)}")
+        return [], {
+            'total_hours': 0,
+            'regular_amount': 0,
+            'overtime_amount': 0,
+            'total_amount': 0
+        }
