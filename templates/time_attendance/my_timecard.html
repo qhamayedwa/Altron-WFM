@@ -223,7 +223,7 @@
 <script>
     // Handle break functionality with AJAX
     async function handleBreak(action) {
-        const url = action === 'start' ? '/time/start-break' : '/time/end-break';
+        const url = action === 'start' ? '/time-attendance/start-break' : '/time-attendance/end-break';
         const button = event.target.closest('button');
         const originalText = button.innerHTML;
         
