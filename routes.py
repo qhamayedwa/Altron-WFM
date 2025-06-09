@@ -420,7 +420,7 @@ def export_csv():
 @main_bp.route('/export-payroll-csv')
 @login_required
 def export_payroll_csv():
-    """Export payroll report to CSV"""
+    """Export payroll report to CSV with proper role-based filtering"""
     try:
         # Get the same data as reports page
         start_date = request.args.get('start_date')
@@ -434,15 +434,51 @@ def export_payroll_csv():
             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
 
-        # Get attendance data
-        users_with_entries = db.session.query(User).join(
-            TimeEntry, User.id == TimeEntry.user_id
-        ).filter(
-            and_(
-                TimeEntry.clock_in_time >= start_date,
-                TimeEntry.clock_in_time <= end_date + timedelta(days=1)
-            )
-        ).distinct().all()
+        # Apply role-based filtering (same logic as reports page)
+        from dashboard_management import get_managed_departments
+        
+        # Check user permissions
+        user_roles = [role.name for role in current_user.roles]
+        is_manager_or_admin = any(role in ['Manager', 'Admin', 'Super User'] for role in user_roles)
+        
+        if is_manager_or_admin:
+            # Managers see their department employees, Admins/Super Users see all
+            if 'Admin' in user_roles or 'Super User' in user_roles:
+                # Admin/Super User: get all users with time entries
+                users_with_entries = db.session.query(User).join(
+                    TimeEntry, User.id == TimeEntry.user_id
+                ).filter(
+                    and_(
+                        TimeEntry.clock_in_time >= start_date,
+                        TimeEntry.clock_in_time <= end_date + timedelta(days=1)
+                    )
+                ).distinct().all()
+            else:
+                # Manager: get only their department employees
+                managed_dept_ids = get_managed_departments(current_user.id)
+                if managed_dept_ids:
+                    users_with_entries = db.session.query(User).join(
+                        TimeEntry, User.id == TimeEntry.user_id
+                    ).filter(
+                        and_(
+                            TimeEntry.clock_in_time >= start_date,
+                            TimeEntry.clock_in_time <= end_date + timedelta(days=1),
+                            User.department_id.in_(managed_dept_ids)
+                        )
+                    ).distinct().all()
+                else:
+                    users_with_entries = []
+        else:
+            # Employee: only see their own data
+            users_with_entries = db.session.query(User).join(
+                TimeEntry, User.id == TimeEntry.user_id
+            ).filter(
+                and_(
+                    TimeEntry.clock_in_time >= start_date,
+                    TimeEntry.clock_in_time <= end_date + timedelta(days=1),
+                    User.id == current_user.id
+                )
+            ).distinct().all()
 
         # Create CSV content
         output = io.StringIO()
@@ -466,8 +502,10 @@ def export_payroll_csv():
             overtime_hours = max(0, total_hours - 40)
             gross_pay = total_hours * 15.0  # R15/hour base rate
             
+            user_name = f"{user.first_name} {user.last_name}".strip() if hasattr(user, 'first_name') and user.first_name else user.username
+            
             writer.writerow([
-                user.username, 
+                user_name, 
                 start_date.strftime('%Y-%m-%d'), 
                 end_date.strftime('%Y-%m-%d'), 
                 regular_hours, 
@@ -480,7 +518,10 @@ def export_payroll_csv():
         output.seek(0)
         response = make_response(output.getvalue())
         response.headers['Content-Type'] = 'text/csv'
-        response.headers['Content-Disposition'] = f'attachment; filename=payroll_report_{start_date}_{end_date}.csv'
+        
+        # Add role context to filename
+        role_context = "admin" if 'Admin' in user_roles or 'Super User' in user_roles else ("manager" if is_manager_or_admin else "employee")
+        response.headers['Content-Disposition'] = f'attachment; filename={role_context}_payroll_report_{start_date}_{end_date}.csv'
         
         return response
         
