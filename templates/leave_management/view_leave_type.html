@@ -220,13 +220,13 @@
                         {% for application in recent_applications %}
                         <tr>
                             <td>
-                                <strong>{{ application.user.first_name }} {{ application.user.last_name }}</strong>
+                                <strong>{{ application.employee.first_name }} {{ application.employee.last_name }}</strong>
                                 <br>
-                                <small class="text-muted">{{ application.user.username }}</small>
+                                <small class="text-muted">{{ application.employee.username }}</small>
                             </td>
                             <td>{{ application.start_date.strftime('%b %d, %Y') }}</td>
                             <td>{{ application.end_date.strftime('%b %d, %Y') }}</td>
-                            <td>{{ application.total_days }} days</td>
+                            <td>{{ application.total_days() }} days</td>
                             <td>
                                 <span class="badge bg-{{ 
                                     'warning' if application.status == 'Pending' else
