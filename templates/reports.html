@@ -80,7 +80,7 @@
                 <div class="card-body text-center">
                     <i data-feather="clock" class="mb-2" style="width: 32px; height: 32px; color: #0d6efd;"></i>
                     <h5 class="card-title">Total Hours</h5>
-                    <h3 class="text-primary">{{ total_hours or 0 }}</h3>
+                    <h3 class="text-primary">{{ "%.2f"|format(total_hours) if total_hours else "0.00" }}</h3>
                     <small class="text-muted">Current Period</small>
                 </div>
             </div>
@@ -90,7 +90,7 @@
                 <div class="card-body text-center">
                     <i data-feather="trending-up" class="mb-2" style="width: 32px; height: 32px; color: #198754;"></i>
                     <h5 class="card-title">Overtime Hours</h5>
-                    <h3 class="text-success">{{ overtime_hours or 0 }}</h3>
+                    <h3 class="text-success">{{ "%.2f"|format(overtime_hours) if overtime_hours else "0.00" }}</h3>
                     <small class="text-muted">Extra Time</small>
                 </div>
             </div>
@@ -149,8 +149,8 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ summary.total_days }}</td>
-                                    <td>{{ "%.1f"|format(summary.total_hours) }} hrs</td>
-                                    <td>{{ "%.1f"|format(summary.avg_hours) }} hrs</td>
+                                    <td>{{ "%.2f"|format(summary.total_hours) }} hrs</td>
+                                    <td>{{ "%.2f"|format(summary.avg_hours) }} hrs</td>
                                     <td>
                                         {% if summary.total_hours > 160 %}
                                             <span class="badge bg-success">High Activity</span>
@@ -197,9 +197,9 @@
                                 {% for period in pay_period_summary %}
                                 <tr>
                                     <td>{{ period.period_start.strftime('%Y-%m-%d') }} - {{ period.period_end.strftime('%Y-%m-%d') }}</td>
-                                    <td>{{ period.regular_hours }} hrs</td>
-                                    <td>{{ period.overtime_hours }} hrs</td>
-                                    <td>{{ period.total_hours }} hrs</td>
+                                    <td>{{ "%.2f"|format(period.regular_hours) }} hrs</td>
+                                    <td>{{ "%.2f"|format(period.overtime_hours) }} hrs</td>
+                                    <td>{{ "%.2f"|format(period.total_hours) }} hrs</td>
                                     <td>R{{ "%.2f"|format(period.gross_pay) }}</td>
                                 </tr>
                                 {% endfor %}
