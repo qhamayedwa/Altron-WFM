@@ -1,49 +1,188 @@
 {% extends "base.html" %}
 
-{% block title %}Team Timecard - Flask PostgreSQL App{% endblock %}
+{% block title %}Team Time Card Management - Flask PostgreSQL App{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container-fluid py-4">
+    <!-- Header with Statistics -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-            <i data-feather="users" class="me-2"></i>
-            Team Timecard Management
-        </h2>
-        <a href="{{ url_for('time_attendance.time_exceptions') }}" class="btn btn-warning">
-            <i data-feather="alert-triangle" class="me-2"></i>
-            View Exceptions
-        </a>
+        <div>
+            <h2>
+                <i data-feather="users" class="me-2"></i>
+                Team Time Card Management
+            </h2>
+            <p class="text-muted mb-0">
+                {{ summary_stats.total_entries }} entries | {{ summary_stats.total_hours }} total hours | {{ summary_stats.overtime_hours }} overtime hours
+            </p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('time_attendance.team_calendar') }}" class="btn btn-outline-secondary">
+                <i data-feather="calendar" class="me-2"></i>Calendar View
+            </a>
+            <a href="{{ url_for('time_attendance.time_exceptions') }}" class="btn btn-outline-warning">
+                <i data-feather="alert-triangle" class="me-2"></i>Exceptions
+            </a>
+            <button class="btn btn-primary" onclick="exportTimeCards()">
+                <i data-feather="download" class="me-2"></i>Export
+            </button>
+        </div>
     </div>
 
-    <!-- Filters -->
+    <!-- Summary Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-primary">{{ summary_stats.total_entries }}</h4>
+                    <small class="text-muted">Total Entries</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-success">{{ "%.2f"|format(summary_stats.total_hours) }}</h4>
+                    <small class="text-muted">Total Hours</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-warning">{{ "%.2f"|format(summary_stats.overtime_hours) }}</h4>
+                    <small class="text-muted">Overtime Hours</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-info">{{ "%.2f"|format(summary_stats.avg_hours_per_day) }}</h4>
+                    <small class="text-muted">Avg Hours/Day</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Search and Filters -->
     <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="filter" class="me-2"></i>
+                Search & Filter Time Cards
+            </h5>
+        </div>
         <div class="card-body">
-            <form method="GET" class="row g-3">
-                <div class="col-md-3">
-                    <label for="user_id" class="form-label">Employee</label>
-                    <select class="form-select" id="user_id" name="user_id">
-                        <option value="">All Employees</option>
-                        {% for user in users %}
-                        <option value="{{ user.id }}" {% if user.id == selected_user_id %}selected{% endif %}>
-                            {{ user.username }} - {{ user.full_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
+            <form method="GET" id="filterForm">
+                <!-- Quick Filter Buttons -->
+                <div class="mb-3">
+                    <label class="form-label">Quick Filters</label>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setQuickFilter('today')">Today</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setQuickFilter('this_week')">This Week</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setQuickFilter('this_month')">This Month</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllFilters()">Clear All</button>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label for="start_date" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="start_date" name="start_date" 
-                           value="{{ start_date or '' }}">
+
+                <!-- Search Bar -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Search Employees</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i data-feather="search"></i></span>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search_query or '' }}" 
+                                   placeholder="Search by name, username, email, or notes...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="per_page" class="form-label">Results Per Page</label>
+                        <select class="form-select" id="per_page" name="per_page">
+                            <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label for="end_date" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="end_date" name="end_date" 
-                           value="{{ end_date or '' }}">
+
+                <!-- Filter Row 1 -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label for="user_id" class="form-label">Employee</label>
+                        <select class="form-select" id="user_id" name="user_id">
+                            <option value="">All Employees</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" 
+                                    {% if selected_user_id == user.id %}selected{% endif %}>
+                                {{ user.username }} - {{ user.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="role" class="form-label">Employee Role</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="">All Roles</option>
+                            {% for role in roles %}
+                            <option value="{{ role.name }}" 
+                                    {% if selected_role == role.name %}selected{% endif %}>
+                                {{ role.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="department" class="form-label">Department</label>
+                        <select class="form-select" id="department" name="department">
+                            <option value="">All Departments</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" 
+                                    {% if selected_department == dept.id %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Entry Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="Open" {% if selected_status == 'Open' %}selected{% endif %}>Open</option>
+                            <option value="Closed" {% if selected_status == 'Closed' %}selected{% endif %}>Closed</option>
+                            <option value="Exception" {% if selected_status == 'Exception' %}selected{% endif %}>Exception</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">Filter</button>
-                    <a href="{{ url_for('time_attendance.team_timecard') }}" class="btn btn-outline-secondary">Clear</a>
+
+                <!-- Filter Row 2 - Date Range -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" 
+                               value="{{ start_date or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" 
+                               value="{{ end_date or '' }}">
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i data-feather="filter" class="me-1"></i>Apply Filters
+                        </button>
+                        <a href="{{ url_for('time_attendance.team_timecard') }}" class="btn btn-outline-secondary me-2">
+                            <i data-feather="x" class="me-1"></i>Clear All
+                        </a>
+                        <button type="button" class="btn btn-outline-info" onclick="saveFilterPreset()">
+                            <i data-feather="bookmark" class="me-1"></i>Save Filter
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Hidden field for quick filters -->
+                <input type="hidden" name="quick_filter" id="quick_filter" value="{{ quick_filter or '' }}">
             </form>
         </div>
     </div>
@@ -145,13 +284,23 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
+            <!-- Enhanced Pagination with All Filters -->
             {% if time_entries.pages > 1 %}
             <nav aria-label="Team timecard pagination">
                 <ul class="pagination justify-content-center mt-3">
                     {% if time_entries.has_prev %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('time_attendance.team_timecard', page=time_entries.prev_num, user_id=selected_user_id, start_date=start_date, end_date=end_date) }}">Previous</a>
+                        <a class="page-link" href="{{ url_for('time_attendance.team_timecard', 
+                           page=time_entries.prev_num, 
+                           user_id=selected_user_id, 
+                           role=selected_role,
+                           department=selected_department,
+                           status=selected_status,
+                           search=search_query,
+                           start_date=start_date, 
+                           end_date=end_date,
+                           per_page=per_page,
+                           quick_filter=quick_filter) }}">Previous</a>
                     </li>
                     {% endif %}
 
@@ -159,7 +308,17 @@
                         {% if page_num %}
                             {% if page_num != time_entries.page %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('time_attendance.team_timecard', page=page_num, user_id=selected_user_id, start_date=start_date, end_date=end_date) }}">{{ page_num }}</a>
+                                <a class="page-link" href="{{ url_for('time_attendance.team_timecard', 
+                                   page=page_num, 
+                                   user_id=selected_user_id, 
+                                   role=selected_role,
+                                   department=selected_department,
+                                   status=selected_status,
+                                   search=search_query,
+                                   start_date=start_date, 
+                                   end_date=end_date,
+                                   per_page=per_page,
+                                   quick_filter=quick_filter) }}">{{ page_num }}</a>
                             </li>
                             {% else %}
                             <li class="page-item active">
@@ -175,10 +334,27 @@
 
                     {% if time_entries.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('time_attendance.team_timecard', page=time_entries.next_num, user_id=selected_user_id, start_date=start_date, end_date=end_date) }}">Next</a>
+                        <a class="page-link" href="{{ url_for('time_attendance.team_timecard', 
+                           page=time_entries.next_num, 
+                           user_id=selected_user_id, 
+                           role=selected_role,
+                           department=selected_department,
+                           status=selected_status,
+                           search=search_query,
+                           start_date=start_date, 
+                           end_date=end_date,
+                           per_page=per_page,
+                           quick_filter=quick_filter) }}">Next</a>
                     </li>
                     {% endif %}
                 </ul>
+                
+                <!-- Pagination Info -->
+                <div class="text-center text-muted mt-2">
+                    Showing {{ ((time_entries.page - 1) * time_entries.per_page) + 1 }} to 
+                    {{ time_entries.page * time_entries.per_page if time_entries.page * time_entries.per_page < time_entries.total else time_entries.total }} 
+                    of {{ time_entries.total }} entries
+                </div>
             </nav>
             {% endif %}
             {% else %}
@@ -212,6 +388,88 @@
 <script>
     feather.replace();
 
+    // Enhanced search and filtering functionality
+    function setQuickFilter(filterType) {
+        document.getElementById('quick_filter').value = filterType;
+        
+        // Clear other date inputs when using quick filters
+        if (filterType !== '') {
+            document.getElementById('start_date').value = '';
+            document.getElementById('end_date').value = '';
+        }
+        
+        // Submit the form
+        document.getElementById('filterForm').submit();
+    }
+
+    function clearAllFilters() {
+        // Clear all form fields
+        document.getElementById('filterForm').reset();
+        
+        // Clear quick filter
+        document.getElementById('quick_filter').value = '';
+        
+        // Redirect to clean URL
+        window.location.href = '{{ url_for("time_attendance.team_timecard") }}';
+    }
+
+    function saveFilterPreset() {
+        const form = document.getElementById('filterForm');
+        const formData = new FormData(form);
+        const filterParams = {};
+        
+        for (let [key, value] of formData.entries()) {
+            if (value) {
+                filterParams[key] = value;
+            }
+        }
+        
+        const presetName = prompt('Enter a name for this filter preset:');
+        if (presetName) {
+            // Save to localStorage
+            const savedFilters = JSON.parse(localStorage.getItem('timecardFilters') || '{}');
+            savedFilters[presetName] = filterParams;
+            localStorage.setItem('timecardFilters', JSON.stringify(savedFilters));
+            
+            showMessage('Filter preset saved successfully!', 'success');
+            loadFilterPresets();
+        }
+    }
+
+    // Real-time search functionality
+    let searchTimeout;
+    document.getElementById('search').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            // Auto-submit after 1 second of no typing
+            if (this.value.length >= 3 || this.value.length === 0) {
+                document.getElementById('filterForm').submit();
+            }
+        }, 1000);
+    });
+
+    // Results per page change handler
+    document.getElementById('per_page').addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
+
+    // Role-based filtering functions
+    function filterByRole(roleName) {
+        document.getElementById('role').value = roleName;
+        document.getElementById('filterForm').submit();
+    }
+
+    function filterByDepartment(deptId) {
+        document.getElementById('department').value = deptId;
+        document.getElementById('filterForm').submit();
+    }
+
+    function filterByStatus(status) {
+        document.getElementById('status').value = status;
+        document.getElementById('filterForm').submit();
+    }
+
+    // Time entry management functions
     async function approveEntry(entryId) {
         if (!confirm('Are you sure you want to approve this time entry?')) {
             return;
@@ -228,13 +486,13 @@
             const data = await response.json();
             
             if (data.success) {
-                flashMessages.show(data.message, 'success');
+                showMessage(data.message, 'success');
                 setTimeout(() => location.reload(), 1000);
             } else {
-                flashMessages.show(data.message, 'danger');
+                showMessage(data.message, 'danger');
             }
         } catch (error) {
-            flashMessages.show('Error approving entry', 'danger');
+            showMessage('Error approving entry', 'danger');
         }
     }
 
@@ -254,48 +512,219 @@
             const data = await response.json();
             
             if (data.success) {
-                flashMessages.show(data.message, 'success');
+                showMessage(data.message, 'success');
                 setTimeout(() => location.reload(), 1000);
             } else {
-                flashMessages.show(data.message, 'danger');
+                showMessage(data.message, 'danger');
             }
         } catch (error) {
-            flashMessages.show('Error approving overtime', 'danger');
+            showMessage('Error approving overtime', 'danger');
         }
     }
 
-    function viewDetails(entryId) {
-        // This would typically fetch detailed information about the time entry
-        // For now, we'll show a placeholder modal
-        document.getElementById('entryDetailsContent').innerHTML = `
-            <div class="text-center">
-                <i data-feather="clock" class="text-muted mb-3" width="48" height="48"></i>
-                <h5>Time Entry Details</h5>
-                <p class="text-muted">Detailed view functionality will be implemented in future updates.</p>
-                <p>Entry ID: ${entryId}</p>
-            </div>
+    async function viewDetails(entryId) {
+        try {
+            const response = await fetch(`/time/entry-details/${entryId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('entryDetailsContent').innerHTML = data.html;
+                new bootstrap.Modal(document.getElementById('entryDetailsModal')).show();
+            } else {
+                // Fallback detailed view
+                document.getElementById('entryDetailsContent').innerHTML = `
+                    <div class="text-center">
+                        <i data-feather="clock" class="text-muted mb-3" width="48" height="48"></i>
+                        <h5>Time Entry Details</h5>
+                        <p class="text-muted">Entry ID: ${entryId}</p>
+                        <p class="text-muted">Detailed view will load entry specifics</p>
+                    </div>
+                `;
+                feather.replace();
+                new bootstrap.Modal(document.getElementById('entryDetailsModal')).show();
+            }
+        } catch (error) {
+            showMessage('Error loading entry details', 'danger');
+        }
+    }
+
+    function exportTimeCards() {
+        const form = document.getElementById('filterForm');
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+        
+        // Add export parameter
+        params.append('export', 'csv');
+        
+        // Create download link
+        const downloadUrl = '/time/team-timecard?' + params.toString();
+        window.open(downloadUrl, '_blank');
+    }
+
+    // Utility function to show messages
+    function showMessage(message, type) {
+        // Create alert div
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
-        feather.replace();
-        new bootstrap.Modal(document.getElementById('entryDetailsModal')).show();
+        // Insert into body
+        document.body.appendChild(alertDiv);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
     }
 
-    // Set default date range to current week
+    // Initialize and enhance UI
     document.addEventListener('DOMContentLoaded', function() {
-        const startDateInput = document.getElementById('start_date');
-        const endDateInput = document.getElementById('end_date');
+        // Load saved filter presets
+        loadFilterPresets();
         
-        if (!startDateInput.value && !endDateInput.value) {
-            const today = new Date();
-            const weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
-            
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
-            
-            startDateInput.value = weekStart.toISOString().split('T')[0];
-            endDateInput.value = weekEnd.toISOString().split('T')[0];
+        // Set active quick filter button
+        const activeQuickFilter = '{{ quick_filter }}';
+        if (activeQuickFilter) {
+            const activeBtn = document.querySelector(`[onclick="setQuickFilter('${activeQuickFilter}')"]`);
+            if (activeBtn) {
+                activeBtn.classList.remove('btn-outline-primary');
+                activeBtn.classList.add('btn-primary');
+            }
         }
+
+        // Highlight active role filter
+        const activeRole = '{{ selected_role }}';
+        if (activeRole) {
+            const roleDropdown = document.getElementById('role');
+            roleDropdown.style.borderColor = '#007bff';
+            roleDropdown.style.boxShadow = '0 0 0 0.2rem rgba(0,123,255,.25)';
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+F to focus search
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('search').focus();
+            }
+            
+            // Escape to clear filters
+            if (e.key === 'Escape') {
+                clearAllFilters();
+            }
+        });
+
+        // Auto-refresh data every 5 minutes
+        setInterval(() => {
+            if (document.querySelector('.badge:contains("Active")')) {
+                location.reload();
+            }
+        }, 300000); // 5 minutes
+    });
+
+    function loadFilterPresets() {
+        const savedFilters = JSON.parse(localStorage.getItem('timecardFilters') || '{}');
+        
+        if (Object.keys(savedFilters).length > 0) {
+            // Check if preset dropdown already exists
+            if (document.getElementById('presetSelect')) {
+                return;
+            }
+
+            const presetContainer = document.createElement('div');
+            presetContainer.className = 'col-md-3 mb-3';
+            presetContainer.innerHTML = `
+                <label class="form-label">Saved Filters</label>
+                <select class="form-select" id="presetSelect">
+                    <option value="">Select saved filter...</option>
+                </select>
+            `;
+            
+            const presetSelect = presetContainer.querySelector('select');
+            
+            Object.keys(savedFilters).forEach(presetName => {
+                const option = document.createElement('option');
+                option.value = presetName;
+                option.textContent = presetName;
+                presetSelect.appendChild(option);
+            });
+            
+            presetSelect.addEventListener('change', function() {
+                if (this.value) {
+                    const preset = savedFilters[this.value];
+                    Object.keys(preset).forEach(key => {
+                        const field = document.getElementById(key);
+                        if (field) {
+                            field.value = preset[key];
+                        }
+                    });
+                    
+                    document.getElementById('filterForm').submit();
+                }
+            });
+            
+            // Insert after results per page
+            const perPageCol = document.querySelector('#per_page').parentElement;
+            perPageCol.parentElement.insertBefore(presetContainer, perPageCol.nextSibling);
+        }
+    }
+
+    // Add table sorting functionality
+    function sortTable(columnIndex, header) {
+        const table = document.querySelector('table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        const isAscending = !header.classList.contains('sort-asc');
+        
+        // Remove existing sort classes
+        document.querySelectorAll('th').forEach(th => {
+            th.classList.remove('sort-asc', 'sort-desc');
+        });
+        
+        // Add sort class to current header
+        header.classList.add(isAscending ? 'sort-asc' : 'sort-desc');
+        
+        // Sort rows
+        rows.sort((a, b) => {
+            const aText = a.cells[columnIndex].textContent.trim();
+            const bText = b.cells[columnIndex].textContent.trim();
+            
+            // Check if numeric
+            const aNum = parseFloat(aText);
+            const bNum = parseFloat(bText);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return isAscending ? aNum - bNum : bNum - aNum;
+            }
+            
+            // Text comparison
+            return isAscending ? aText.localeCompare(bText) : bText.localeCompare(aText);
+        });
+        
+        // Re-append sorted rows
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Add sort icons to table headers
+    document.addEventListener('DOMContentLoaded', function() {
+        const headers = document.querySelectorAll('th');
+        headers.forEach((header, index) => {
+            if (index < headers.length - 1) { // Skip actions column
+                header.style.cursor = 'pointer';
+                header.title = 'Click to sort';
+                header.addEventListener('click', () => sortTable(index, header));
+            }
+        });
     });
 </script>
 {% endblock %}

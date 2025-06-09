@@ -374,62 +374,163 @@ def current_status():
 @time_attendance_bp.route('/team-timecard')
 @role_required('Manager', 'Admin', 'Super User')
 def team_timecard():
-    """View team members' time cards"""
+    """Enhanced team time card management with comprehensive search and filtering"""
     page = request.args.get('page', 1, type=int)
-    per_page = 20
-    user_id = request.args.get('user_id', type=int)
+    per_page = request.args.get('per_page', 20, type=int)
     
-    # Get date range filter
+    # Enhanced filter parameters
+    user_id = request.args.get('user_id', type=int)
+    role_filter = request.args.get('role')
+    department_filter = request.args.get('department', type=int)
+    status_filter = request.args.get('status')
+    search_query = request.args.get('search', '').strip()
+    
+    # Date range filters
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
-    # Build query with joins to include user and department information
-    from sqlalchemy.orm import joinedload
-    query = TimeEntry.query.options(joinedload(TimeEntry.employee))
+    # Quick filters
+    quick_filter = request.args.get('quick_filter')
+    if quick_filter == 'today':
+        start_date = date.today().strftime('%Y-%m-%d')
+        end_date = start_date
+    elif quick_filter == 'this_week':
+        today = date.today()
+        start_date = (today - timedelta(days=today.weekday())).strftime('%Y-%m-%d')
+        end_date = (today + timedelta(days=6-today.weekday())).strftime('%Y-%m-%d')
+    elif quick_filter == 'this_month':
+        today = date.today()
+        start_date = today.replace(day=1).strftime('%Y-%m-%d')
+        end_date = today.strftime('%Y-%m-%d')
     
-    # Apply department filtering for managers
+    # Build base query with joins
+    from sqlalchemy.orm import joinedload
+    from models import Role, Department
+    
+    query = TimeEntry.query.options(
+        joinedload(TimeEntry.employee).joinedload(User.roles),
+        joinedload(TimeEntry.employee).joinedload(User.employee_department)
+    ).join(User, TimeEntry.user_id == User.id)
+    
+    # Apply department-based access control for managers
     if current_user.has_role('Manager') and not current_user.has_role('Super User'):
-        if hasattr(current_user, 'department_id') and current_user.department_id:
-            # Manager can only see their department's entries
-            query = query.join(User, TimeEntry.user_id == User.id).filter(
-                User.department_id == current_user.department_id
-            )
+        # Get departments this manager can access
+        from dashboard_management import get_managed_departments
+        managed_dept_ids = get_managed_departments(current_user.id)
+        
+        if managed_dept_ids:
+            # Manager can see entries from their managed departments
+            query = query.filter(User.employee_department_id.in_(managed_dept_ids))
         else:
-            # Manager with no department sees only their own entries
+            # Manager with no departments sees only their own entries
             query = query.filter(TimeEntry.user_id == current_user.id)
     
-    # Filter by user if specified
+    # Apply filters
     if user_id:
         query = query.filter(TimeEntry.user_id == user_id)
     
-    # Filter by date range
-    if start_date:
-        query = query.filter(TimeEntry.clock_in_time >= datetime.strptime(start_date, '%Y-%m-%d'))
-    if end_date:
-        query = query.filter(TimeEntry.clock_in_time <= datetime.strptime(end_date, '%Y-%m-%d'))
+    if role_filter:
+        query = query.join(User.roles).filter(Role.name == role_filter)
     
+    if department_filter:
+        query = query.filter(User.employee_department_id == department_filter)
+    
+    if status_filter:
+        query = query.filter(TimeEntry.status == status_filter)
+    
+    # Search functionality
+    if search_query:
+        search_terms = search_query.split()
+        for term in search_terms:
+            query = query.filter(
+                or_(
+                    User.username.ilike(f'%{term}%'),
+                    User.first_name.ilike(f'%{term}%'),
+                    User.last_name.ilike(f'%{term}%'),
+                    User.email.ilike(f'%{term}%'),
+                    TimeEntry.notes.ilike(f'%{term}%')
+                )
+            )
+    
+    # Date range filtering
+    if start_date:
+        try:
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(TimeEntry.clock_in_time >= start_dt)
+        except ValueError:
+            pass
+    
+    if end_date:
+        try:
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(TimeEntry.clock_in_time < end_dt)
+        except ValueError:
+            pass
+    
+    # Get total count for statistics
+    total_entries = query.count()
+    
+    # Paginate results
     time_entries = query.order_by(TimeEntry.clock_in_time.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
-    # Get users for filter dropdown - restrict to department for managers
+    # Get filter options based on access rights
     if current_user.has_role('Manager') and not current_user.has_role('Super User'):
-        if hasattr(current_user, 'department_id') and current_user.department_id:
-            users = User.query.filter_by(
-                is_active=True, 
-                department_id=current_user.department_id
+        # Managers see limited scope
+        from dashboard_management import get_managed_departments
+        managed_dept_ids = get_managed_departments(current_user.id)
+        
+        if managed_dept_ids:
+            users = User.query.filter(
+                User.is_active == True,
+                User.employee_department_id.in_(managed_dept_ids)
             ).order_by(User.username).all()
+            
+            departments = Department.query.filter(
+                Department.id.in_(managed_dept_ids)
+            ).order_by(Department.name).all()
         else:
-            users = [current_user]  # Manager with no department sees only themselves
+            users = [current_user]
+            departments = []
     else:
+        # Super Users and Admins see all
         users = User.query.filter_by(is_active=True).order_by(User.username).all()
+        departments = Department.query.order_by(Department.name).all()
+    
+    # Get all roles for filtering
+    roles = Role.query.order_by(Role.name).all()
+    
+    # Calculate summary statistics
+    summary_stats = {
+        'total_entries': total_entries,
+        'total_hours': 0,
+        'avg_hours_per_day': 0,
+        'overtime_hours': 0
+    }
+    
+    # Calculate statistics from current query results
+    if time_entries.items:
+        total_hours = sum(entry.total_hours for entry in time_entries.items if entry.total_hours)
+        summary_stats['total_hours'] = round(total_hours, 2)
+        summary_stats['avg_hours_per_day'] = round(total_hours / len(time_entries.items), 2) if time_entries.items else 0
+        summary_stats['overtime_hours'] = round(sum(entry.overtime_hours for entry in time_entries.items), 2)
     
     return render_template('time_attendance/team_timecard.html',
                          time_entries=time_entries,
                          users=users,
+                         roles=roles,
+                         departments=departments,
+                         summary_stats=summary_stats,
                          selected_user_id=user_id,
+                         selected_role=role_filter,
+                         selected_department=department_filter,
+                         selected_status=status_filter,
+                         search_query=search_query,
                          start_date=start_date,
-                         end_date=end_date)
+                         end_date=end_date,
+                         quick_filter=quick_filter,
+                         per_page=per_page)
 
 @time_attendance_bp.route('/team-calendar')
 @role_required('Manager', 'Admin', 'Super User')
