@@ -59,6 +59,29 @@
         </div>
     </div>
 
+    <!-- Batch Summary -->
+    {% if batch_stats %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0"><i data-feather="users" width="16" height="16"></i> Batch Schedules Summary</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for batch_id, count in batch_stats.items() %}
+                <div class="col-md-4 mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">Batch {{ batch_id[:8] }}...</small>
+                            <br><span class="badge bg-info">{{ count }} employees</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Schedules Table -->
     {% if schedules.items %}
     <div class="card">
@@ -104,13 +127,16 @@
                             </td>
                             <td>
                                 {% if schedule.batch_id %}
-                                    <span class="badge bg-info" title="Batch Schedule">
+                                    <span class="badge bg-info" title="Batch Schedule - {{ batch_stats.get(schedule.batch_id, 1) }} employees">
                                         <i data-feather="users" width="12" height="12"></i>
-                                        Batch
+                                        Batch ({{ batch_stats.get(schedule.batch_id, 1) }})
                                     </span>
-                                    <br><small class="text-muted">{{ schedule.batch_id[:8] }}...</small>
+                                    <br><small class="text-muted">ID: {{ schedule.batch_id[:8] }}...</small>
                                 {% else %}
-                                    <span class="badge bg-secondary">Individual</span>
+                                    <span class="badge bg-secondary">
+                                        <i data-feather="user" width="12" height="12"></i>
+                                        Individual
+                                    </span>
                                 {% endif %}
                             </td>
                             <td>{{ schedule.assigned_by.username }}</td>

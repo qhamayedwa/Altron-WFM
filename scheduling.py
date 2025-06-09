@@ -218,7 +218,8 @@ def manage_schedules():
                          selected_user_id=user_id,
                          selected_shift_type_id=shift_type_id,
                          start_date=start_date,
-                         end_date=end_date)
+                         end_date=end_date,
+                         batch_stats=batch_stats)
 
 @scheduling_bp.route('/schedules/create', methods=['GET', 'POST'])
 @role_required('Manager', 'Admin', 'Super User')
