@@ -107,17 +107,18 @@ def payroll_processing():
                     pay_code_breakdown[code_name]['hours'] += hours
                     pay_code_breakdown[code_name]['amount'] = pay_code_breakdown[code_name]['hours'] * pay_code_breakdown[code_name]['rate']
                 
-                # Calculate overtime breakdown
-                total_hours = sum([breakdown['hours'] for breakdown in pay_code_breakdown.values()])
-                regular_hours = min(total_hours, 40)
-                ot_15_hours = max(0, min(total_hours - 40, 8))  # First 8 hours over 40
-                ot_20_hours = max(0, total_hours - 48)  # Hours over 48
-                
                 # Calculate gross pay from pay code breakdown amounts
                 calculated_gross_pay = sum([breakdown['amount'] for breakdown in pay_code_breakdown.values()])
                 
-                # Apply overtime rates if applicable
-                if ot_15_hours > 0 or ot_20_hours > 0:
+                # Calculate overtime breakdown for reporting (based on total hours)
+                total_hours = sum([breakdown['hours'] for breakdown in pay_code_breakdown.values()])
+                
+                # If all hours are REGULAR pay code, apply automatic overtime calculation
+                if len(pay_code_breakdown) == 1 and 'REGULAR' in pay_code_breakdown:
+                    regular_hours = min(total_hours, 40)
+                    ot_15_hours = max(0, min(total_hours - 40, 8))  # First 8 hours over 40
+                    ot_20_hours = max(0, total_hours - 48)  # Hours over 48
+                    
                     base_rate = 150.0  # Base hourly rate in ZAR
                     overtime_15_rate = base_rate * 1.5  # Time and a half
                     overtime_20_rate = base_rate * 2.0  # Double time
@@ -127,6 +128,11 @@ def payroll_processing():
                     ot_15_pay = ot_15_hours * overtime_15_rate
                     ot_20_pay = ot_20_hours * overtime_20_rate
                     calculated_gross_pay = regular_pay + ot_15_pay + ot_20_pay
+                else:
+                    # Use individual pay code calculations
+                    regular_hours = pay_code_breakdown.get('REGULAR', {}).get('hours', 0)
+                    ot_15_hours = pay_code_breakdown.get('OVERTIME', {}).get('hours', 0)
+                    ot_20_hours = pay_code_breakdown.get('DT', {}).get('hours', 0)
                 
                 employee_payroll = {
                     'employee_id': employee.id,
