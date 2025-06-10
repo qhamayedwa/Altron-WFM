@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}AI Schedule Results - WFM{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i data-feather="cpu" class="me-2"></i>
+            AI-Generated Schedule Results
+        </h2>
+        <div class="btn-group">
+            <a href="{{ url_for('ai_scheduling.generate_schedule') }}" class="btn btn-outline-primary">
+                <i data-feather="refresh-cw" class="me-2"></i>
+                Generate New Schedule
+            </a>
+            <a href="{{ url_for('ai_scheduling.ai_dashboard') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="me-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Optimization Metrics -->
+    {% if metrics %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="trending-up" class="me-2"></i>
+                Optimization Metrics
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded">
+                        <div class="h4 text-success mb-1">{{ metrics.get('optimization_score', 'N/A') }}%</div>
+                        <small class="text-muted">Optimization Score</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded">
+                        <div class="h4 text-info mb-1">{{ metrics.get('coverage_percentage', 'N/A') }}%</div>
+                        <small class="text-muted">Coverage Rate</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded">
+                        <div class="h4 text-warning mb-1">{{ metrics.get('cost_efficiency', 'N/A') }}%</div>
+                        <small class="text-muted">Cost Efficiency</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded">
+                        <div class="h4 text-primary mb-1">{{ metrics.get('employee_satisfaction', 'N/A') }}%</div>
+                        <small class="text-muted">Employee Satisfaction</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Coverage Analysis -->
+    {% if coverage %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i data-feather="bar-chart-2" class="me-2"></i>
+                Coverage Analysis
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Time Slot</th>
+                            <th>Required Staff</th>
+                            <th>Scheduled Staff</th>
+                            <th>Coverage Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in coverage %}
+                        <tr>
+                            <td>{{ slot.get('time_slot', 'Unknown') }}</td>
+                            <td>{{ slot.get('required', 0) }}</td>
+                            <td>{{ slot.get('scheduled', 0) }}</td>
+                            <td>
+                                {% set coverage_pct = (slot.get('scheduled', 0) / slot.get('required', 1) * 100) if slot.get('required', 0) > 0 else 0 %}
+                                {% if coverage_pct >= 100 %}
+                                <span class="badge bg-success">Fully Covered</span>
+                                {% elif coverage_pct >= 80 %}
+                                <span class="badge bg-warning">Adequate</span>
+                                {% else %}
+                                <span class="badge bg-danger">Under-staffed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No coverage data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Schedule Recommendations -->
+    {% if recommendations %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i data-feather="calendar" class="me-2"></i>
+                Schedule Recommendations
+            </h5>
+            <button class="btn btn-success btn-sm" onclick="applySchedule()">
+                <i data-feather="check" class="me-2"></i>
+                Apply Schedule
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Date</th>
+                            <th>Shift</th>
+                            <th>Hours</th>
+                            <th>Confidence</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in recommendations %}
+                        <tr>
+                            <td>
+                                <strong>{{ rec.get('employee_name', 'Unknown') }}</strong>
+                                <br><small class="text-muted">{{ rec.get('employee_id', 'N/A') }}</small>
+                            </td>
+                            <td>{{ rec.get('department', 'N/A') }}</td>
+                            <td>{{ rec.get('date', 'N/A') }}</td>
+                            <td>
+                                {{ rec.get('start_time', 'N/A') }} - {{ rec.get('end_time', 'N/A') }}
+                                <br><small class="text-muted">{{ rec.get('shift_type', 'Regular') }}</small>
+                            </td>
+                            <td>{{ rec.get('hours', 0) }}h</td>
+                            <td>
+                                {% set confidence = rec.get('confidence', 0) %}
+                                {% if confidence >= 90 %}
+                                <span class="badge bg-success">{{ confidence }}%</span>
+                                {% elif confidence >= 70 %}
+                                <span class="badge bg-warning">{{ confidence }}%</span>
+                                {% else %}
+                                <span class="badge bg-danger">{{ confidence }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-success" onclick="approveRecommendation({{ rec.get('id', 0) }})"
+                                            title="Approve">
+                                        <i data-feather="check"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning" onclick="modifyRecommendation({{ rec.get('id', 0) }})"
+                                            title="Modify">
+                                        <i data-feather="edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="rejectRecommendation({{ rec.get('id', 0) }})"
+                                            title="Reject">
+                                        <i data-feather="x"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i data-feather="alert-circle" class="me-2"></i>
+                                No schedule recommendations generated
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i data-feather="alert-triangle" class="text-warning mb-3" width="64" height="64"></i>
+            <h5 class="text-warning">No Schedule Generated</h5>
+            <p class="text-muted">The AI scheduling system could not generate recommendations with the current parameters.</p>
+            <a href="{{ url_for('ai_scheduling.generate_schedule') }}" class="btn btn-primary">
+                <i data-feather="refresh-cw" class="me-2"></i>
+                Try Again
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Apply Schedule Modal -->
+<div class="modal fade" id="applyScheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Apply AI-Generated Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i data-feather="info" class="me-2"></i>
+                    This will apply the AI-generated schedule recommendations to your system. Employees will be notified of their new assignments.
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="notifyEmployees" checked>
+                    <label class="form-check-label" for="notifyEmployees">
+                        Send notifications to affected employees
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="overwriteExisting">
+                    <label class="form-check-label" for="overwriteExisting">
+                        Overwrite existing conflicting schedules
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="confirmApplySchedule()">
+                    <i data-feather="check" class="me-2"></i>
+                    Apply Schedule
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    feather.replace();
+
+    // Initialize flash messages system
+    const flashMessages = new FlashMessages();
+    flashMessages.init();
+
+    function applySchedule() {
+        new bootstrap.Modal(document.getElementById('applyScheduleModal')).show();
+    }
+
+    async function confirmApplySchedule() {
+        const notifyEmployees = document.getElementById('notifyEmployees').checked;
+        const overwriteExisting = document.getElementById('overwriteExisting').checked;
+
+        try {
+            const response = await fetch('/ai-scheduling/apply-ai-schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    notify_employees: notifyEmployees,
+                    overwrite_existing: overwriteExisting
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                flashMessages.show('Schedule applied successfully! Employees have been notified.', 'success');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("scheduling.manage_schedules") }}';
+                }, 2000);
+            } else {
+                flashMessages.show(data.message || 'Error applying schedule', 'danger');
+            }
+        } catch (error) {
+            flashMessages.show('Error applying schedule', 'danger');
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('applyScheduleModal')).hide();
+    }
+
+    async function approveRecommendation(recId) {
+        if (!confirm('Approve this schedule recommendation?')) return;
+
+        try {
+            const response = await fetch(`/ai-scheduling/approve-recommendation/${recId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                flashMessages.show('Recommendation approved', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                flashMessages.show(data.message || 'Error approving recommendation', 'danger');
+            }
+        } catch (error) {
+            flashMessages.show('Error approving recommendation', 'danger');
+        }
+    }
+
+    async function rejectRecommendation(recId) {
+        if (!confirm('Reject this schedule recommendation?')) return;
+
+        try {
+            const response = await fetch(`/ai-scheduling/reject-recommendation/${recId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                flashMessages.show('Recommendation rejected', 'warning');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                flashMessages.show(data.message || 'Error rejecting recommendation', 'danger');
+            }
+        } catch (error) {
+            flashMessages.show('Error rejecting recommendation', 'danger');
+        }
+    }
+
+    function modifyRecommendation(recId) {
+        flashMessages.show('Modification feature coming soon', 'info');
+    }
+</script>
+{% endblock %}
