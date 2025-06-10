@@ -249,22 +249,51 @@ def export_payroll():
                     code_name = 'REGULAR'
                 
                 if code_name not in pay_code_data:
-                    pay_code_data[code_name] = {'hours': 0, 'amount': 0}
+                    # Get actual pay code rate from database
+                    pay_code = PayCode.query.filter_by(code=code_name, is_active=True).first()
+                    base_rate = 150.0  # Base rate in ZAR
+                    
+                    # Calculate rate based on pay code factor
+                    if pay_code and pay_code.configuration:
+                        try:
+                            import json
+                            config = json.loads(pay_code.configuration)
+                            pay_rate_factor = config.get('pay_rate_factor', 1.0)
+                            actual_rate = base_rate * pay_rate_factor
+                        except:
+                            actual_rate = base_rate
+                    else:
+                        actual_rate = base_rate
+                    
+                    pay_code_data[code_name] = {'hours': 0, 'amount': 0, 'rate': actual_rate}
                 
                 pay_code_data[code_name]['hours'] += hours
-                pay_code_data[code_name]['amount'] += hours * 15.0  # Base rate
+                pay_code_data[code_name]['amount'] += hours * pay_code_data[code_name]['rate']
             
-            # Calculate overtime
-            regular_hours = min(total_hours, 40)
-            ot_15_hours = max(0, min(total_hours - 40, 8))
-            ot_20_hours = max(0, total_hours - 48)
+            # Calculate breakdown for display
+            regular_hours = pay_code_data.get('REGULAR', {}).get('hours', 0)
+            ot_15_hours = pay_code_data.get('OVERTIME', {}).get('hours', 0)
+            ot_20_hours = pay_code_data.get('DT', {}).get('hours', 0)
             
-            # Calculate pay
-            regular_pay = regular_hours * 15.0
-            ot_15_pay = ot_15_hours * 22.5  # 1.5x rate
-            ot_20_pay = ot_20_hours * 30.0  # 2.0x rate
-            gross_pay = regular_pay + ot_15_pay + ot_20_pay
-            deductions = gross_pay * 0.2  # Simplified 20% deductions
+            # If all hours are REGULAR, apply automatic overtime calculation
+            if len(pay_code_data) == 1 and 'REGULAR' in pay_code_data:
+                regular_hours = min(total_hours, 40)
+                ot_15_hours = max(0, min(total_hours - 40, 8))
+                ot_20_hours = max(0, total_hours - 48)
+                
+                base_rate = 150.0
+                regular_pay = regular_hours * base_rate
+                ot_15_pay = ot_15_hours * (base_rate * 1.5)
+                ot_20_pay = ot_20_hours * (base_rate * 2.0)
+                gross_pay = regular_pay + ot_15_pay + ot_20_pay
+            else:
+                # Use pay code calculations
+                regular_pay = pay_code_data.get('REGULAR', {}).get('amount', 0)
+                ot_15_pay = pay_code_data.get('OVERTIME', {}).get('amount', 0)
+                ot_20_pay = pay_code_data.get('DT', {}).get('amount', 0)
+                gross_pay = sum([data['amount'] for data in pay_code_data.values()])
+            
+            deductions = gross_pay * 0.25  # 25% deductions
             net_pay = gross_pay - deductions
             
             # Build row data
