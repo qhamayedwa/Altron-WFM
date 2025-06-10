@@ -633,16 +633,11 @@ def super_admin_dashboard():
     print(f"Dashboard data active_users: {dashboard_data.get('system_stats', {}).get('active_users', 'NOT_FOUND')}")
     print(f"Dashboard data total keys: {list(dashboard_data.keys())}")
     
-    # Show all sections for Super Admin by default
-    visible_sections = [
-        'system-health-section',
-        'organization-overview-section', 
-        'attendance-analytics-section',
-        'workflow-automation-section',
-        'leave-scheduling-section',
-        'ai-insights-section',
-        'alerts-notifications-section'
-    ]
+    # Apply configuration for Super Admin sections
+    visible_sections = []
+    for section_id, roles in config.items():
+        if roles.get('super_admin', True):
+            visible_sections.append(section_id)
     
     return render_template('dashboard_super_admin.html', 
                          visible_sections=visible_sections,
