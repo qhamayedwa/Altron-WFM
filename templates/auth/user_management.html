@@ -21,9 +21,16 @@
             <form method="GET" class="row g-3">
                 <div class="col-md-4">
                     <label for="search" class="form-label">Search Users</label>
-                    <input type="text" name="search" id="search" class="form-control" 
-                           placeholder="Search by name, username, or employee ID..."
-                           value="{{ request.args.get('search', '') }}">
+                    <div class="input-group">
+                        <span class="input-group-text"><i data-feather="search"></i></span>
+                        <input type="text" name="search" id="search" class="form-control" 
+                               placeholder="Search by name, username, email, employee ID..."
+                               value="{{ request.args.get('search', '') }}"
+                               onkeyup="searchUsersRealtime()" oninput="searchUsersRealtime()">
+                        <button class="btn btn-outline-secondary" type="button" onclick="clearSearchRealtime()" id="clearSearchBtn" style="display: none;">
+                            <i data-feather="x"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label for="role" class="form-label">Filter by Role</label>
@@ -222,14 +229,85 @@
     let searchTimeout;
     const searchInput = document.getElementById('search');
     const searchForm = searchInput.closest('form');
+    const clearBtn = document.getElementById('clearSearchBtn');
     
+    // Real-time client-side search for instant filtering
+    function searchUsersRealtime() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const table = document.querySelector('table tbody');
+        const rows = table.querySelectorAll('tr');
+        
+        // Show/hide clear button
+        if (clearBtn) {
+            clearBtn.style.display = searchTerm ? 'block' : 'none';
+        }
+        
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length > 1) { // Skip pagination/empty rows
+                let rowText = '';
+                cells.forEach(cell => {
+                    rowText += ' ' + cell.textContent.toLowerCase();
+                });
+                
+                const isVisible = searchTerm === '' || rowText.includes(searchTerm);
+                row.style.display = isVisible ? '' : 'none';
+                
+                if (isVisible) {
+                    visibleCount++;
+                }
+            }
+        });
+        
+        // Update no results message
+        updateSearchMessage(visibleCount, searchTerm);
+    }
+    
+    function clearSearchRealtime() {
+        searchInput.value = '';
+        if (clearBtn) {
+            clearBtn.style.display = 'none';
+        }
+        searchUsersRealtime();
+        searchInput.focus();
+    }
+    
+    function updateSearchMessage(visibleCount, searchTerm) {
+        const table = document.querySelector('table tbody');
+        const existingMessage = table.querySelector('.search-message');
+        
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        if (visibleCount === 0 && searchTerm !== '') {
+            const messageRow = document.createElement('tr');
+            messageRow.className = 'search-message';
+            messageRow.innerHTML = `
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i data-feather="search" class="me-2"></i>
+                    No users found matching "${searchTerm}". Try a different search term or <a href="#" onclick="clearSearchRealtime()">clear search</a>.
+                </td>
+            `;
+            table.appendChild(messageRow);
+            feather.replace();
+        }
+    }
+    
+    // Server-side search with debouncing for comprehensive results
     searchInput.addEventListener('input', function() {
+        // Real-time client-side filtering
+        searchUsersRealtime();
+        
+        // Debounced server-side search for comprehensive results
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            if (searchInput.value.length >= 2 || searchInput.value.length === 0) {
+            if (searchInput.value.length >= 3 || searchInput.value.length === 0) {
                 searchForm.submit();
             }
-        }, 500); // Wait 500ms after user stops typing
+        }, 1000); // Wait 1 second for server search
     });
     
     // Submit form when filters change
@@ -241,13 +319,35 @@
         searchForm.submit();
     });
     
-    // Add loading indicator
+    // Keyboard shortcuts
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            clearSearchRealtime();
+        }
+    });
+    
+    // Focus search with Ctrl+F
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
+    
+    // Add loading indicator for server searches
     searchForm.addEventListener('submit', function() {
         const submitBtn = searchForm.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i data-feather="loader" class="me-1"></i> Searching...';
-        submitBtn.disabled = true;
-        feather.replace();
+        if (submitBtn) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i data-feather="loader" class="me-1"></i> Searching...';
+            submitBtn.disabled = true;
+            feather.replace();
+        }
     });
+    
+    // Initialize search state
+    if (searchInput.value) {
+        searchUsersRealtime();
+    }
 </script>
 {% endblock %}
