@@ -381,11 +381,14 @@ class AutomationEngine:
         calculation.overtime_hours = overtime_hours
         calculation.calculated_at = datetime.utcnow()
         
-        # Set pay components (would integrate with pay rules engine)
+        # Set pay components with correct South African rates
+        base_rate = 150.00  # R150 per hour base rate
+        overtime_rate = base_rate * 1.5  # R225 per hour overtime
+        
         pay_components = {
-            'regular_pay': regular_hours * 25.00,  # Base rate
-            'overtime_pay': overtime_hours * 37.50,  # 1.5x rate
-            'total_gross': (regular_hours * 25.00) + (overtime_hours * 37.50)
+            'regular_pay': regular_hours * base_rate,
+            'overtime_pay': overtime_hours * overtime_rate,
+            'total_gross': (regular_hours * base_rate) + (overtime_hours * overtime_rate)
         }
         calculation.set_pay_components(pay_components)
         

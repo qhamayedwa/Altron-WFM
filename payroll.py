@@ -82,9 +82,13 @@ def payroll_processing():
                         hours = 8.0  # Default 8 hours if times not set
                     
                     if code_name not in pay_code_breakdown:
+                        # Get actual pay code rate from database
+                        pay_code = PayCode.query.filter_by(name=code_name, is_active=True).first()
+                        base_rate = float(pay_code.hourly_rate) if pay_code and pay_code.hourly_rate else 150.0
+                        
                         pay_code_breakdown[code_name] = {
                             'hours': 0,
-                            'rate': 15.0,  # Base rate, should come from employee data
+                            'rate': base_rate,
                             'amount': 0
                         }
                     
@@ -97,6 +101,21 @@ def payroll_processing():
                 ot_15_hours = max(0, min(total_hours - 40, 8))  # First 8 hours over 40
                 ot_20_hours = max(0, total_hours - 48)  # Hours over 48
                 
+                # Calculate gross pay from pay code breakdown amounts
+                calculated_gross_pay = sum([breakdown['amount'] for breakdown in pay_code_breakdown.values()])
+                
+                # Apply overtime rates if applicable
+                if ot_15_hours > 0 or ot_20_hours > 0:
+                    base_rate = 150.0  # Base hourly rate in ZAR
+                    overtime_15_rate = base_rate * 1.5  # Time and a half
+                    overtime_20_rate = base_rate * 2.0  # Double time
+                    
+                    # Recalculate with proper overtime rates
+                    regular_pay = regular_hours * base_rate
+                    ot_15_pay = ot_15_hours * overtime_15_rate
+                    ot_20_pay = ot_20_hours * overtime_20_rate
+                    calculated_gross_pay = regular_pay + ot_15_pay + ot_20_pay
+                
                 employee_payroll = {
                     'employee_id': employee.id,
                     'employee_name': f"{employee.first_name} {employee.last_name}" if employee.first_name else employee.username,
@@ -107,9 +126,9 @@ def payroll_processing():
                     'ot_20_hours': ot_20_hours,
                     'total_hours': total_hours,
                     'pay_code_breakdown': pay_code_breakdown,
-                    'gross_pay': pay_calculation.get('gross_pay', 0) if pay_calculation else total_hours * 150.0,
-                    'net_pay': pay_calculation.get('net_pay', 0) if pay_calculation else total_hours * 150.0 * 0.8,  # Simplified net pay
-                    'deductions': pay_calculation.get('deductions', 0) if pay_calculation else total_hours * 150.0 * 0.2
+                    'gross_pay': pay_calculation.get('gross_pay', calculated_gross_pay) if pay_calculation else calculated_gross_pay,
+                    'net_pay': pay_calculation.get('net_pay', calculated_gross_pay * 0.75) if pay_calculation else calculated_gross_pay * 0.75,  # 25% tax/deductions
+                    'deductions': pay_calculation.get('deductions', calculated_gross_pay * 0.25) if pay_calculation else calculated_gross_pay * 0.25
                 }
                 
                 payroll_data.append(employee_payroll)
