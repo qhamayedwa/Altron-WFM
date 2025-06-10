@@ -132,39 +132,47 @@ def register():
         form.employee_id.data = generate_employee_id()
     
     if form.validate_on_submit():
-        # Generate employee ID if not provided
-        employee_id = form.employee_id.data or generate_employee_id()
-        
-        user = User(
-            username=form.username.data,
-            email=form.email.data,
-            first_name=form.first_name.data,
-            last_name=form.last_name.data,
-            employee_id=employee_id,
-            department_id=form.department_id.data if form.department_id.data else None,
-            job_id=form.job_id.data if form.job_id.data else None,
-            position=form.position.data if form.position.data else None,
-            is_active=form.is_active.data
-        )
-        user.set_password(form.password.data)
-        
-        # Add selected roles
-        if form.roles.data:
-            for role_id in form.roles.data:
-                role = Role.query.get(role_id)
-                if role:
-                    user.add_role(role)
-        else:
-            # Default to User role if no roles selected
-            user_role = Role.query.filter_by(name='User').first()
-            if user_role:
-                user.add_role(user_role)
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        flash(f'Employee {user.full_name} (ID: {employee_id}) has been registered successfully!', 'success')
-        return redirect(url_for('auth.user_management'))
+        try:
+            # Generate employee ID if not provided
+            employee_id = form.employee_id.data or generate_employee_id()
+            
+            user = User()
+            user.username = form.username.data
+            user.email = form.email.data
+            user.first_name = form.first_name.data
+            user.last_name = form.last_name.data
+            user.employee_id = employee_id
+            user.department_id = form.department_id.data if form.department_id.data else None
+            user.job_id = form.job_id.data if form.job_id.data else None
+            user.position = form.position.data if form.position.data else None
+            user.is_active = form.is_active.data
+            user.set_password(form.password.data)
+            
+            # Add selected roles
+            if form.roles.data:
+                for role_id in form.roles.data:
+                    role = Role.query.get(role_id)
+                    if role:
+                        user.add_role(role)
+            else:
+                # Default to User role if no roles selected
+                user_role = Role.query.filter_by(name='User').first()
+                if user_role:
+                    user.add_role(user_role)
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            flash(f'Employee {user.full_name} (ID: {employee_id}) has been registered successfully!', 'success')
+            return redirect(url_for('auth.user_management'))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating user: {e}")
+            import traceback
+            traceback.print_exc()
+            flash(f'Error creating user: {str(e)}', 'danger')
+            return render_template('auth/register.html', title='Register Employee', form=form)
     
     return render_template('auth/register.html', title='Register Employee', form=form)
 
