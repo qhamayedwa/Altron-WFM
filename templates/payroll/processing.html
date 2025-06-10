@@ -148,6 +148,7 @@
                     <form id="exportForm" class="row g-3">
                         <input type="hidden" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') if start_date else '' }}">
                         <input type="hidden" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') if end_date else '' }}">
+                        {% if selected_employee_id %}<input type="hidden" name="employee_filter" value="{{ selected_employee_id }}">{% endif %}
                         
                         <div class="col-md-6">
                             <label class="form-label">Include Pay Codes</label>
