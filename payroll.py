@@ -83,8 +83,9 @@ def payroll_processing():
                     
                     if code_name not in pay_code_breakdown:
                         # Get actual pay code rate from database
-                        pay_code = PayCode.query.filter_by(name=code_name, is_active=True).first()
-                        base_rate = float(pay_code.hourly_rate) if pay_code and pay_code.hourly_rate else 150.0
+                        pay_code = PayCode.query.filter_by(code=code_name, is_active=True).first()
+                        # PayCode model doesn't have hourly_rate field, use default base rate
+                        base_rate = 150.0
                         
                         pay_code_breakdown[code_name] = {
                             'hours': 0,
