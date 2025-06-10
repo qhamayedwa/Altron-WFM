@@ -133,6 +133,8 @@ def payroll_processing():
                     regular_hours = pay_code_breakdown.get('REGULAR', {}).get('hours', 0)
                     ot_15_hours = pay_code_breakdown.get('OVERTIME', {}).get('hours', 0)
                     ot_20_hours = pay_code_breakdown.get('DT', {}).get('hours', 0)
+                    # Keep the calculated gross pay from individual pay codes
+                    calculated_gross_pay = sum([breakdown['amount'] for breakdown in pay_code_breakdown.values()])
                 
                 employee_payroll = {
                     'employee_id': employee.id,
