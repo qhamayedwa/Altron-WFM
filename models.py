@@ -193,6 +193,39 @@ class Department(db.Model):
     def __repr__(self):
         return f'<Department {self.name}>'
 
+class Job(db.Model):
+    """Job/Position model for employee positions"""
+    __tablename__ = 'jobs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    code = db.Column(db.String(20), nullable=False, unique=True)
+    description = db.Column(db.Text, nullable=True)
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=True)
+    
+    # Job details
+    level = db.Column(db.String(50), nullable=True)  # Entry, Mid, Senior, Executive
+    employment_type = db.Column(db.String(50), default='Full-time')  # Full-time, Part-time, Contract
+    min_salary = db.Column(db.Float, nullable=True)
+    max_salary = db.Column(db.Float, nullable=True)
+    
+    # Requirements
+    required_skills = db.Column(db.Text, nullable=True)
+    required_experience_years = db.Column(db.Integer, nullable=True)
+    education_requirements = db.Column(db.Text, nullable=True)
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    department = db.relationship('Department', backref='jobs')
+    employees = db.relationship('User', backref='job_position', lazy='dynamic', foreign_keys='User.job_id')
+    
+    def __repr__(self):
+        return f'<Job {self.title}>'
+
 # Multi-tenant models (legacy - will be replaced by Company hierarchy)
 
 class Tenant(db.Model):
@@ -347,6 +380,7 @@ class User(UserMixin, db.Model):
     # Job details
     job_title = db.Column(db.String(100), nullable=True)
     job_grade = db.Column(db.String(10), nullable=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=True, index=True)
     salary = db.Column(db.Float, nullable=True)
     
     # Payroll integration
