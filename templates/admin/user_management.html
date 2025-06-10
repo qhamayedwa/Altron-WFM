@@ -64,7 +64,10 @@
         <div class="col-md-4">
             <div class="input-group">
                 <span class="input-group-text"><i data-feather="search"></i></span>
-                <input type="text" class="form-control" placeholder="Search users..." id="userSearch" onkeyup="searchUsers()">
+                <input type="text" class="form-control" placeholder="Search users by name, email, department..." id="userSearch" onkeyup="searchUsers()" oninput="searchUsers()">
+                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()" id="clearSearchBtn" style="display: none;">
+                    <i data-feather="x"></i>
+                </button>
             </div>
         </div>
         <div class="col-md-3">
@@ -265,13 +268,76 @@
 
 <script>
 function searchUsers() {
-    const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-    const rows = document.querySelectorAll('#usersTable tbody tr');
+    const searchInput = document.getElementById('userSearch');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const table = document.getElementById('usersTable');
+    const rows = table.querySelectorAll('tbody tr');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    
+    // Show/hide clear button
+    clearBtn.style.display = searchTerm ? 'block' : 'none';
+    
+    let visibleCount = 0;
     
     rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+        // Skip the "no users found" row and search message rows
+        if (row.cells.length === 1 && row.cells[0].colSpan > 1) {
+            return;
+        }
+        
+        const cells = row.querySelectorAll('td');
+        let rowText = '';
+        
+        // Extract text from specific columns (user info, email, department, roles)
+        if (cells.length >= 6) {
+            rowText += cells[1].textContent.toLowerCase(); // User column
+            rowText += ' ' + cells[2].textContent.toLowerCase(); // Email column
+            rowText += ' ' + cells[3].textContent.toLowerCase(); // Department column
+            rowText += ' ' + cells[4].textContent.toLowerCase(); // Roles column
+        }
+        
+        const isVisible = searchTerm === '' || rowText.includes(searchTerm);
+        row.style.display = isVisible ? '' : 'none';
+        
+        if (isVisible) {
+            visibleCount++;
+        }
     });
+    
+    // Update table message if no results
+    updateSearchMessage(visibleCount, searchTerm);
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('userSearch');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    
+    searchInput.value = '';
+    clearBtn.style.display = 'none';
+    searchUsers(); // Trigger search to show all users
+    searchInput.focus();
+}
+
+function updateSearchMessage(visibleCount, searchTerm) {
+    const tbody = document.querySelector('#usersTable tbody');
+    const existingMessage = tbody.querySelector('.search-message');
+    
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    if (visibleCount === 0 && searchTerm !== '') {
+        const messageRow = document.createElement('tr');
+        messageRow.className = 'search-message';
+        messageRow.innerHTML = `
+            <td colspan="9" class="text-center text-muted py-4">
+                <i data-feather="search" class="me-2"></i>
+                No users found matching "${searchTerm}"
+            </td>
+        `;
+        tbody.appendChild(messageRow);
+        feather.replace();
+    }
 }
 
 function filterUsers() {
@@ -362,6 +428,27 @@ function formatUserDetails(user) {
 
 document.addEventListener('DOMContentLoaded', function() {
     feather.replace();
+    
+    // Initialize search functionality
+    const searchInput = document.getElementById('userSearch');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    
+    // Add keyboard shortcuts
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                clearSearch();
+            }
+        });
+        
+        // Focus search input when pressing Ctrl+F
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
