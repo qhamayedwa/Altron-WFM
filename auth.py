@@ -130,6 +130,14 @@ def register():
     # Auto-generate employee ID on form load
     if request.method == 'GET':
         form.employee_id.data = generate_employee_id()
+        
+        # Pre-select department if provided in URL
+        department_id = request.args.get('department_id')
+        if department_id:
+            try:
+                form.department_id.data = int(department_id)
+            except (ValueError, TypeError):
+                pass
     
     if form.validate_on_submit():
         try:
