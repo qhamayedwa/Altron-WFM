@@ -246,7 +246,15 @@ def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     form = EditUserForm(user.username, user.email)
     
+    print(f"DEBUG: Form submitted. Method: {request.method}")
+    if request.method == 'POST':
+        print(f"DEBUG: Form data - hourly_rate: {form.hourly_rate.data}")
+        print(f"DEBUG: Current user hourly_rate: {user.hourly_rate}")
+        print(f"DEBUG: Form validation: {form.validate()}")
+        print(f"DEBUG: Form errors: {form.errors}")
+    
     if form.validate_on_submit():
+        print(f"DEBUG: Form validation passed, updating user...")
         try:
             # Basic Information
             user.username = form.username.data
@@ -304,8 +312,14 @@ def edit_user(user_id):
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating user: {str(e)}', 'danger')
+    else:
+        # Show form validation errors if any
+        if request.method == 'POST' and form.errors:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'{field}: {error}', 'danger')
     
-    elif request.method == 'GET':
+    if request.method == 'GET':
         # Basic Information
         form.username.data = user.username
         form.email.data = user.email
