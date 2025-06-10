@@ -42,9 +42,9 @@ def payroll_processing():
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
         # Get all employees for the dropdown (users who are not Super Users)
-        all_employees = User.query.filter(User.is_active.is_(True)).order_by(User.username).all()
-        # Filter out Super Users from dropdown
-        all_employees = [emp for emp in all_employees if not emp.has_role('Super User')]
+        all_employees = User.query.order_by(User.username).all()
+        # Filter out Super Users and inactive users from dropdown
+        all_employees = [emp for emp in all_employees if emp.is_active and not emp.has_role('Super User')]
         
         # Build query for employees with time entries in the period
         employees_query = db.session.query(User).join(
@@ -211,8 +211,7 @@ def export_payroll():
         ).filter(
             and_(
                 TimeEntry.clock_in_time >= start_date,
-                TimeEntry.clock_in_time <= end_date + timedelta(days=1),
-                User.is_active.is_(True)
+                TimeEntry.clock_in_time <= end_date + timedelta(days=1)
             )
         )
         

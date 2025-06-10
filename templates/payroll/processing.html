@@ -71,6 +71,26 @@
         </div>
     </div>
 
+    <!-- Filter Status -->
+    {% if selected_employee_id %}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i data-feather="filter" class="me-2"></i>
+                <strong>Active Filter:</strong> Showing payroll data for 
+                {% for employee in employees %}
+                    {% if employee.id|string == selected_employee_id|string %}
+                        {{ employee.username }}{% if employee.first_name %} ({{ employee.first_name }} {{ employee.last_name }}){% endif %}
+                    {% endif %}
+                {% endfor %}
+                <a href="{{ url_for('payroll.payroll_processing', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')) }}" class="btn btn-sm btn-outline-secondary ms-2">
+                    <i data-feather="x" class="me-1"></i>Clear Filter
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Payroll Summary -->
     {% if payroll_data %}
     <div class="row mb-4">
