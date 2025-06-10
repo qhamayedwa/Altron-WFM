@@ -33,6 +33,15 @@
             border-radius: 0 6px 6px 6px;
         }
         
+        /* Third-level dropdown positioning */
+        .dropdown-submenu .dropdown-submenu .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -1px;
+            margin-left: -1px;
+            border-radius: 0 6px 6px 6px;
+        }
+        
         /* Mobile responsive adjustments */
         @media (max-width: 768px) {
             .dropdown {
@@ -71,6 +80,16 @@
             .dropdown-submenu .dropdown-item {
                 padding-left: 2rem !important;
                 font-size: 0.9rem !important;
+            }
+            
+            /* Third-level mobile adjustments */
+            .dropdown-submenu .dropdown-submenu .dropdown-menu {
+                background-color: #e9ecef !important;
+            }
+            
+            .dropdown-submenu .dropdown-submenu .dropdown-item {
+                padding-left: 3rem !important;
+                font-size: 0.85rem !important;
             }
             
             .navbar {
@@ -187,46 +206,75 @@
                                 Management
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.team_timecard') }}">
-                                    <i data-feather="users" class="me-2"></i>
-                                    Team Timecard
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.employee_timecards') }}">
-                                    <i data-feather="clipboard" class="me-2"></i>
-                                    Employee Time Cards
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.team_calendar') }}">
-                                    <i data-feather="calendar" class="me-2"></i>
-                                    Team Calendar View
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('time_attendance.time_exceptions') }}">
-                                    <i data-feather="alert-triangle" class="me-2"></i>
-                                    Time Exceptions
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('scheduling.manage_schedules') }}">
-                                    <i data-feather="calendar" class="me-2"></i>
-                                    Manage Schedules
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('scheduling.shift_types') }}">
-                                    <i data-feather="clock" class="me-2"></i>
-                                    Shift Types
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('ai_scheduling.ai_dashboard') }}">
-                                    <i data-feather="cpu" class="me-2"></i>
-                                    AI Scheduling
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('ai.ai_dashboard') }}">
-                                    <i data-feather="zap" class="me-2"></i>
-                                    AI Insights
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('leave_management.team_applications') }}">
-                                    <i data-feather="umbrella" class="me-2"></i>
-                                    Team Leave Applications
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('leave_management.apply_for_employee') }}">
-                                    <i data-feather="user-plus" class="me-2"></i>
-                                    Apply Leave for Employee
-                                </a></li>
+                                <!-- Team Attendance Subsection -->
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                        <i data-feather="clock" class="me-2"></i>
+                                        Team Attendance
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.team_timecard') }}">
+                                            <i data-feather="users" class="me-2"></i>
+                                            Team Timecard
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.employee_timecards') }}">
+                                            <i data-feather="clipboard" class="me-2"></i>
+                                            Employee Time Cards
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.time_exceptions') }}">
+                                            <i data-feather="alert-triangle" class="me-2"></i>
+                                            Time Exceptions
+                                        </a></li>
+                                    </ul>
+                                </li>
+                                
+                                <!-- Team Scheduling Subsection -->
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                        <i data-feather="calendar" class="me-2"></i>
+                                        Team Scheduling
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ url_for('time_attendance.team_calendar') }}">
+                                            <i data-feather="calendar" class="me-2"></i>
+                                            Team Calendar View
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('scheduling.manage_schedules') }}">
+                                            <i data-feather="calendar" class="me-2"></i>
+                                            Manage Schedules
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('scheduling.shift_types') }}">
+                                            <i data-feather="clock" class="me-2"></i>
+                                            Shift Types
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('ai_scheduling.ai_dashboard') }}">
+                                            <i data-feather="cpu" class="me-2"></i>
+                                            AI Scheduling
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('ai.ai_dashboard') }}">
+                                            <i data-feather="zap" class="me-2"></i>
+                                            AI Insights
+                                        </a></li>
+                                    </ul>
+                                </li>
+                                
+                                <!-- Leave Approvals Subsection -->
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                        <i data-feather="umbrella" class="me-2"></i>
+                                        Leave Approvals
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ url_for('leave_management.team_applications') }}">
+                                            <i data-feather="umbrella" class="me-2"></i>
+                                            Team Leave Applications
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('leave_management.apply_for_employee') }}">
+                                            <i data-feather="user-plus" class="me-2"></i>
+                                            Apply Leave for Employee
+                                        </a></li>
+                                    </ul>
+                                </li>
                             </ul>
                         </li>
                         {% endif %}
