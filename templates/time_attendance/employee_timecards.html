@@ -555,8 +555,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-submit form when employee selection changes
     const userSelect = document.getElementById('user_id');
-    userSelect.addEventListener('change', function() {
-        this.form.submit();
+    if (userSelect) {
+        userSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+    
+    // Simple modal debugging - don't create instances, let Bootstrap handle it
+    console.log('Found modals:', document.querySelectorAll('.modal').length);
+    
+    // Debug modal triggers
+    document.querySelectorAll('[data-bs-toggle="modal"]').forEach(function(trigger) {
+        trigger.addEventListener('click', function(e) {
+            console.log('Modal trigger clicked:', this.getAttribute('data-bs-target'));
+        });
     });
 });
 </script>
