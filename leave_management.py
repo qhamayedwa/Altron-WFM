@@ -272,7 +272,7 @@ def approve_application(application_id):
         if not is_super_user:
             if is_manager:
                 managed_dept_ids = get_managed_departments(current_user.id)
-                if not managed_dept_ids or application.user.department_id not in managed_dept_ids:
+                if not managed_dept_ids or application.employee.department_id not in managed_dept_ids:
                     return jsonify({'success': False, 'message': 'Access denied: Cannot approve applications for employees outside your managed departments'})
             else:
                 return jsonify({'success': False, 'message': 'Access denied: Insufficient permissions'})
