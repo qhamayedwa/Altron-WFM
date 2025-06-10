@@ -41,10 +41,13 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">&nbsp;</label>
-                            <div class="d-grid">
+                            <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">
                                     <i data-feather="refresh-cw" class="me-2"></i>Process Payroll
                                 </button>
+                                <a href="{{ url_for('payroll.payroll_configuration') }}" class="btn btn-outline-secondary btn-sm">
+                                    <i data-feather="settings" class="me-2"></i>Configure Rates
+                                </a>
                             </div>
                         </div>
                     </form>
