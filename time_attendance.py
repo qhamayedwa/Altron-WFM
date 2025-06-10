@@ -925,6 +925,7 @@ def employee_timecards():
         from models import User, Schedule, TimeEntry, LeaveApplication
         from organization_management import get_managed_departments
         from datetime import datetime, date, timedelta
+        from sqlalchemy import func
         
         # Get filter parameters
         page = request.args.get('page', 1, type=int)
@@ -973,25 +974,37 @@ def employee_timecards():
                 # Generate date range for the period
                 current_date = start_date_obj
                 while current_date <= end_date_obj:
-                    # Get schedule for this date
-                    schedule = Schedule.query.filter(
-                        Schedule.user_id == user.id,
-                        func.date(Schedule.start_time) == current_date
-                    ).first()
+                    # Get schedule for this date with error handling
+                    schedule = None
+                    try:
+                        schedule = Schedule.query.filter(
+                            Schedule.user_id == user.id,
+                            func.date(Schedule.start_time) == current_date
+                        ).first()
+                    except Exception:
+                        pass
                     
-                    # Get time entries for this date
-                    time_entries = TimeEntry.query.filter(
-                        TimeEntry.user_id == user.id,
-                        func.date(TimeEntry.clock_in_time) == current_date
-                    ).all()
+                    # Get time entries for this date with error handling
+                    time_entries = []
+                    try:
+                        time_entries = TimeEntry.query.filter(
+                            TimeEntry.user_id == user.id,
+                            func.date(TimeEntry.clock_in_time) == current_date
+                        ).all()
+                    except Exception:
+                        pass
                     
-                    # Get leave applications for this date
-                    leave_app = LeaveApplication.query.filter(
-                        LeaveApplication.user_id == user.id,
-                        LeaveApplication.start_date <= current_date,
-                        LeaveApplication.end_date >= current_date,
-                        LeaveApplication.status == 'Approved'
-                    ).first()
+                    # Get leave applications for this date with error handling
+                    leave_app = None
+                    try:
+                        leave_app = LeaveApplication.query.filter(
+                            LeaveApplication.user_id == user.id,
+                            LeaveApplication.start_date <= current_date,
+                            LeaveApplication.end_date >= current_date,
+                            LeaveApplication.status == 'Approved'
+                        ).first()
+                    except Exception:
+                        pass
                     
                     # Calculate total hours worked
                     total_hours = 0
