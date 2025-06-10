@@ -96,6 +96,9 @@ def create_app(config_class=Config):
     from dashboard_management import dashboard_bp
     from notifications import notifications_bp
     from pay_code_admin import pay_code_admin_bp
+    from sage_vip_routes import sage_vip_bp
+    from sage_vip_api import sage_vip_api_bp
+    from sage_vip_config_api import sage_vip_config_api_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(time_attendance_bp)
@@ -112,6 +115,9 @@ def create_app(config_class=Config):
     app.register_blueprint(debug_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(pay_code_admin_bp)
+    app.register_blueprint(sage_vip_bp)
+    app.register_blueprint(sage_vip_api_bp)
+    app.register_blueprint(sage_vip_config_api_bp)
 
     
     # Register additional API routes without version prefix for frontend compatibility
