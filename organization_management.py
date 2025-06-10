@@ -527,10 +527,14 @@ def assign_employee(department_id):
     # Get all departments for filter dropdown
     all_departments = Department.query.filter_by(is_active=True).all()
     
+    # Get current employee count for this department
+    current_employee_count = User.query.filter_by(department_id=department_id, is_active=True).count()
+    
     return render_template('organization/assign_employee.html', 
                          department=department, 
                          available_employees=available_employees,
-                         all_departments=all_departments)
+                         all_departments=all_departments,
+                         current_employee_count=current_employee_count)
 
 # API Endpoints
 @org_bp.route('/api/hierarchy/<int:company_id>')
