@@ -31,6 +31,11 @@
             margin-top: -1px;
             margin-left: -1px;
             border-radius: 0 6px 6px 6px;
+            display: none;
+        }
+        
+        .dropdown-submenu .dropdown-menu.show {
+            display: block;
         }
         
         /* Third-level dropdown positioning */
@@ -40,6 +45,11 @@
             margin-top: -1px;
             margin-left: -1px;
             border-radius: 0 6px 6px 6px;
+            display: none;
+        }
+        
+        .dropdown-submenu .dropdown-submenu .dropdown-menu.show {
+            display: block;
         }
         
         /* Mobile responsive adjustments */
@@ -503,6 +513,61 @@
     
     <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Multi-level dropdown support -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle multi-level dropdown menus
+            const dropdownSubmenus = document.querySelectorAll('.dropdown-submenu');
+            
+            dropdownSubmenus.forEach(function(submenu) {
+                const dropdownToggle = submenu.querySelector('.dropdown-toggle');
+                const dropdownMenu = submenu.querySelector('.dropdown-menu');
+                
+                if (dropdownToggle && dropdownMenu) {
+                    dropdownToggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Close other open submenus at the same level
+                        const parentMenu = submenu.closest('.dropdown-menu');
+                        if (parentMenu) {
+                            const siblingSubmenus = parentMenu.querySelectorAll('.dropdown-submenu > .dropdown-menu.show');
+                            siblingSubmenus.forEach(function(sibling) {
+                                if (sibling !== dropdownMenu) {
+                                    sibling.classList.remove('show');
+                                }
+                            });
+                        }
+                        
+                        // Toggle current submenu
+                        dropdownMenu.classList.toggle('show');
+                    });
+                    
+                    // Handle hover for desktop
+                    if (window.innerWidth > 768) {
+                        submenu.addEventListener('mouseenter', function() {
+                            dropdownMenu.classList.add('show');
+                        });
+                        
+                        submenu.addEventListener('mouseleave', function() {
+                            dropdownMenu.classList.remove('show');
+                        });
+                    }
+                }
+            });
+            
+            // Close all submenus when main dropdown closes
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    const openSubmenus = document.querySelectorAll('.dropdown-submenu .dropdown-menu.show');
+                    openSubmenus.forEach(function(submenu) {
+                        submenu.classList.remove('show');
+                    });
+                }
+            });
+        });
+    </script>
     
     <!-- Notification System JavaScript -->
     <script>
