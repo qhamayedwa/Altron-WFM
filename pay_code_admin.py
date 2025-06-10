@@ -190,6 +190,102 @@ def assign_pay_codes():
                          pay_codes=pay_codes,
                          departments=departments)
 
+@pay_code_admin_bp.route('/assign/individual', methods=['POST'])
+@role_required('Admin', 'Super User')
+def assign_individual_pay_code():
+    """Assign pay code to individual employee"""
+    try:
+        data = request.json
+        employee_id = data.get('employee_id')
+        pay_code_id = data.get('pay_code_id')
+        
+        if not employee_id or not pay_code_id:
+            return jsonify({
+                'success': False,
+                'message': 'Employee ID and Pay Code ID are required'
+            }), 400
+        
+        # Get employee and pay code
+        employee = User.query.get(employee_id)
+        pay_code = PayCode.query.get(pay_code_id)
+        
+        if not employee or not pay_code:
+            return jsonify({
+                'success': False,
+                'message': 'Employee or Pay Code not found'
+            }), 404
+        
+        # Check if already assigned
+        if pay_code in employee.pay_codes:
+            return jsonify({
+                'success': False,
+                'message': 'Pay code already assigned to this employee'
+            }), 400
+        
+        # Assign pay code
+        employee.pay_codes.append(pay_code)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Pay code {pay_code.code} assigned to {employee.username}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Error assigning pay code: {str(e)}'
+        }), 500
+
+@pay_code_admin_bp.route('/assign/remove', methods=['POST'])
+@role_required('Admin', 'Super User')
+def remove_pay_code_assignment():
+    """Remove pay code assignment from employee"""
+    try:
+        data = request.json
+        employee_id = data.get('employee_id')
+        pay_code_id = data.get('pay_code_id')
+        
+        if not employee_id or not pay_code_id:
+            return jsonify({
+                'success': False,
+                'message': 'Employee ID and Pay Code ID are required'
+            }), 400
+        
+        # Get employee and pay code
+        employee = User.query.get(employee_id)
+        pay_code = PayCode.query.get(pay_code_id)
+        
+        if not employee or not pay_code:
+            return jsonify({
+                'success': False,
+                'message': 'Employee or Pay Code not found'
+            }), 404
+        
+        # Check if assigned
+        if pay_code not in employee.pay_codes:
+            return jsonify({
+                'success': False,
+                'message': 'Pay code not assigned to this employee'
+            }), 400
+        
+        # Remove pay code
+        employee.pay_codes.remove(pay_code)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Pay code {pay_code.code} removed from {employee.username}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Error removing pay code: {str(e)}'
+        }), 500
+
 @pay_code_admin_bp.route('/assign/bulk', methods=['POST'])
 @role_required('Admin', 'Super User')
 def bulk_assign_pay_codes():

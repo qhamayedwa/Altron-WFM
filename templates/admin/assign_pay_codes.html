@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Pay Codes to Employees{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i data-feather="users" class="me-2"></i>
+                        Assign Pay Codes to Employees
+                    </h2>
+                    <p class="text-muted mb-0">Manage pay code assignments for employees</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('pay_code_admin.dashboard') }}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-2"></i>
+                        Back to Dashboard
+                    </a>
+                    <button type="button" class="btn btn-primary" onclick="bulkAssignPayCodes()">
+                        <i data-feather="save" class="me-2"></i>
+                        Save All Assignments
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label class="form-label">Filter by Department</label>
+            <select class="form-select" id="departmentFilter" onchange="filterEmployees()">
+                <option value="">All Departments</option>
+                {% for department in departments %}
+                <option value="{{ department.id }}">{{ department.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Search Employee</label>
+            <input type="text" class="form-control" id="employeeSearch" placeholder="Search by name or username..." onkeyup="filterEmployees()">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Bulk Actions</label>
+            <div class="btn-group w-100">
+                <select class="form-select" id="bulkPayCode">
+                    <option value="">Select Pay Code</option>
+                    {% for pay_code in pay_codes %}
+                    <option value="{{ pay_code.id }}">{{ pay_code.code }} - {{ pay_code.description }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn btn-outline-primary" onclick="applyBulkAssignment()">
+                    Apply to Filtered
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Employee Pay Code Assignments</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>
+                                <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Current Pay Codes</th>
+                            <th>Assign Pay Code</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeeTableBody">
+                        {% for employee in employees %}
+                        <tr class="employee-row" 
+                            data-department-id="{{ employee.department_id or '' }}" 
+                            data-employee-name="{{ employee.first_name }} {{ employee.last_name }} {{ employee.username }}">
+                            <td>
+                                <input type="checkbox" class="form-check-input employee-checkbox" value="{{ employee.id }}">
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-3">
+                                        {{ (employee.first_name or employee.username)[0].upper() }}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ employee.first_name }} {{ employee.last_name }}</h6>
+                                        <small class="text-muted">{{ employee.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if employee.department %}
+                                    <span class="badge bg-secondary">{{ employee.department.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">No Department</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div id="currentPayCodes{{ employee.id }}">
+                                    {% if employee.pay_codes %}
+                                        {% for pay_code in employee.pay_codes %}
+                                        <span class="badge bg-info me-1 mb-1">
+                                            {{ pay_code.code }}
+                                            <button type="button" class="btn-close btn-close-white btn-sm ms-1" 
+                                                    onclick="removePayCode({{ employee.id }}, {{ pay_code.id }})" 
+                                                    aria-label="Remove"></button>
+                                        </span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">No pay codes assigned</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm" id="payCodeSelect{{ employee.id }}">
+                                    <option value="">Select Pay Code</option>
+                                    {% for pay_code in pay_codes %}
+                                    <option value="{{ pay_code.id }}">{{ pay_code.code }} - {{ pay_code.description }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            onclick="assignPayCode({{ employee.id }})">
+                                        <i data-feather="plus" class="me-1"></i>
+                                        Assign
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" 
+                                            onclick="viewEmployeeDetails({{ employee.id }})">
+                                        <i data-feather="eye" class="me-1"></i>
+                                        View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assignment Status Modal -->
+<div class="modal fade" id="assignmentStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assignment Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="assignmentResults"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter employees by department and search term
+function filterEmployees() {
+    const departmentFilter = document.getElementById('departmentFilter').value;
+    const searchTerm = document.getElementById('employeeSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('.employee-row');
+    
+    rows.forEach(row => {
+        const departmentId = row.getAttribute('data-department-id');
+        const employeeName = row.getAttribute('data-employee-name').toLowerCase();
+        
+        const departmentMatch = !departmentFilter || departmentId === departmentFilter;
+        const nameMatch = !searchTerm || employeeName.includes(searchTerm);
+        
+        row.style.display = (departmentMatch && nameMatch) ? '' : 'none';
+    });
+}
+
+// Toggle select all checkboxes
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        const row = checkbox.closest('.employee-row');
+        if (row.style.display !== 'none') {
+            checkbox.checked = selectAll.checked;
+        }
+    });
+}
+
+// Apply bulk assignment to selected employees
+function applyBulkAssignment() {
+    const payCodeId = document.getElementById('bulkPayCode').value;
+    if (!payCodeId) {
+        alert('Please select a pay code first.');
+        return;
+    }
+    
+    const selectedEmployees = [];
+    document.querySelectorAll('.employee-checkbox:checked').forEach(checkbox => {
+        selectedEmployees.push(checkbox.value);
+    });
+    
+    if (selectedEmployees.length === 0) {
+        alert('Please select at least one employee.');
+        return;
+    }
+    
+    // Apply to individual selects
+    selectedEmployees.forEach(employeeId => {
+        document.getElementById(`payCodeSelect${employeeId}`).value = payCodeId;
+    });
+    
+    alert(`Pay code applied to ${selectedEmployees.length} employees. Click "Save All Assignments" to confirm.`);
+}
+
+// Assign pay code to individual employee
+function assignPayCode(employeeId) {
+    const selectElement = document.getElementById(`payCodeSelect${employeeId}`);
+    const payCodeId = selectElement.value;
+    
+    if (!payCodeId) {
+        alert('Please select a pay code first.');
+        return;
+    }
+    
+    fetch('/pay-codes/assign/individual', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            employee_id: employeeId,
+            pay_code_id: payCodeId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh current pay codes display
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while assigning the pay code.');
+    });
+}
+
+// Remove pay code from employee
+function removePayCode(employeeId, payCodeId) {
+    if (!confirm('Are you sure you want to remove this pay code assignment?')) {
+        return;
+    }
+    
+    fetch('/pay-codes/assign/remove', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            employee_id: employeeId,
+            pay_code_id: payCodeId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while removing the pay code.');
+    });
+}
+
+// Bulk assign all selected pay codes
+function bulkAssignPayCodes() {
+    const assignments = [];
+    
+    document.querySelectorAll('[id^="payCodeSelect"]').forEach(select => {
+        if (select.value) {
+            const employeeId = select.id.replace('payCodeSelect', '');
+            assignments.push({
+                employee_id: parseInt(employeeId),
+                pay_code_id: parseInt(select.value)
+            });
+        }
+    });
+    
+    if (assignments.length === 0) {
+        alert('No assignments to save.');
+        return;
+    }
+    
+    fetch('/pay-codes/assign/bulk', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            assignments: assignments
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('assignmentResults').innerHTML = `
+                <div class="alert alert-success">
+                    <strong>Success!</strong> ${data.assigned_count} pay codes assigned successfully.
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('assignmentStatusModal')).show();
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            document.getElementById('assignmentResults').innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>Error!</strong> ${data.message}
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('assignmentStatusModal')).show();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving assignments.');
+    });
+}
+
+// View employee details
+function viewEmployeeDetails(employeeId) {
+    window.open(`/auth/user/${employeeId}/edit`, '_blank');
+}
+
+// Initialize feather icons
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
+</script>
+{% endblock %}
