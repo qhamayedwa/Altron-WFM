@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectMultipleField, TextAreaField, BooleanField, IntegerField, FloatField, SelectField, DateField
 from wtforms.fields import DateField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, NumberRange
+from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, NumberRange, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
 from models import User, Role, Department, Job
 
@@ -29,8 +29,8 @@ class RegistrationForm(FlaskForm):
     
     # Employee-specific fields
     employee_id = StringField('Employee ID', render_kw={'readonly': True}, validators=[Length(max=20)])
-    department_id = SelectField('Department', coerce=int, validators=[DataRequired()])
-    job_id = SelectField('Job/Position', coerce=int, validators=[DataRequired()])
+    department_id = SelectField('Department', coerce=lambda x: int(x) if x else None, validators=[Optional()])
+    job_id = SelectField('Job/Position', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     position = StringField('Position/Job Title', validators=[Length(max=64)])
     
     password = PasswordField('Password', validators=[
@@ -51,12 +51,12 @@ class RegistrationForm(FlaskForm):
         self.roles.choices = [(role.id, role.name) for role in Role.query.all()]
         
         # Populate department choices
-        self.department_id.choices = [('', 'Select Department')] + [
+        self.department_id.choices = [(None, 'Select Department')] + [
             (dept.id, dept.name) for dept in Department.query.filter(Department.is_active.is_(True)).all()
         ]
         
         # Populate job choices
-        self.job_id.choices = [('', 'Select Job Position')] + [
+        self.job_id.choices = [(None, 'Select Job Position')] + [
             (job.id, f"{job.title} ({job.level})") for job in Job.query.filter(Job.is_active.is_(True)).all()
         ]
     
