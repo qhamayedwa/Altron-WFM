@@ -188,16 +188,56 @@ def register():
 @super_user_required
 def user_management():
     """User management page (Super User only)"""
+    from models import Role, Department
+    
     page = request.args.get('page', 1, type=int)
     per_page = 10
+    search = request.args.get('search', '').strip()
+    role_filter = request.args.get('role', '').strip()
+    department_filter = request.args.get('department', '').strip()
     
-    users = User.query.order_by(User.created_at.desc()).paginate(
+    # Build query with filters
+    query = User.query
+    
+    # Apply search filter
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                User.username.ilike(search_term),
+                User.first_name.ilike(search_term),
+                User.last_name.ilike(search_term),
+                User.email.ilike(search_term),
+                User.employee_id.ilike(search_term),
+                User.position.ilike(search_term)
+            )
+        )
+    
+    # Apply role filter
+    if role_filter:
+        role_obj = Role.query.filter_by(name=role_filter).first()
+        if role_obj:
+            query = query.filter(User.roles.contains(role_obj))
+    
+    # Apply department filter
+    if department_filter:
+        query = query.filter(User.department_id == int(department_filter))
+    
+    users = query.order_by(User.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
+    # Get filter options
+    all_roles = Role.query.all()
+    all_departments = Department.query.filter_by(is_active=True).all()
+    
     return render_template('auth/user_management.html', 
                          title='User Management', 
-                         users=users)
+                         users=users,
+                         all_roles=all_roles,
+                         all_departments=all_departments,
+                         current_role_filter=role_filter,
+                         search_term=search)
 
 @auth_bp.route('/user/<int:user_id>/edit', methods=['GET', 'POST'])
 @super_user_required

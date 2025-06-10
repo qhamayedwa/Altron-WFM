@@ -20,20 +20,37 @@
         <div class="card-body">
             <form method="GET" class="row g-3">
                 <div class="col-md-4">
+                    <label for="search" class="form-label">Search Users</label>
+                    <input type="text" name="search" id="search" class="form-control" 
+                           placeholder="Search by name, username, or employee ID..."
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-3">
                     <label for="role" class="form-label">Filter by Role</label>
                     <select name="role" id="role" class="form-select">
                         <option value="">All Roles</option>
                         {% for role in all_roles %}
                         <option value="{{ role.name }}" {% if role.name == current_role_filter %}selected{% endif %}>
-                            {{ role.name }} ({{ role.description }})
+                            {{ role.name }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-8 d-flex align-items-end">
+                <div class="col-md-3">
+                    <label for="department" class="form-label">Filter by Department</label>
+                    <select name="department" id="department" class="form-select">
+                        <option value="">All Departments</option>
+                        {% for dept in all_departments %}
+                        <option value="{{ dept.id }}" {% if dept.id|string == request.args.get('department', '') %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-outline-primary me-2">
-                        <i data-feather="filter" class="me-1"></i>
-                        Apply Filter
+                        <i data-feather="search" class="me-1"></i>
+                        Search
                     </button>
                     <a href="{{ url_for('auth.user_management') }}" class="btn btn-outline-secondary">
                         <i data-feather="x" class="me-1"></i>
@@ -45,11 +62,24 @@
     </div>
 
     <!-- Results Summary -->
-    {% if current_role_filter %}
+    {% if search_term or current_role_filter or request.args.get('department') %}
     <div class="alert alert-info">
         <i data-feather="filter" class="me-2"></i>
-        Showing {{ users.total }} users with role: <strong>{{ current_role_filter }}</strong>
-        <a href="{{ url_for('auth.user_management') }}" class="ms-3 text-decoration-none">View All Users</a>
+        Showing filtered results: 
+        {% if search_term %}
+            Search: "<strong>{{ search_term }}</strong>"
+        {% endif %}
+        {% if current_role_filter %}
+            {% if search_term %} | {% endif %}Role: <strong>{{ current_role_filter }}</strong>
+        {% endif %}
+        {% if request.args.get('department') %}
+            {% if search_term or current_role_filter %} | {% endif %}Department: <strong>
+            {% for dept in all_departments %}
+                {% if dept.id|string == request.args.get('department') %}{{ dept.name }}{% endif %}
+            {% endfor %}
+            </strong>
+        {% endif %}
+        ({{ users.total }} user{{ 's' if users.total != 1 else '' }} found)
     </div>
     {% endif %}
 
@@ -187,5 +217,37 @@
 {% block scripts %}
 <script>
     feather.replace();
+    
+    // Auto-submit search form after user stops typing
+    let searchTimeout;
+    const searchInput = document.getElementById('search');
+    const searchForm = searchInput.closest('form');
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (searchInput.value.length >= 2 || searchInput.value.length === 0) {
+                searchForm.submit();
+            }
+        }, 500); // Wait 500ms after user stops typing
+    });
+    
+    // Submit form when filters change
+    document.getElementById('role').addEventListener('change', function() {
+        searchForm.submit();
+    });
+    
+    document.getElementById('department').addEventListener('change', function() {
+        searchForm.submit();
+    });
+    
+    // Add loading indicator
+    searchForm.addEventListener('submit', function() {
+        const submitBtn = searchForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i data-feather="loader" class="me-1"></i> Searching...';
+        submitBtn.disabled = true;
+        feather.replace();
+    });
 </script>
 {% endblock %}
