@@ -8,7 +8,7 @@
         <div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('organization.departments') }}">Departments</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('organization.dashboard') }}">Organization</a></li>
                     <li class="breadcrumb-item">
                         <a href="{{ url_for('organization.view_department', department_id=department.id) }}">{{ department.name }}</a>
                     </li>
