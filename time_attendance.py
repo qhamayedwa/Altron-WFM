@@ -810,6 +810,80 @@ def import_clock_data():
     
     return render_template('time_attendance/import_data.html')
 
+@time_attendance_bp.route('/entry-details/<int:entry_id>')
+@role_required('Manager', 'Admin', 'Super User')
+def entry_details(entry_id):
+    """Get detailed information for a specific time entry"""
+    try:
+        # Get the time entry with user information
+        entry = db.session.query(TimeEntry).join(User, TimeEntry.user_id == User.id).filter(
+            TimeEntry.id == entry_id
+        ).first()
+        
+        if not entry:
+            return jsonify({
+                'success': False,
+                'message': 'Time entry not found'
+            }), 404
+        
+        # Apply role-based access control
+        is_super_user = current_user.has_role('Super User')
+        is_manager = current_user.has_role('Manager')
+        
+        if is_manager and not is_super_user:
+            managed_dept_ids = get_managed_departments(current_user.id)
+            if entry.user.department_id not in managed_dept_ids:
+                return jsonify({
+                    'success': False,
+                    'message': 'Access denied'
+                }), 403
+        
+        # Calculate worked hours
+        worked_hours = 0
+        if entry.clock_in_time and entry.clock_out_time:
+            time_diff = entry.clock_out_time - entry.clock_in_time
+            worked_hours = round(time_diff.total_seconds() / 3600.0, 2)
+        
+        # Build detailed HTML response
+        html_content = f"""
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Employee Information</h6>
+                <p><strong>Name:</strong> {entry.user.first_name} {entry.user.last_name}</p>
+                <p><strong>Username:</strong> {entry.user.username}</p>
+                <p><strong>Employee ID:</strong> {entry.user.employee_id or 'N/A'}</p>
+            </div>
+            <div class="col-md-6">
+                <h6>Time Details</h6>
+                <p><strong>Clock In:</strong> {entry.clock_in_time.strftime('%Y-%m-%d %H:%M:%S') if entry.clock_in_time else 'N/A'}</p>
+                <p><strong>Clock Out:</strong> {entry.clock_out_time.strftime('%Y-%m-%d %H:%M:%S') if entry.clock_out_time else 'Still clocked in'}</p>
+                <p><strong>Hours Worked:</strong> {worked_hours}</p>
+                <p><strong>Status:</strong> <span class="badge bg-{'success' if entry.status == 'Closed' else 'warning'}">{entry.status}</span></p>
+            </div>
+        </div>
+        """
+        
+        if entry.notes:
+            html_content += f"""
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Notes</h6>
+                    <p>{entry.notes}</p>
+                </div>
+            </div>
+            """
+        
+        return jsonify({
+            'success': True,
+            'html': html_content
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error loading entry details: {str(e)}'
+        }), 500
+
 @time_attendance_bp.route('/reports')
 @role_required('Manager', 'Admin', 'Super User')
 def reports():

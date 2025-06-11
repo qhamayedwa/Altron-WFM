@@ -524,7 +524,7 @@
 
     async function viewDetails(entryId) {
         try {
-            const response = await fetch(`/time/entry-details/${entryId}`);
+            const response = await fetch(`/time-attendance/entry-details/${entryId}`);
             const data = await response.json();
             
             if (data.success) {
