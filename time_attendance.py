@@ -989,10 +989,12 @@ def employee_timecards():
                     try:
                         time_entries = TimeEntry.query.filter(
                             TimeEntry.user_id == user.id,
+                            TimeEntry.clock_in_time.isnot(None),
                             func.date(TimeEntry.clock_in_time) == current_date
                         ).all()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logging.error(f"Error fetching time entries for user {user.id} on {current_date}: {e}")
+                        time_entries = []
                     
                     # Get leave applications for this date with error handling
                     leave_app = None
