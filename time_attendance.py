@@ -1021,8 +1021,8 @@ def employee_timecards():
                     timecard_data.append({
                         'user': user,
                         'date': current_date,
-                        'schedule': schedule,
-                        'absence': leave_app,
+                        'schedule': None,
+                        'absence': None,
                         'clock_in': clock_in_time,
                         'clock_out': clock_out_time,
                         'total_hours': round(total_hours, 2),
@@ -1076,7 +1076,7 @@ def employee_timecards():
                              
     except Exception as e:
         flash(f'Error loading employee timecards: {str(e)}', 'danger')
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('dashboard'))
 
 def generate_pay_code_summary(users_list, start_date, end_date, summary_group, is_super_user, managed_dept_ids):
     """
