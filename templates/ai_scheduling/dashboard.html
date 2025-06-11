@@ -25,7 +25,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <div class="text-muted small">Active Employees</div>
-                            <div class="h4 mb-0">{{ active_employees or 0 }}</div>
+                            <div class="h4 mb-0">{{ scheduling_insights.total_employees if scheduling_insights else 0 }}</div>
                         </div>
                         <div class="text-primary">
                             <i data-feather="users" class="feather-xl"></i>
@@ -40,11 +40,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="text-muted small">AI Schedules Generated</div>
-                            <div class="h4 mb-0">{{ ai_schedules_count or 0 }}</div>
+                            <div class="text-muted small">Average Attendance Rate</div>
+                            <div class="h4 mb-0">{{ "%.1f%%" % (attendance_insights.attendance_rate * 100) if attendance_insights and attendance_insights.attendance_rate else "0%" }}</div>
                         </div>
                         <div class="text-success">
-                            <i data-feather="cpu" class="feather-xl"></i>
+                            <i data-feather="activity" class="feather-xl"></i>
                         </div>
                     </div>
                 </div>
@@ -83,6 +83,60 @@
             </div>
         </div>
     </div>
+
+    <!-- AI Insights Section -->
+    {% if scheduling_insights or attendance_insights %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="brain" class="me-2"></i>AI Workforce Insights
+                    </h5>
+                    <small class="text-muted">Statistical analysis of workforce patterns</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if scheduling_insights %}
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Scheduling Analysis</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Peak Hours:</strong> {{ scheduling_insights.peak_hours|join(', ') if scheduling_insights.peak_hours else 'N/A' }}</li>
+                                <li><strong>Schedule Adherence:</strong> {{ "%.1f%%" % (scheduling_insights.schedule_adherence * 100) if scheduling_insights.schedule_adherence else 'N/A' }}</li>
+                                <li><strong>Coverage Score:</strong> {{ "%.1f%%" % (scheduling_insights.coverage_score * 100) if scheduling_insights.coverage_score else 'N/A' }}</li>
+                                <li><strong>Active Departments:</strong> {{ scheduling_insights.departments_analyzed if scheduling_insights.departments_analyzed else 0 }}</li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        {% if attendance_insights %}
+                        <div class="col-md-6">
+                            <h6 class="text-success">Attendance Patterns</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Attendance Rate:</strong> {{ "%.1f%%" % (attendance_insights.attendance_rate * 100) if attendance_insights.attendance_rate else 'N/A' }}</li>
+                                <li><strong>Average Hours/Day:</strong> {{ "%.1f hrs" % attendance_insights.avg_hours_per_day if attendance_insights.avg_hours_per_day else 'N/A' }}</li>
+                                <li><strong>Punctuality Rate:</strong> {{ "%.1f%%" % (attendance_insights.punctuality_rate * 100) if attendance_insights.punctuality_rate else 'N/A' }}</li>
+                                <li><strong>Employees Analyzed:</strong> {{ attendance_insights.employees_analyzed if attendance_insights.employees_analyzed else 0 }}</li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if scheduling_insights and scheduling_insights.recommendations %}
+                    <div class="mt-3">
+                        <h6 class="text-info">AI Recommendations</h6>
+                        <div class="alert alert-info">
+                            {% for recommendation in scheduling_insights.recommendations[:3] %}
+                            <div><i data-feather="check-circle" class="feather-sm me-1"></i>{{ recommendation }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- AI Scheduling Tools -->
     <div class="row">
