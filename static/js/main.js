@@ -1,4 +1,4 @@
-// WFM System - Minimal JavaScript (No Form Interference)
+// Altron WFM System - Minimal JavaScript (No Form Interference)
 
 // Flash Messages System (Essential)
 class FlashMessages {
