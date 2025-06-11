@@ -12,7 +12,7 @@ import json
 import logging
 
 # Create AI blueprint
-ai_bp = Blueprint('ai', __name__, url_prefix='/ai')
+ai_bp = Blueprint('ai_insights', __name__, url_prefix='/ai')
 
 @ai_bp.route('/dashboard')
 @login_required
@@ -61,15 +61,19 @@ def natural_query():
 
 # API Endpoints for AI Features
 
-@ai_bp.route('/api/analyze-scheduling', methods=['POST'])
+@ai_bp.route('/api/analyze-scheduling', methods=['GET', 'POST'])
 @login_required
 @role_required('Manager', 'Super User')
 def api_analyze_scheduling():
     """API endpoint for scheduling analysis"""
     try:
-        data = request.get_json()
-        department_id = data.get('department_id')
-        days = data.get('days', 30)
+        if request.method == 'POST':
+            data = request.get_json()
+            department_id = data.get('department_id')
+            days = data.get('days', 30)
+        else:
+            department_id = request.args.get('department_id', type=int)
+            days = request.args.get('days', 30, type=int)
         
         result = ai_service.analyze_scheduling_patterns(department_id, days)
         return jsonify(result)
@@ -101,15 +105,19 @@ def api_generate_payroll_insights():
             'error': 'Failed to generate payroll insights'
         }), 500
 
-@ai_bp.route('/api/analyze-attendance', methods=['POST'])
+@ai_bp.route('/api/analyze-attendance', methods=['GET', 'POST'])
 @login_required
 @role_required('Manager', 'Super User', 'HR')
 def api_analyze_attendance():
     """API endpoint for attendance analysis"""
     try:
-        data = request.get_json()
-        employee_id = data.get('employee_id')
-        days = data.get('days', 30)
+        if request.method == 'POST':
+            data = request.get_json()
+            employee_id = data.get('employee_id')
+            days = data.get('days', 30)
+        else:
+            employee_id = request.args.get('employee_id', type=int)
+            days = request.args.get('days', 30, type=int)
         
         result = ai_service.analyze_attendance_patterns(employee_id, days)
         return jsonify(result)
