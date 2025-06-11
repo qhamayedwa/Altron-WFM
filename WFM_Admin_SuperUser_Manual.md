@@ -1,4 +1,4 @@
-# WFM (Workforce Management) System
+# Altron WFM (Workforce Management) System
 ## Complete Administrator & Super User Manual
 
 **Version:** 2.0  
@@ -30,7 +30,7 @@
 
 ## System Overview
 
-The WFM (Workforce Management) system is a comprehensive platform designed to streamline employee time tracking, scheduling, leave management, and payroll processing. Built on Flask with PostgreSQL, it provides enterprise-level functionality with role-based access control.
+The Altron WFM (Workforce Management) system is a comprehensive platform designed to streamline employee time tracking, scheduling, leave management, and payroll processing. Built on Flask with PostgreSQL, it provides enterprise-level functionality with role-based access control.
 
 ### Core Features
 - **Advanced Time Tracking** with GPS location support

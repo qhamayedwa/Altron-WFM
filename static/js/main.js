@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
     }
     
-    console.log('WFM System initialized successfully');
+    console.log('Altron WFM System initialized successfully');
 });
 
 // Clean up on page unload

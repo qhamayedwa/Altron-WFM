@@ -214,7 +214,7 @@ def test_department_statistics():
 
 def run_comprehensive_tests():
     """Run all comprehensive tests"""
-    print("WFM Application Comprehensive Test Suite")
+    print("Altron WFM Application Comprehensive Test Suite")
     print("=" * 60)
     
     tests = [
