@@ -934,11 +934,11 @@ def employee_timecards():
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         
-        # Default to current week if no dates provided
+        # Default to last 30 days if no dates provided (more comprehensive view)
         if not start_date and not end_date:
             today = date.today()
-            start_date = (today - timedelta(days=today.weekday())).strftime('%Y-%m-%d')
-            end_date = (today + timedelta(days=6-today.weekday())).strftime('%Y-%m-%d')
+            start_date = (today - timedelta(days=30)).strftime('%Y-%m-%d')
+            end_date = today.strftime('%Y-%m-%d')
         
         # Convert string dates to date objects for queries
         start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None
@@ -971,9 +971,9 @@ def employee_timecards():
         
         for user in users:
             if start_date_obj and end_date_obj:
-                # Generate date range for the period
-                current_date = start_date_obj
-                while current_date <= end_date_obj:
+                # Generate date range for the period (newest first)
+                current_date = end_date_obj
+                while current_date >= start_date_obj:
                     # Get schedule for this date with error handling
                     schedule = None
                     try:
@@ -1040,7 +1040,7 @@ def employee_timecards():
                         'time_entries': time_entries
                     })
                     
-                    current_date += timedelta(days=1)
+                    current_date -= timedelta(days=1)
         
         # Pagination for timecard data
         total_records = len(timecard_data)
